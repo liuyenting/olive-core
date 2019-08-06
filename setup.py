@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import find_packages, setup
 
 setup(
     name='olive-core',
@@ -10,7 +10,7 @@ setup(
     author='Liu, Yen-Ting', 
     author_email='',
 
-    packages=['olive'],
-    #namespace_packages=['olive.devices.drivers'],
+    packages=find_packages(),
+    #namespace_packages=['olive.drivers'],
     zip_safe=False
 )
