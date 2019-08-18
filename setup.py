@@ -18,10 +18,10 @@ setup(
 
     classifiers=[
         'License :: OSI Approved :: Apache Software License'
-    ]},
+    ],
     keywords=[],
 
-    author='Liu, Yen-Ting', 
+    author='Liu, Yen-Ting',
     author_email='ytliu@gate.sinica.edu.tw',
 
     # use pyproject.toml for setup dependencies instead

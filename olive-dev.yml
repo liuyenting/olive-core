@@ -1,0 +1,16 @@
+name: olive-dev
+
+channels:
+    - defaults
+
+dependencies:
+    - python=3
+    
+    # linter 
+    - flake8
+
+    # formatter
+    - black
+
+    # numpy from conda uses Intel MKL
+    - numpy
