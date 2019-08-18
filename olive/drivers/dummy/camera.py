@@ -2,6 +2,8 @@ import logging
 
 from olive.devices import Camera
 
+__all__ = ["DummyCamera"]
+
 logger = logging.getLogger(__name__)
 
 
