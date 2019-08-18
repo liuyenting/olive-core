@@ -30,23 +30,17 @@ class Device(object):
             logger.debug('ignore category class "{}"'.format(cls))
 
 
-class Camera(Device):
-    def __init__(self):
-        super().__init__()
-        print("Camera init()")
-
-    def __init_subclass__(cls):
-        super().__init_subclass__(category=Camera)
-
-
-class ConcreteCameraDriver(Camera):
-    def __init__(self):
-        super().__init__()
-        print("ConcreteCamera init()")
-
-
 if __name__ == "__main__":
     mgr = DeviceManager()
+
+    from olive.devices import Camera
+
+    """
+    class ConcreteCameraDriver(Camera):
+        def __init__(self):
+            super().__init__()
+            print("ConcreteCamera init()")
+    """
 
     def print_drivers():
         print("/// DRIVERS ///")
@@ -63,8 +57,8 @@ if __name__ == "__main__":
 
     print_drivers()
     print_devices()
-
+    """
     new_camera = ConcreteCameraDriver()
-
+    """
     print_drivers()
     print_devices()
