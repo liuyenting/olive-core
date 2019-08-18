@@ -29,12 +29,12 @@ setup(
     #
     # use pyproject.toml for setup dependencies instead
     # setup_requires=[],
-    install_requires=[],
+    install_requires=["pyside2"],
     #
     # Package Structure
     #
     packages=find_packages(),
-    # namespace_packages=["olive.drivers"],
+    namespace_packages=["olive.drivers"],
     #
     # Build Instruction
     #

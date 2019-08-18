@@ -46,7 +46,6 @@ class ConcreteCameraDriver(Camera):
 
 
 if __name__ == "__main__":
-
     mgr = DeviceManager()
 
     def print_drivers():
