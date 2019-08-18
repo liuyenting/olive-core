@@ -2,27 +2,29 @@ from abc import ABCMeta, abstractmethod
 import logging
 from typing import NamedTuple
 
-__all__ = ['Camera', 'CameraInfo']
+__all__ = ["Camera", "CameraInfo"]
 
 
 class CameraInfo(NamedTuple):
     #: version of the API
-    version : str
+    version: str
     #: vendor name of the camera
-    vendor : str
+    vendor: str
     #: modle name of the camera
-    model : str
+    model: str
     #: camera serial number
-    serial_number : str
-    
+    serial_number: str
+
     def __repr__(self) -> str:
-        return f'<CameraInfo {self.vendor}, {self.model}, S/N={self.serial_number}>'
+        return f"<CameraInfo {self.vendor}, {self.model}, S/N={self.serial_number}>"
+
 
 class Attribute(NamedTuple):
-    readable : bool
-    writable : bool
-    name : str
-    
+    readable: bool
+    writable: bool
+    name: str
+
+
 class Camera(metaclass=ABCMeta):
     def __init__(self):
         pass
@@ -33,13 +35,13 @@ class Camera(metaclass=ABCMeta):
     #   - Sequence: Aquire a specified number of internal buffers and then stops.
     def snap(self):
         pass
-    
+
     def configure_grab(self):
         pass
-    
+
     def grab(self):
         pass
-    
+
     def sequence(self):
         pass
 
@@ -48,44 +50,47 @@ class Camera(metaclass=ABCMeta):
 
     def close_camera(self):
         pass
-    
+
     @abstractmethod
     def enumerate_cameras(self):
         """Returns a list of supported camera hardwares."""
         pass
-    
+
     def enumerate_attributes(self):
         """Gets the attributes supported by the camera."""
-        pass 
+        pass
+
     # Low level functions
     #   - Acquisition: Configure, start, stop, and unconfigure an image acquisition.
     def configure_acquisition(self):
         pass
 
-    def start_acquisition(self): 
+    def start_acquisition(self):
         """
         Starts an acquisition.
 
         Use stop_acquisition() to stop the acquisition.
-        """  
+        """
         pass
 
     def get_image(self):
         """Get data of the specified frame."""
         pass
-    
+
     def stop_acquisition(self):
         """Stops an acquistion."""
-        pass 
-    
+        pass
+
     def unconfigure_acquisition(self):
         pass
+
     #   - Attribute: Examine and change the acquisition or camera attributes.
     def read_attributes(self):
         pass
-    
+
     def write_attributes(self):
         pass
+
     #   - Event: Register events.
     #   - Register: Access registers.
     #   - Session: Open, close, or enumerate sessions.
