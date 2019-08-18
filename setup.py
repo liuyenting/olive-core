@@ -8,7 +8,9 @@ with open(os.path.join(cwd, "README.md"), encoding="utf-8") as fd:
     LONG_DESCRIPTION = fd.read()
 
 setup(
-    """ Project Info """
+    #
+    # Project Info
+    #
     name="olive-core",
     version="1",
     description="Open LIVE microscopy",
@@ -17,17 +19,25 @@ setup(
     url="https://github.com/liuyenting/olive-core",
     classifiers=["License :: OSI Approved :: Apache Software License"],
     keywords=[],
-    """ Author """
+    #
+    # Author
+    #
     author="Liu, Yen-Ting",
     author_email="ytliu@gate.sinica.edu.tw",
-    """ Dependencies """
+    #
+    # Dependencies
+    #
     # use pyproject.toml for setup dependencies instead
     # setup_requires=[],
     install_requires=[],
-    """ Package Structure """
+    #
+    # Package Structure
+    #
     packages=find_packages(),
     namespace_packages=["olive.drivers"],
-    """ Build Instruction """
+    #
+    # Build Instruction
+    #
     entry_points={"console_scripts": ["funniest-joke=funniest.command_line:main"]},
     zip_safe=False,
 )
