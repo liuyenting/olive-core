@@ -1,3 +1,3 @@
 from .camera import *
-form .modulator import *
+from .modulator import *
 from .motion import *

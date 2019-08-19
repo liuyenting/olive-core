@@ -34,7 +34,6 @@ setup(
     # Package Structure
     #
     packages=find_packages(),
-    namespace_packages=["olive.drivers"],
     #
     # Build Instruction
     #
