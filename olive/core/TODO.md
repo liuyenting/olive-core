@@ -10,7 +10,7 @@
         - buffer for acquisition
 
 - script
-    - define execution relationship between devices
+    - define execution relationship between devices in ONE ACQUISITION CYCLE
         - may use blockly to generate
     
 - dispatcher
