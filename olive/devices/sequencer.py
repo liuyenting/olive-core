@@ -1,4 +1,8 @@
+from .base import Device
 
-class Sequencer(object):
+__all__ = ["Sequencer"]
+
+
+class Sequencer(Device):
     def __init__(self):
         pass
