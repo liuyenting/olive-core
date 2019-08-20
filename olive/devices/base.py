@@ -1,7 +1,7 @@
 from abc import ABCMeta, abstractmethod
 import logging
 
-from olive.core.resources import DeviceManager
+from olive.core.devices import DeviceManager
 
 all = ["Device", "DeviceManager"]
 
@@ -31,34 +31,16 @@ class Device(object):
 
 
 if __name__ == "__main__":
-    mgr = DeviceManager()
+    import coloredlogs
+    from pprint import pprint
 
-    from olive.devices import Camera
+    coloredlogs.install(
+        level="DEBUG", fmt="%(asctime)s %(levelname)s %(message)s", datefmt="%H:%M:%S"
+    )
 
-    """
-    class ConcreteCameraDriver(Camera):
-        def __init__(self):
-            super().__init__()
-            print("ConcreteCamera init()")
-    """
+    # prime the drivers
+    from olive.core.drivers import DriverManager
 
-    def print_drivers():
-        print("/// DRIVERS ///")
-        for category, drivers in mgr.get_drivers().items():
-            print(str(category))
-            for driver in drivers:
-                print(".. {}".format(str(driver)))
+    drv_mgr = DriverManager()
 
-    def print_devices():
-        print("/// DEVICES ///")
-        for uuid, device in mgr.get_devices().items():
-            print("{}, {}".format(uuid, device))
-        print()
-
-    print_drivers()
-    print_devices()
-    """
-    new_camera = ConcreteCameraDriver()
-    """
-    print_drivers()
-    print_devices()
+    pprint([cls.__name__ for cls in Device.__subclasses__()])

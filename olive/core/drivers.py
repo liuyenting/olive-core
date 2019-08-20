@@ -24,7 +24,13 @@ class DriverManager(metaclass=Singleton):
 
     def __init__(self):
         # first run refresh
-        self.drivers = self.list_drivers()
+        self._active = []
+        self._inactive = self.list_drivers()
+
+        # TODO refresh
+        # TODO organize drivers
+
+        # TODO isolate list_drivers, use result from _active/_inactive, with category filter
 
     def list_drivers(self, category=None):
         """
@@ -53,6 +59,18 @@ class DriverManager(metaclass=Singleton):
 
     def query_devices(self, category):
         pass
+
+    @property
+    def active_drivers(self):
+        return self._active
+
+    @property
+    def drivers(self):
+        return self.active_drivers + self.inactive_drivers
+
+    @property
+    def inactive_drivers(self):
+        return self._inactive
 
     @staticmethod
     def _iter_namespace(pkg_name):
