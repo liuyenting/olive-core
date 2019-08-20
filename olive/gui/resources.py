@@ -13,7 +13,7 @@ def ICON(name, root=None):
     """
     Retrieve a QIcon.
     
-    - https://favicon.io/favicon-generator/
+    - https://favicon.io/favicon-generator/ , Noto Sans
     """
     if not root:
         root = os.path.join(cwd, 'resources')

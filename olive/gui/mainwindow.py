@@ -73,5 +73,5 @@ class MainWindow(QMainWindow):
     def create_z_window(self):
         win = QDockWidget("Z")
         win.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
-        
+        #TODO return toggleViewAction -> toolbar
         self.addDockWidget(Qt.LeftDockWidgetArea, win)
