@@ -9,6 +9,12 @@
     - buffer manager
         - buffer for acquisition
 
+    - device manager
+    
+    - driver manager
+        - device primitives
+            (DRIVER holds DEVICE PRIMITIVES, DEVICES are instantiated DEVICE PRIMITIVES)
+
 - script
     - define execution relationship between devices in ONE ACQUISITION CYCLE
         - may use blockly to generate
