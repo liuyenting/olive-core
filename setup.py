@@ -29,7 +29,7 @@ setup(
     #
     # use pyproject.toml for setup dependencies instead
     # setup_requires=[],
-    install_requires=["pyside2"],
+    install_requires=["coloredlogs", "pyside2"],
     #
     # Package Structure
     #
