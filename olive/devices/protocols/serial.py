@@ -17,6 +17,7 @@ class SerialDevice(Device, metaclass=ABCMeta):
         super().__init__()
         self._handle = serial.Serial()
 
+    @classmethod
     def discover(cls):
         """List all the serial ports."""
         return [info.device for info in list_ports.comports()]

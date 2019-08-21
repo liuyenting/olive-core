@@ -1,4 +1,4 @@
-from abc import ABCMeta
+from abc import ABCMeta, abstractmethod
 import logging
 
 from .base import Device
@@ -13,7 +13,11 @@ class Modulator(Device, metaclass=ABCMeta):
 
 
 class AcustoOpticalModulator(Modulator, metaclass=ABCMeta):
-    pass
+    @abstractmethod
+    def __init__(self):
+        pass
+
+    #TODO define channels
 
 
 class ElectroOpticalModulator(Modulator, metaclass=ABCMeta):

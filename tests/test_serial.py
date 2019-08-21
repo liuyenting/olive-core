@@ -9,6 +9,8 @@ coloredlogs.install(
     level="DEBUG", fmt="%(asctime)s %(levelname)s %(message)s", datefmt="%H:%M:%S"
 )
 
+pprint(MDS.discover())
+
 aotf = MDS()
 
 aotf.initialize("COM3")
