@@ -9,15 +9,12 @@ logger = logging.getLogger(__name__)
 
 
 class Modulator(Device, metaclass=ABCMeta):
-    def __init__(self):
-        pass
+    pass
 
 
 class AcustoOpticalModulator(Modulator, metaclass=ABCMeta):
-    def __init__(self):
-        pass
+    pass
 
 
 class ElectroOpticalModulator(Modulator, metaclass=ABCMeta):
-    def __init__(self):
-        pass
+    pass

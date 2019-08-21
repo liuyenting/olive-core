@@ -1,7 +1,17 @@
 from pprint import pprint
 
-from olive.devices.protocols import SerialDevice
+import coloredlogs
 
-sd = SerialDevice()
-pprint(sd.discover())
+from olive.drivers.aa.mds import MultiDigitalSynthesizer as MDS
 
+
+coloredlogs.install(
+    level="DEBUG", fmt="%(asctime)s %(levelname)s %(message)s", datefmt="%H:%M:%S"
+)
+
+aotf = MDS()
+
+aotf.initialize("COM3")
+
+
+aotf.close()

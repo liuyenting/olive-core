@@ -10,7 +10,14 @@ class Device(metaclass=ABCMeta):
     """
     Base class for all device type.
     """
-    
+    @abstractmethod
+    def __init__(self):
+        """
+        Note:
+            Inhibit user to instantiate Device.
+        """
+        pass
+
     @classmethod
     @abstractmethod
     def discover(cls):
