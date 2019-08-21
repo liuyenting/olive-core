@@ -1,15 +1,23 @@
+from abc import ABCMeta
 import logging
 
 from .base import Device
 
 __all__ = ["AcustoOpticalModulator", "ElectroOpticalModulator"]
 
+logger = logging.getLogger(__name__)
 
-class AcustoOpticalModulator(Device):
+
+class Modulator(Device, metaclass=ABCMeta):
     def __init__(self):
         pass
 
 
-class ElectroOpticalModulator(Device):
+class AcustoOpticalModulator(Modulator, metaclass=ABCMeta):
+    def __init__(self):
+        pass
+
+
+class ElectroOpticalModulator(Modulator, metaclass=ABCMeta):
     def __init__(self):
         pass

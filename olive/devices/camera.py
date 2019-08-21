@@ -2,7 +2,7 @@ from abc import ABCMeta, abstractmethod
 import logging
 from typing import NamedTuple
 
-from .base import Device
+from olive.devices.base import Device
 
 __all__ = ["Camera", "CameraInfo"]
 
@@ -30,9 +30,6 @@ class Attribute(NamedTuple):
 class Camera(Device):
     def __init__(self):
         super().__init__()
-
-    def __init_subclass__(cls):
-        super().__init_subclass__(category=Camera)
 
     # High level functions
     #   - Snap: Capture all or a portion of a single image to the user buffer

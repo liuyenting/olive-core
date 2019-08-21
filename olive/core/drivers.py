@@ -1,9 +1,11 @@
 import importlib
 import inspect
+import itertools
 import logging
 import pkgutil
 
 from olive.core.utils import Singleton
+import olive.devices
 from olive.devices.base import Device
 
 import olive.drivers
@@ -22,17 +24,58 @@ class DriverManager(metaclass=Singleton):
         - driver reload
     """
 
-    def __init__(self):
-        # first run refresh
-        self._active = []
-        self._inactive = self.list_drivers()
+    def __init__(self, blacklist=[]):
+        # populate categories
+        self._drivers = {klass: [] for klass in Device.__subclasses__()}
 
-        # TODO refresh
-        # TODO organize drivers
+        self.refresh()
 
         # TODO isolate list_drivers, use result from _active/_inactive, with category filter
 
-    def list_drivers(self, category=None):
+    def refresh(self):
+        """Refresh known driver list."""
+        # TODO deactivate first
+
+        for drivers in self._drivers.values():
+            del drivers[:]
+
+        for driver in self._enumerate_drivers():
+            # determine category
+            for parent in self._drivers.keys():
+                if issubclass(driver, parent):
+                    self._drivers[parent].append(driver)
+                    break
+            else:
+                # this should _never_ happen
+                logger.warning(
+                    f'"{driver} inherit from an unknown device type, ignored'
+                )
+                continue
+
+    def query_devices(self, category):
+        pass
+
+    @property
+    def drivers(self):
+        return list(itertools.chain.from_iterable(self._drivers.values()))
+
+    @staticmethod
+    def _iter_namespace(pkg_name):
+        """
+        Iterate over a namespace package.
+
+        Args:
+            pkg_name (type): namespace package to iterate over
+
+        Returns:
+            (tuple): tuple containing
+                finder (FileFinder): module location
+                name (str): fully qualified name of the found item
+                is_pkg (bool): whether the found path is a package
+        """
+        return pkgutil.iter_modules(pkg_name.__path__, pkg_name.__name__ + ".")
+
+    def _enumerate_drivers(self):
         """
         Iterate over the driver namespace and list out all potential drivers.
 
@@ -57,36 +100,8 @@ class DriverManager(metaclass=Singleton):
         logger.info(f"{len(drv)} driver(s) loaded")
         return drv
 
-    def query_devices(self, category):
+    def _find_parent(self, klass):
         pass
-
-    @property
-    def active_drivers(self):
-        return self._active
-
-    @property
-    def drivers(self):
-        return self.active_drivers + self.inactive_drivers
-
-    @property
-    def inactive_drivers(self):
-        return self._inactive
-
-    @staticmethod
-    def _iter_namespace(pkg_name):
-        """
-        Iterate over a namespace package.
-
-        Args:
-            pkg_name (type): namespace package to iterate over
-
-        Returns:
-            (tuple): tuple containing
-                finder (FileFinder): module location
-                name (str): fully qualified name of the found item
-                is_pkg (bool): whether the found path is a package
-        """
-        return pkgutil.iter_modules(pkg_name.__path__, pkg_name.__name__ + ".")
 
 
 if __name__ == "__main__":
@@ -97,3 +112,12 @@ if __name__ == "__main__":
     )
 
     dm = DriverManager()
+
+    from pprint import pprint
+
+    pprint(dm.drivers)
+    pprint(dm._drivers)
+
+    from olive.devices.modulator import AcustoOpticalModulator
+
+    aom = AcustoOpticalModulator()

@@ -41,3 +41,7 @@
             - repeats
             - intervals
             - exposure
+
+---
+
+driver -> device (virtual) -> hardware (physical)
