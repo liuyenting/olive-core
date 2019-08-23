@@ -1,4 +1,5 @@
 from abc import ABCMeta, abstractmethod
+from enum import Enum
 import logging
 
 import serial
@@ -61,6 +62,36 @@ class SerialDevice(Device, metaclass=ABCMeta):
 
     def close(self):
         self.handle.close()
+        logger.debug()
+
+    def get_attribute(self, name):
+        return getattr(self.handle, name)
+
+    def set_attribute(self, name, value):
+        setattr(self.handle, name, value)
+
+    def bytes_waiting(self):
+        """
+        Return number of bytes in the buffer.
+        
+        Returns:
+            (tuple): tuple containing
+                in_waiting (int): number of bytes in the input buffer
+                out_waiting (int): number of bytes in the output buffer
+        """
+        return (self.handle.in_waiting, self.handle.out_waiting)
+
+    def flush(self):
+        """Flush the I/O buffer."""
+        self.handle.flush()
+
+    def read(self, nbytes=None, pattern=None):
+        """Read specified number of bytes from the device."""
+        pass
+
+    def write(self, buffer):
+        """Write the data to the device."""
+        pass
 
     @property
     def handle(self):
