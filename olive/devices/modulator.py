@@ -9,16 +9,20 @@ logger = logging.getLogger(__name__)
 
 
 class Modulator(Device, metaclass=ABCMeta):
-    pass
+    @abstractmethod
+    def __init__(self):
+        super().__init__()
 
 
 class AcustoOpticalModulator(Modulator, metaclass=ABCMeta):
     @abstractmethod
     def __init__(self):
-        pass
+        super().__init__()
 
-    #TODO define channels
+    # TODO define channels
 
 
 class ElectroOpticalModulator(Modulator, metaclass=ABCMeta):
-    pass
+    @abstractmethod
+    def __init__(self):
+        super().__init__()

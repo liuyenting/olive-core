@@ -1,3 +1,4 @@
+from typing import Tuple
 import importlib
 import inspect
 import itertools
@@ -22,6 +23,10 @@ class DriverManager(metaclass=Singleton):
     Todo:
         - blacklist
         - driver reload
+
+    Attributes:
+        drivers (dict): list of known drivers
+            This will return everything.
     """
 
     def __init__(self, blacklist=[]):
@@ -39,7 +44,7 @@ class DriverManager(metaclass=Singleton):
         for drivers in self._drivers.values():
             del drivers[:]
 
-        for driver in self._enumerate_drivers():
+        for driver in DriverManager._enumerate_drivers():
             # determine category
             for parent in self._drivers.keys():
                 if issubclass(driver, parent):
@@ -56,12 +61,12 @@ class DriverManager(metaclass=Singleton):
         pass
 
     @property
-    def drivers(self):
-        return list(itertools.chain.from_iterable(self._drivers.values()))
+    def drivers(self) -> Tuple[Device]:
+        return tuple(itertools.chain.from_iterable(self._drivers.values()))
 
     @staticmethod
     def _iter_namespace(pkg_name):
-        """
+        """                                                                                                                                                          
         Iterate over a namespace package.
 
         Args:
@@ -75,7 +80,8 @@ class DriverManager(metaclass=Singleton):
         """
         return pkgutil.iter_modules(pkg_name.__path__, pkg_name.__name__ + ".")
 
-    def _enumerate_drivers(self):
+    @staticmethod
+    def _enumerate_drivers():
         """
         Iterate over the driver namespace and list out all potential drivers.
 
@@ -99,25 +105,3 @@ class DriverManager(metaclass=Singleton):
             drv.extend(_drv)
         logger.info(f"{len(drv)} driver(s) loaded")
         return drv
-
-    def _find_parent(self, klass):
-        pass
-
-
-if __name__ == "__main__":
-    import coloredlogs
-
-    coloredlogs.install(
-        level="DEBUG", fmt="%(asctime)s %(levelname)s %(message)s", datefmt="%H:%M:%S"
-    )
-
-    dm = DriverManager()
-
-    from pprint import pprint
-
-    pprint(dm.drivers)
-    pprint(dm._drivers)
-
-    from olive.devices.modulator import AcustoOpticalModulator
-
-    aom = AcustoOpticalModulator()

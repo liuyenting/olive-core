@@ -60,6 +60,8 @@ class SerialDevice(Device, metaclass=ABCMeta):
         self.handle.open()
         logger.debug(f"established connection with {port}")
 
+        super().initialize()
+
     def close(self):
         self.handle.close()
         logger.debug()

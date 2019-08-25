@@ -28,13 +28,17 @@ class Attribute(NamedTuple):
 
 
 class Camera(Device):
+    @abstractmethod
     def __init__(self):
         super().__init__()
 
-    # High level functions
-    #   - Snap: Capture all or a portion of a single image to the user buffer
-    #   - Grab: Perform an acquisition that loops continually on one or more internal buffers.
-    #   - Sequence: Aquire a specified number of internal buffers and then stops.
+    """
+    High level functions
+        - Snap: Capture all or a portion of a single image to the user buffer
+        - Grab: Perform an acquisition that loops continually on one or more internal buffers.
+        - Sequence: Aquire a specified number of internal buffers and then stops.
+    """
+
     def snap(self):
         pass
 
@@ -47,23 +51,11 @@ class Camera(Device):
     def sequence(self):
         pass
 
-    def open_camera(self):
-        pass
+    """
+    Acquisition:
+        Configure, start, stop, and unconfigure an image acquisition.
+    """
 
-    def close_camera(self):
-        pass
-
-    @abstractmethod
-    def enumerate_cameras(self):
-        """Returns a list of supported camera hardwares."""
-        pass
-
-    def enumerate_attributes(self):
-        """Gets the attributes supported by the camera."""
-        pass
-
-    # Low level functions
-    #   - Acquisition: Configure, start, stop, and unconfigure an image acquisition.
     def configure_acquisition(self):
         pass
 
@@ -86,17 +78,51 @@ class Camera(Device):
     def unconfigure_acquisition(self):
         pass
 
-    #   - Attribute: Examine and change the acquisition or camera attributes.
-    def read_attributes(self):
-        pass
+    """
+    Attribute:
+        Examine and change the acquisition or camera attributes.
+    """
 
-    def write_attributes(self):
-        pass
+    # def enumerate_attributes(self):
+    #    pass
 
-    #   - Event: Register events.
-    #   - Register: Access registers.
-    #   - Session: Open, close, or enumerate sessions.
-    #   - Utility: Get detailed error information.
+    # def get_attribute(self, name):
+    #    pass
+
+    # def set_attribute(self, name, value):
+    #    pass
+
+    """
+    Event:
+        Register events.
+    """
+
+    """
+    Register:
+        Access registers.
+    
+    Note:
+        DO WE NEED THIS?
+    """
+
+    """
+    Session:
+        Open, close, or enumerate sessions.
+    """
+
+    # def discover(cls):
+    #    pass
+
+    # def initialize(self):
+    #    pass
+
+    # def close(self):
+    #    pass
+
+    """
+    Utility: 
+        Get detailed error information.
+    """
 
     """
      Snap2

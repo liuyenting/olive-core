@@ -1,5 +1,7 @@
+from abc import ABCMeta
 from collections import defaultdict
 import logging
+from typing import Tuple
 from uuid import uuid4 as uuid
 
 from olive.core.utils import Singleton
@@ -23,8 +25,9 @@ class DeviceManager(metaclass=Singleton):
     def add_device(self, device):
         self._devices[uuid().hex] = device
 
-    def add_driver(self, a, b):
-        pass  # TODO remove this function and depenency in olive.devices.base.Device
-
     def get_devices(self):
         return self._devices
+
+    @property
+    def devices(self) -> Tuple[ABCMeta]:
+        pass

@@ -13,7 +13,7 @@ pprint(MDS.discover())
 
 aotf = MDS()
 
-aotf.initialize("COM3")
+#aotf.initialize("COM3")
 
 
-aotf.close()
+#aotf.close()
