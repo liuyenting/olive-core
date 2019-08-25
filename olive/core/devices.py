@@ -1,11 +1,10 @@
-from abc import ABCMeta
-from collections import defaultdict
+import itertools
 import logging
 from typing import Tuple
-from uuid import uuid4 as uuid
+from uuid import uuid4 as uuid_gen
 
 from olive.core.utils import Singleton
-
+from olive.devies.base import Device
 
 __all__ = ["DeviceManager"]
 
@@ -18,16 +17,22 @@ class DeviceManager(metaclass=Singleton):
     """
 
     def __init__(self):
-        logger.debug("Device Manager initiated")
+        # populate categories
+        self._devices = {klass: [] for klass in Device.__subclasses__()}
 
-        self._devices = defaultdict(list)
+    def register(self, device):
+        new_uuid = uuid_gen().bytes
+        self._devices[new_uuid] = device
+        logger.debug(f'new device {device} registered as "{new_uuid}"')
 
-    def add_device(self, device):
-        self._devices[uuid().hex] = device
+    def unregister(self, device):
+        uuid = device.uuid
+        # TODO remove entry by UUID
+        # TODO detroy the device
 
     def get_devices(self):
         return self._devices
 
     @property
-    def devices(self) -> Tuple[ABCMeta]:
-        pass
+    def devices(self) -> Tuple[Device]:
+        return tuple(itertools.chain.from_iterable(self._devices.values()))

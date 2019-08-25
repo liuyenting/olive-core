@@ -1,9 +1,10 @@
-from typing import Tuple
+from abc import ABCMeta
 import importlib
 import inspect
 import itertools
 import logging
 import pkgutil
+from typing import Tuple
 
 from olive.core.utils import Singleton
 import olive.devices
@@ -61,7 +62,7 @@ class DriverManager(metaclass=Singleton):
         pass
 
     @property
-    def drivers(self) -> Tuple[Device]:
+    def drivers(self) -> Tuple[ABCMeta]:
         return tuple(itertools.chain.from_iterable(self._drivers.values()))
 
     @staticmethod

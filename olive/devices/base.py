@@ -1,7 +1,8 @@
 from abc import ABCMeta, abstractmethod
 import logging
 from typing import ByteString
-from uuid import uuid4
+
+from olive.core import DeviceManager
 
 all = ["Device"]
 
@@ -77,8 +78,8 @@ class Device(metaclass=ABCMeta):
 
     def _register(self):
         """Register the device to DeviceManager."""
-        self._uuid = uuid4().bytes
+        DeviceManager().register(self)
 
     def _unregister(self):
         """Unregister the device from DevieManager."""
-        self._uuid = None
+        DeviceManager().unregister(self)
