@@ -44,24 +44,16 @@ class DriverManager(metaclass=Singleton):
             del drivers[:]
 
         for driver in DriverManager._enumerate_drivers():
-            # determine category
-            for parent in self._drivers.keys():
-                if issubclass(driver, parent):
-                    self._drivers[parent].append(driver)
-                    break
-            else:
-                # this should _never_ happen
-                logger.warning(
-                    f'"{driver} inherit from an unknown device type, ignored'
-                )
-                continue
+            # determine primitive
+            for _klass in driver._determine_primitives():
+                self._drivers[_klass].append(driver)
 
     def query_devices(self, category):
         return tuple(self._drivers[category])
 
     @property
     def drivers(self):
-        return tuple(itertools.chain.from_iterable(self._drivers.values()))
+        return tuple(set(itertools.chain.from_iterable(self._drivers.values())))
 
     @staticmethod
     def _iter_namespace(pkg_name):

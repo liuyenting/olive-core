@@ -72,7 +72,7 @@ class Device(metaclass=ABCMeta):
         """
 
     @classmethod
-    def _determine_primtives(cls):
+    def _determine_primitives(cls):
         """Determine primitive types, since drivers are organized by direct descendent of Device."""
         visited, queue, primitives = set(), deque([cls]), []
         while queue:
