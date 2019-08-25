@@ -17,7 +17,7 @@ pprint(drv_mgr.drivers)
 print("\n** categorized drivers **")
 pprint(drv_mgr._drivers)
 
-Drv = drv_mgr.drivers[1]
+Drv = drv_mgr.drivers[0]
 
 print("\n** before instantiation")
 pprint(dev_mgr.devices)

@@ -1,9 +1,10 @@
-from olive.devices import AcustoOpticalModulator, SerialDevice
+from olive.devices import AcustoOpticalModulator
+from olive.devices.protocols import Serial
 
 __all__ = ["MultiDigitalSynthesizer"]
 
 
-class MultiDigitalSynthesizer(SerialDevice, AcustoOpticalModulator):
+class MultiDigitalSynthesizer(Serial, AcustoOpticalModulator):
     def __init__(self):
         super().__init__()
 

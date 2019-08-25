@@ -20,15 +20,13 @@ class DeviceManager(metaclass=Singleton):
         self._devices = {klass: [] for klass in Device.__subclasses__()}
 
     def register(self, device):
-        klass = device._determine_primitives()
-        for _klass in klass:
-            self._devices[_klass].append(device)
+        category = device._determine_category()
+        self._devices[category].append(device)
         logger.debug(f"new device {device} registered")
 
     def unregister(self, device):
-        klass = device._determine_primitives()
-        for _klass in klass:
-            self._devices[_klass].remove(device)
+        category = device._determine_category()
+        self._devices[category].remove(device)
         logger.debug(f"{device} unregistered")
 
     def get_devices(self):

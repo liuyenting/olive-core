@@ -44,9 +44,8 @@ class DriverManager(metaclass=Singleton):
             del drivers[:]
 
         for driver in DriverManager._enumerate_drivers():
-            # determine primitive
-            for _klass in driver._determine_primitives():
-                self._drivers[_klass].append(driver)
+            category = driver._determine_category()
+            self._drivers[category].append(driver)
 
     def query_devices(self, category):
         return tuple(self._drivers[category])

@@ -4,15 +4,14 @@ import logging
 import serial
 from serial.tools import list_ports
 
-from olive.devices.base import Device
-
+from olive.devices.protocols.base import Protocol
 
 __all__ = ["SerialDevice"]
 
 logger = logging.getLogger(__name__)
 
 
-class SerialDevice(Device, metaclass=ABCMeta):
+class Serial(Protocol, metaclass=ABCMeta):
     @abstractmethod
     def __init__(self):
         super().__init__()
