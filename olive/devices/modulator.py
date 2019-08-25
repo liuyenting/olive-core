@@ -1,7 +1,7 @@
 from abc import ABCMeta, abstractmethod
 import logging
 
-from .base import Device
+from olive.devices.base import Device
 
 __all__ = ["AcustoOpticalModulator", "ElectroOpticalModulator"]
 

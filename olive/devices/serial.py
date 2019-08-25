@@ -1,11 +1,11 @@
 from abc import ABCMeta, abstractmethod
-from enum import Enum
 import logging
 
 import serial
 from serial.tools import list_ports
 
 from olive.devices.base import Device
+
 
 __all__ = ["SerialDevice"]
 
@@ -65,6 +65,8 @@ class SerialDevice(Device, metaclass=ABCMeta):
     def close(self):
         self.handle.close()
         logger.debug(f"connection to {self.handle.port} closed")
+
+        super().close()
 
     def get_attribute(self, name):
         return getattr(self.handle, name)

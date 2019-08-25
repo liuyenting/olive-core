@@ -1,6 +1,6 @@
 import logging
 
-from .base import Device
+from olive.devices.base import Device
 
 __all__ = ["Galvo"]
 

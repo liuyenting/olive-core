@@ -1,5 +1,4 @@
-from olive.devices import AcustoOpticalModulator
-from olive.devices.protocols import SerialDevice
+from olive.devices import AcustoOpticalModulator, SerialDevice
 
 __all__ = ["MultiDigitalSynthesizer"]
 

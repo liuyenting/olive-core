@@ -72,21 +72,22 @@ class Device(metaclass=ABCMeta):
         """
 
     @classmethod
-    def _determine_category(cls):
-        """Determine root category, since drivers are organized by direct descendent of Device."""
-        visited, queue = set(), deque([cls])
+    def _determine_primtives(cls):
+        """Determine primitive types, since drivers are organized by direct descendent of Device."""
+        visited, queue, primitives = set(), deque([cls]), []
         while queue:
             klass = queue.popleft()
             for parent in klass.__bases__:
                 if parent == Device:
-                    # klass is the primitive device type, the category
-                    return klass
+                    # klass is a primitive device type
+                    logger.debug(f"{cls} is {klass}")
+                    primitives.append(klass)
+                    continue
                 elif parent not in visited:
                     # skip over cyclic dependency
                     visited.add(parent)
                     queue.append(parent)
-
-        raise RuntimeError(f"unable to determine category for {cls}")
+        return tuple(primitives)
 
     def _register(self):
         """Register the device to DeviceManager."""

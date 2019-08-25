@@ -3,7 +3,7 @@ import logging
 from typing import Tuple
 
 from olive.core.utils import Singleton
-from olive.devices.base import Device  # TODO fix circular depenency
+from olive.devices.base import Device
 
 __all__ = ["DeviceManager"]
 
@@ -20,21 +20,20 @@ class DeviceManager(metaclass=Singleton):
         self._devices = {klass: [] for klass in Device.__subclasses__()}
 
     def register(self, device):
-        category = device._determine_category()
-        self._devices[category].append(device)
+        klass = device._determine_primtives()
+        for _klass in klass:
+            self._devices[_klass].append(device)
         logger.debug(f"new device {device} registered")
 
     def unregister(self, device):
-        # TODO find parent
-        category = device._determine_category()
-        try:
-            self._devies[category].remove(device)
-        except ValueError:
-            logger.warning("{device} was ")
+        klass = device._determine_primtives()
+        for _klass in klass:
+            self._devices[_klass].remove(device)
+        logger.debug(f"{device} unregistered")
 
     def get_devices(self):
         return self._devices
 
     @property
     def devices(self) -> Tuple[Device]:
-        return tuple(itertools.chain.from_iterable(self._devices.values()))
+        return tuple(set(itertools.chain.from_iterable(self._devices.values())))
