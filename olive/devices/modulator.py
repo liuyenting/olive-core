@@ -15,6 +15,15 @@ class Modulator(Device, metaclass=ABCMeta):
 
 
 class AcustoOpticalModulator(Modulator, metaclass=ABCMeta):
+    """
+    - channels
+        - name
+        - freqency
+        - power
+
+    - frequency range
+    """
+
     @abstractmethod
     def __init__(self):
         super().__init__()
@@ -23,6 +32,20 @@ class AcustoOpticalModulator(Modulator, metaclass=ABCMeta):
 
 
 class ElectroOpticalModulator(Modulator, metaclass=ABCMeta):
+    """
+    - channel (1)
+        - gain
+        - bias
+
+    - power range
+        - gain
+            - min
+            - max
+        - bias
+            - min
+            - max
+    """
+
     @abstractmethod
     def __init__(self):
         super().__init__()

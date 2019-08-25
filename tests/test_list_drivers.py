@@ -2,16 +2,33 @@ from pprint import pprint
 
 import coloredlogs
 
-from olive.core.drivers import DriverManager
+from olive.core import DeviceManager, DriverManager
 
 coloredlogs.install(
     level="DEBUG", fmt="%(asctime)s %(levelname)s %(message)s", datefmt="%H:%M:%S"
 )
 
-dm = DriverManager()
+drv_mgr = DriverManager()
+dev_mgr = DeviceManager()
 
-print("** all drivers **")
-pprint(dm.drivers)
+print("\n** all drivers **")
+pprint(drv_mgr.drivers)
 
-print("** categorized drivers **")
-pprint(dm._drivers)
+print("\n** categorized drivers **")
+pprint(drv_mgr._drivers)
+
+CamDrv = drv_mgr.drivers[0]
+
+print("\n** before instantiation")
+pprint(dev_mgr.devices)
+
+cam = CamDrv()
+cam.initialize()
+
+print("\n** after instantiation")
+pprint(dev_mgr.devices)
+
+cam.close()
+
+print("\n** after cleanup**")
+pprint(dev_mgr.devices)

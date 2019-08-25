@@ -1,10 +1,8 @@
-from abc import ABCMeta
 import importlib
 import inspect
 import itertools
 import logging
 import pkgutil
-from typing import Tuple
 
 from olive.core.utils import Singleton
 import olive.devices
@@ -59,15 +57,15 @@ class DriverManager(metaclass=Singleton):
                 continue
 
     def query_devices(self, category):
-        pass
+        return tuple(self._drivers[category])
 
     @property
-    def drivers(self) -> Tuple[ABCMeta]:
+    def drivers(self):
         return tuple(itertools.chain.from_iterable(self._drivers.values()))
 
     @staticmethod
     def _iter_namespace(pkg_name):
-        """                                                                                                                                                          
+        """
         Iterate over a namespace package.
 
         Args:

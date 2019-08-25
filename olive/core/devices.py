@@ -1,10 +1,9 @@
 import itertools
 import logging
 from typing import Tuple
-from uuid import uuid4 as uuid_gen
 
 from olive.core.utils import Singleton
-from olive.devies.base import Device
+from olive.devices.base import Device  # TODO fix circular depenency
 
 __all__ = ["DeviceManager"]
 
@@ -21,14 +20,18 @@ class DeviceManager(metaclass=Singleton):
         self._devices = {klass: [] for klass in Device.__subclasses__()}
 
     def register(self, device):
-        new_uuid = uuid_gen().bytes
-        self._devices[new_uuid] = device
-        logger.debug(f'new device {device} registered as "{new_uuid}"')
+        parent = device._find_root_category()
+        self._devices[parent].append(device)
+        logger.debug(f"new device {device} registered")
 
     def unregister(self, device):
-        uuid = device.uuid
-        # TODO remove entry by UUID
-        # TODO detroy the device
+        # TODO find parent
+        parent = device._find_root_category()
+        try:
+            self._devies[parent].remove(device)
+        except ValueError:
+            logger.warning("{device} was ")
+        device._uuid = None
 
     def get_devices(self):
         return self._devices
