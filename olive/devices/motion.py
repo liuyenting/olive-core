@@ -14,3 +14,18 @@ class Galvo(Device):
 
     def __init__(self):
         pass
+
+
+class Stage(Device):
+    pass
+
+
+class LinearStage(Stage):
+    pass
+
+
+class RotaryStage(Stage):
+    pass
+
+
+# TODO difference between stage controller and axes, composite?

@@ -7,7 +7,7 @@ from olive.devices.base import Device
 __all__ = ["Camera", "CameraInfo"]
 
 
-class CameraInfo(NamedTuple):
+class CameraInfo(NamedTuple):  # TODO move this to generic device definition
     #: version of the API
     version: str
     #: vendor name of the camera
@@ -100,7 +100,7 @@ class Camera(Device):
     """
     Register:
         Access registers.
-    
+
     Note:
         DO WE NEED THIS?
     """
@@ -120,7 +120,7 @@ class Camera(Device):
     #    pass
 
     """
-    Utility: 
+    Utility:
         Get detailed error information.
     """
 
@@ -134,7 +134,7 @@ class Camera(Device):
      Enumerate Cameras
      Enumerate Attributes
     Enumerate Video Modes
-    
+
     --- low level ---
      Configure Acquisition
     Configure Ring Acquisition
