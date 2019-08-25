@@ -21,11 +21,12 @@ class PseudoCamera(Camera):
     def close(self):
         super().close()
 
+    def enumerate_attributes(self):
+        pass
+
     def get_attribute(self, name):
         pass
 
     def set_attribute(self, name, value):
         pass
 
-    def enumerate_cameras(self):
-        pass
