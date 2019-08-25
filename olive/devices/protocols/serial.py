@@ -41,7 +41,7 @@ class SerialDevice(Device, metaclass=ABCMeta):
             write_timeout (float):write timeout in seconds
                 Same as read_timeout.
             **kwargs: Other pySerial supported settings.
-                write_timeout, inter_byte_timeout, dsrdtr, baudrate, timeout, parity, 
+                write_timeout, inter_byte_timeout, dsrdtr, baudrate, timeout, parity,
                 bytesize, rtscts, stopbits, xonxoff
         Note:
             The timeout argument will configure both read and write timeout.
@@ -58,13 +58,13 @@ class SerialDevice(Device, metaclass=ABCMeta):
         self.handle.apply_settings(kwargs)
 
         self.handle.open()
-        logger.debug(f"established connection with {port}")
+        logger.debug(f"established connection to {port}")
 
         super().initialize()
 
     def close(self):
         self.handle.close()
-        logger.debug()
+        logger.debug(f"connection to {self.handle.port} closed")
 
     def get_attribute(self, name):
         return getattr(self.handle, name)
@@ -75,7 +75,7 @@ class SerialDevice(Device, metaclass=ABCMeta):
     def bytes_waiting(self):
         """
         Return number of bytes in the buffer.
-        
+
         Returns:
             (tuple): tuple containing
                 in_waiting (int): number of bytes in the input buffer

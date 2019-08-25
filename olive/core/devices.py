@@ -20,18 +20,17 @@ class DeviceManager(metaclass=Singleton):
         self._devices = {klass: [] for klass in Device.__subclasses__()}
 
     def register(self, device):
-        parent = device._find_root_category()
-        self._devices[parent].append(device)
+        category = device._determine_category()
+        self._devices[category].append(device)
         logger.debug(f"new device {device} registered")
 
     def unregister(self, device):
         # TODO find parent
-        parent = device._find_root_category()
+        category = device._determine_category()
         try:
-            self._devies[parent].remove(device)
+            self._devies[category].remove(device)
         except ValueError:
             logger.warning("{device} was ")
-        device._uuid = None
 
     def get_devices(self):
         return self._devices

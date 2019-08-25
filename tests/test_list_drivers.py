@@ -17,18 +17,18 @@ pprint(drv_mgr.drivers)
 print("\n** categorized drivers **")
 pprint(drv_mgr._drivers)
 
-CamDrv = drv_mgr.drivers[0]
+Drv = drv_mgr.drivers[1]
 
 print("\n** before instantiation")
 pprint(dev_mgr.devices)
 
-cam = CamDrv()
-cam.initialize()
+dev = Drv()
+dev.initialize(None)
 
 print("\n** after instantiation")
 pprint(dev_mgr.devices)
 
-cam.close()
+dev.close()
 
 print("\n** after cleanup**")
 pprint(dev_mgr.devices)

@@ -1,4 +1,5 @@
 from abc import ABCMeta, abstractmethod
+from collections import deque
 import logging
 
 __all__ = ["Device"]
@@ -17,7 +18,6 @@ class Device(metaclass=ABCMeta):
         Note:
             Prevent user from instantiation.
         """
-        self._uuid = None
 
     @classmethod
     @abstractmethod
@@ -72,13 +72,21 @@ class Device(metaclass=ABCMeta):
         """
 
     @classmethod
-    def _find_root_category(cls):
-        """Find root category, since drivers are organized by direct descendent of Device."""
+    def _determine_category(cls):
+        """Determine root category, since drivers are organized by direct descendent of Device."""
+        visited, queue = set(), deque([cls])
+        while queue:
+            klass = queue.popleft()
+            for parent in klass.__bases__:
+                if parent == Device:
+                    # klass is the primitive device type, the category
+                    return klass
+                elif parent not in visited:
+                    # skip over cyclic dependency
+                    visited.add(parent)
+                    queue.append(parent)
 
-        # TODO
-        logger.debug("Device._find_root_category()")
-        print(cls.__bases__)
-        raise RuntimeError("DEBUG")
+        raise RuntimeError(f"unable to determine category for {cls}")
 
     def _register(self):
         """Register the device to DeviceManager."""
