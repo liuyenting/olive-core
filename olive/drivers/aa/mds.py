@@ -74,6 +74,7 @@ class MultiDigitalSynthesizer(AcustoOpticalModulator):
         await super().initialize()
 
     async def close(self):
+        # TODO restore control to manual
         # TODO flush first
         self.handle.close()
 

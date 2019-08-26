@@ -1,5 +1,7 @@
 from abc import ABCMeta, abstractmethod
+from collections import OrderedDict
 import logging
+from typing import NamedTuple
 
 from olive.devices.base import Device
 
@@ -12,6 +14,14 @@ class Modulator(Device, metaclass=ABCMeta):
     @abstractmethod
     def __init__(self):
         super().__init__()
+
+
+class ChannelInfo(NamedTuple):
+    alias: str
+    #: frequency in MHz
+    frequency: float
+    #: discrete power level
+    power: int
 
 
 class AcustoOpticalModulator(Modulator, metaclass=ABCMeta):
@@ -27,8 +37,19 @@ class AcustoOpticalModulator(Modulator, metaclass=ABCMeta):
     @abstractmethod
     def __init__(self):
         super().__init__()
+        self._channels = []
 
-    # TODO define channels
+    async def get_frequency(self, ch):
+        pass
+
+    async def set_frequency(self, ch, frequency):
+        pass
+
+    async def get_power(self, ch):
+        pass
+
+    async def set_power(self, ch, power):
+        pass
 
 
 class ElectroOpticalModulator(Modulator, metaclass=ABCMeta):

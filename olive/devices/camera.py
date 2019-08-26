@@ -21,7 +21,7 @@ class CameraInfo(NamedTuple):  # TODO move this to generic device definition
         return f"<CameraInfo {self.vendor}, {self.model}, S/N={self.serial_number}>"
 
 
-class Attribute(NamedTuple):
+class Attribute(NamedTuple):  # TODO move this to generic device definition
     readable: bool
     writable: bool
     name: str

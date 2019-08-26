@@ -1,15 +1,30 @@
 from abc import ABCMeta, abstractmethod
 from collections import deque
-from  concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor
 import logging
 import multiprocessing as mp
+from typing import NamedTuple
 
-__all__ = ["Device"]
+__all__ = ["Device", "DeviceInfo"]
 
 logger = logging.getLogger(__name__)
 
 #: default thread pool uses 5 times the number of cores
 MAX_WORKERS = mp.cpu_count() * 2
+
+
+class DeviceInfo(NamedTuple):
+    #: version of the API
+    version: str
+    #: vendor of the device
+    vendor: str
+    #: model of the device
+    model: str
+    #: serial number
+    serial_number: str
+
+    def __repr__(self):
+        return f"<{self.vendor}, {self.model}, s/n={self.serial_number}>"
 
 
 class Device(metaclass=ABCMeta):
