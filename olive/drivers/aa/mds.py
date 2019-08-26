@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import re
 
 from serial import Serial
 from serial.tools import list_ports
@@ -19,22 +20,25 @@ class MultiDigitalSynthesizer(AcustoOpticalModulator):
 
     @classmethod
     def enumerate_devices(cls):
-        loop = asyncio.get_event_loop()
+        async def test_port(loop, device, port):
+            await device.initialize(port)
+            await device.close()
+
+        async def batch_test_port(loop, ports):
+            return zip(
+                ports,
+                await asyncio.gather(
+                    *[test_port(loop, cls(), port) for port in ports],
+                    return_exceptions=True,
+                ),
+            )
 
         ports = [info.device for info in list_ports.comports()]
+        loop = asyncio.get_event_loop()
+        results = loop.run_until_complete(batch_test_port(loop, ports))
+        return tuple(port for port, exception in results if exception is None)
 
-        async def batch_initialize():
-            futures = []
-            for port in ports:
-                dut = cls()
-                future = loop.run_in_executor(cls.executor, dut.initialize, port)
-                futures.append(future)
-            await asyncio.wait(fs={futures[0]}, return_when=asyncio.ALL_COMPLETED)
-        loop.run_until_complete(batch_initialize())
-
-        # TODO close all devices
-
-    def initialize(self, port, baudrate=19200, timeout=500):
+    async def initialize(self, port, baudrate=9600, timeout=1000):
         """
         Initialize the synthesizer.
 
@@ -45,36 +49,47 @@ class MultiDigitalSynthesizer(AcustoOpticalModulator):
         """
         logger.debug(f'initializing "{port}"')
 
-        timeout /= 1000
+        if timeout:
+            timeout /= 1000
 
-        serial = Serial(
+        self._handle = Serial(
             port=port, baudrate=baudrate, timeout=timeout, write_timeout=timeout
         )
-        self._find_version(serial)
+        version = await self._find_version()
+        logger.debug(f"device version: {version}")
 
-        self._handle = serial
-        super().initialize()
+        await super().initialize()
 
-    def close(self):
+    async def close(self):
+        logger.debug(f'closing "{self.handle.port}"')
         # TODO flush first
         self.handle.close()
 
-        super().close()
+        await super().close()
 
-    def enumerate_attributes(self):
+    async def enumerate_attributes(self):
         pass
 
-    def get_attribute(self, name):
+    async def get_attribute(self, name):
         pass
 
-    def set_attribute(self, name, value):
+    async def set_attribute(self, name, value):
         pass
 
     @property
     def handle(self):
         return self._handle
 
-    def _find_version(self, serial):
-        import time
+    async def _find_version(self, pattern=r"MDS [vV]([\w\.]+).*//"):
+        logger.info("finding version...")
+        self.handle.write(b"\r")
 
-        time.sleep(5)
+        loop = asyncio.get_running_loop()
+        data = await loop.run_in_executor(self.executor, self.handle.read_until, "?")
+        data = data.decode("utf-8")
+
+        tokens = re.search(pattern, data, flags=re.MULTILINE)
+        if tokens:
+            return tokens.group(1)
+        else:
+            raise UnsupportedDeviceError
