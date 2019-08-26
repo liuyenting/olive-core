@@ -1,10 +1,15 @@
 from abc import ABCMeta, abstractmethod
 from collections import deque
+from  concurrent.futures import ThreadPoolExecutor
 import logging
+import multiprocessing as mp
 
 __all__ = ["Device"]
 
 logger = logging.getLogger(__name__)
+
+#: default thread pool uses 5 times the number of cores
+MAX_WORKERS = mp.cpu_count() * 2
 
 
 class Device(metaclass=ABCMeta):
@@ -12,8 +17,10 @@ class Device(metaclass=ABCMeta):
     Base class for all device type.
     """
 
+    executor = ThreadPoolExecutor(max_workers=MAX_WORKERS)
+
     @abstractmethod
-    def __init__(self):
+    def __init__(self, nthreads=1):
         """
         Note:
             Prevent user from instantiation.
@@ -21,7 +28,7 @@ class Device(metaclass=ABCMeta):
 
     @classmethod
     @abstractmethod
-    def discover(cls):
+    def enumerate_devices(cls):
         """List supported hardwares."""
 
     @abstractmethod

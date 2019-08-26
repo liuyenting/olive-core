@@ -110,7 +110,7 @@ class Camera(Device):
         Open, close, or enumerate sessions.
     """
 
-    # def discover(cls):
+    # def enumerate_devices(cls):
     #    pass
 
     # def initialize(self):

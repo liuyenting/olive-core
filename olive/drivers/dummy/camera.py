@@ -12,10 +12,10 @@ class PseudoCamera(Camera):
         super().__init__()
 
     @classmethod
-    def discover(cls):
+    async def enumerate_devices(cls):
         pass
 
-    def initialize(self):
+    async def initialize(self):
         super().initialize()
 
     def close(self):

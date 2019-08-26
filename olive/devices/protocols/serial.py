@@ -1,12 +1,11 @@
 from abc import ABCMeta, abstractmethod
+from asyncio import Transport, BaseProtocol
 import logging
 
 import serial
 from serial.tools import list_ports
 
-from olive.devices.protocols.base import Protocol
-
-__all__ = ["SerialDevice"]
+__all__ = ["Serial"]
 
 logger = logging.getLogger(__name__)
 
@@ -18,9 +17,9 @@ class Serial(Protocol, metaclass=ABCMeta):
         self._handle = serial.Serial()
 
     @classmethod
-    def discover(cls):
+    def enumerate_devices(cls):
         """List all the serial ports."""
-        return [info.device for info in list_ports.comports()]
+        return tuple(info.device for info in list_ports.comports())
 
     def initialize(
         self, port, baudrate=9600, read_timeout=None, write_timeout=None, **kwargs

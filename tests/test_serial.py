@@ -1,3 +1,5 @@
+import asyncio
+import logging
 from pprint import pprint
 
 import coloredlogs
@@ -9,11 +11,7 @@ coloredlogs.install(
     level="DEBUG", fmt="%(asctime)s %(levelname)s %(message)s", datefmt="%H:%M:%S"
 )
 
-pprint(MDS.discover())
+logger = logging.getLogger(__name__)
 
-aotf = MDS()
-
-#aotf.initialize("COM3")
-
-
-#aotf.close()
+devices = MDS.enumerate_devices()
+pprint(devices)
