@@ -48,7 +48,7 @@ class MultiDigitalSynthesizer(AcustoOpticalModulator):
                 raise exception
         return tuple(devices)
 
-    async def initialize(self, port, baudrate=9600, timeout=1000):
+    async def initialize(self, port, baudrate=19200, timeout=1000):
         """
         Initialize the synthesizer.
 
@@ -56,6 +56,10 @@ class MultiDigitalSynthesizer(AcustoOpticalModulator):
             port (str): device name
             baudrate (int): baud rate
             timeout (int): timeout in ms
+
+        Notes:
+            For virtual COM, baudrate does not really matter, 19200 bps is the default
+            value for RS232 link.
         """
         if timeout:
             timeout /= 1000
