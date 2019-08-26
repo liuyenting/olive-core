@@ -35,8 +35,18 @@ class MultiDigitalSynthesizer(AcustoOpticalModulator):
 
         ports = [info.device for info in list_ports.comports()]
         loop = asyncio.get_event_loop()
+
         results = loop.run_until_complete(batch_test_port(loop, ports))
-        return tuple(port for port, exception in results if exception is None)
+        devices = []
+        for port, exception in results:
+            if isinstance(exception, UnsupportedDeviceError):
+                continue
+            elif exception is None:
+                devices.append(port)
+            else:
+                # unknown exception occurred
+                raise exception
+        return tuple(devices)
 
     async def initialize(self, port, baudrate=9600, timeout=1000):
         """
@@ -47,8 +57,6 @@ class MultiDigitalSynthesizer(AcustoOpticalModulator):
             baudrate (int): baud rate
             timeout (int): timeout in ms
         """
-        logger.debug(f'initializing "{port}"')
-
         if timeout:
             timeout /= 1000
 
@@ -57,11 +65,11 @@ class MultiDigitalSynthesizer(AcustoOpticalModulator):
         )
         version = await self._find_version()
         logger.debug(f"device version: {version}")
+        # TODO switch implementation based on version string?
 
         await super().initialize()
 
     async def close(self):
-        logger.debug(f'closing "{self.handle.port}"')
         # TODO flush first
         self.handle.close()
 
