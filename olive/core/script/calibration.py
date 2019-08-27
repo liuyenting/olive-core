@@ -1,6 +1,5 @@
-from olive.core.devices import AcustoOptoModulator
-
-from .base import Script
+from olive.core.script import Script
+from olive.devices import AcustoOpticalModulator
 
 
 class AOTFCalibration(Script):
@@ -8,7 +7,7 @@ class AOTFCalibration(Script):
     Automagically calibrate AOTF frequencies and power range.
     """
 
-    aotf = AcustoOptoModulator
+    aotf = AcustoOpticalModulator
 
     def setup(self):
         pass
