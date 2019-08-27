@@ -1,6 +1,9 @@
+from __future__ import annotations
 from abc import abstractmethod
+from concurrent.futures import ThreadPoolExecutor
 import itertools
 import logging
+import multiprocessing as mp
 from typing import Tuple
 
 from olive.core.utils import Singleton
@@ -8,6 +11,9 @@ from olive.core.utils import Singleton
 __all__ = ["Device", "DeviceManager", "DeviceType"]
 
 logger = logging.getLogger(__name__)
+
+#: default thread pool uses 5 times the number of cores
+MAX_WORKERS = mp.cpu_count() * 2
 
 
 class DeviceType(type):
@@ -24,10 +30,12 @@ class Device(metaclass=DeviceType):
     """
 
     @abstractmethod
-    def __init__(self, driver, parent=None):
+    def __init__(self, driver, parent: Device = None):
         """Abstract __init__ to prevent instantiation."""
         self._driver = driver
         self._parent = parent
+
+        self._executor = ThreadPoolExecutor(max_workers=1)
 
     """
     Device initialization.
@@ -82,13 +90,25 @@ class Device(metaclass=DeviceType):
             name (str): documented property name
         """
 
+    """
+    Driver-device associations.
+    """
+
     @property
     def driver(self):
         return self._driver
 
     @property
-    def parent(self):
+    def parent(self) -> Device:
         return self._parent
+
+    """
+    Exceution.
+    """
+
+    @property
+    def executor(self):
+        return self._executor
 
 
 class DeviceManager(metaclass=Singleton):

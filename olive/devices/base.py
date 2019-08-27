@@ -9,9 +9,6 @@ __all__ = ["Device", "DeviceInfo"]
 
 logger = logging.getLogger(__name__)
 
-#: default thread pool uses 5 times the number of cores
-MAX_WORKERS = mp.cpu_count() * 2
-
 
 class DeviceInfo(NamedTuple):
     #: version of the API
@@ -31,8 +28,6 @@ class Device(metaclass=ABCMeta):
     """
     Base class for all device type.
     """
-
-    executor = ThreadPoolExecutor(max_workers=MAX_WORKERS)
 
     @abstractmethod
     def __init__(self, nthreads=1):

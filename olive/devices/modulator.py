@@ -39,20 +39,20 @@ class AcustoOpticalModulator(Modulator, Device):
     """
 
     @abstractmethod
-    def __init__(self):
-        super().__init__()
+    def __init__(self, driver):
+        super().__init__(driver)
         self._channels = []
 
-    def get_frequency(self, ch):
+    def get_frequency(self, channel):
         pass
 
-    def set_frequency(self, ch, frequency):
+    def set_frequency(self, channel, frequency):
         pass
 
-    def get_power(self, ch):
+    def get_power(self, channel):
         pass
 
-    def set_power(self, ch, power):
+    def set_power(self, channel, power):
         pass
 
 
