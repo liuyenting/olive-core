@@ -10,6 +10,10 @@ __all__ = ["DeviceManager"]
 logger = logging.getLogger(__name__)
 
 
+class Device(type):
+    """All devices belong to this type."""
+
+
 class DeviceManager(metaclass=Singleton):
     """
     Device bookkeeping.

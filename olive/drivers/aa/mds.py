@@ -48,7 +48,7 @@ class MultiDigitalSynthesizer(AcustoOpticalModulator):
                 raise exception
         return tuple(devices)
 
-    async def initialize(self, port, baudrate=19200, timeout=1000):
+    def initialize(self, port, baudrate=19200, timeout=1000):
         """
         Initialize the synthesizer.
 
@@ -73,27 +73,27 @@ class MultiDigitalSynthesizer(AcustoOpticalModulator):
 
         await super().initialize()
 
-    async def close(self):
+    def close(self):
         # TODO restore control to manual
         # TODO flush first
         self.handle.close()
 
         await super().close()
 
-    async def enumerate_attributes(self):
+    def enumerate_attributes(self):
         pass
 
-    async def get_attribute(self, name):
+    def get_attribute(self, name):
         pass
 
-    async def set_attribute(self, name, value):
+    def set_attribute(self, name, value):
         pass
 
     @property
     def handle(self):
         return self._handle
 
-    async def _find_version(self, pattern=r"MDS [vV]([\w\.]+).*//"):
+    def _find_version(self, pattern=r"MDS [vV]([\w\.]+).*//"):
         logger.info("finding version...")
         self.handle.write(b"\r")
 

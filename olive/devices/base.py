@@ -47,7 +47,7 @@ class Device(metaclass=ABCMeta):
         """List supported hardwares."""
 
     @abstractmethod
-    async def initialize(self):
+    def initialize(self):
         """
         Initialize and register the device.
 
@@ -59,7 +59,7 @@ class Device(metaclass=ABCMeta):
         self._register()
 
     @abstractmethod
-    async def close(self):
+    def close(self):
         """
         Close and unregister the device.
 
@@ -71,11 +71,11 @@ class Device(metaclass=ABCMeta):
         self._unregister()
 
     @abstractmethod
-    async def enumerate_attributes(self):
+    def enumerate_attributes(self):
         """Get attributes supported by the device."""
 
     @abstractmethod
-    async def get_attribute(self, name):
+    def get_attribute(self, name):
         """
         Get the value of device attributes.
 
@@ -84,7 +84,7 @@ class Device(metaclass=ABCMeta):
         """
 
     @abstractmethod
-    async def set_attribute(self, name, value):
+    def set_attribute(self, name, value):
         """
         Set the value of device attributes.
 

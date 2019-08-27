@@ -1,8 +1,10 @@
+from abc import ABCMeta, abstractmethod
 import importlib
 import inspect
 import itertools
 import logging
 import pkgutil
+from typing import get_type_hints
 
 from olive.core.utils import Singleton
 import olive.devices
@@ -13,6 +15,38 @@ import olive.drivers
 __all__ = ["DriverManager"]
 
 logger = logging.getLogger(__name__)
+
+
+class DriverType(type):
+    """All drivers belong to this type."""
+
+
+class Driver(type):
+    """New type for drivers."""
+
+    def __new__(cls, name, bases, dct):
+        print(get_type_hints(cls))
+        return super().__new__(cls, name, bases, dct)
+
+    """
+    Driver initialization.
+    """
+
+    def initialize(self):
+        pass
+
+    def shutdown(self):
+        pass
+
+    """
+    Device initialization.
+    """
+
+    def open(self):
+        pass
+
+    def close(self):
+        pass
 
 
 class DriverManager(metaclass=Singleton):
@@ -30,7 +64,7 @@ class DriverManager(metaclass=Singleton):
 
     def __init__(self, blacklist=[]):
         # populate categories
-        self._drivers = {klass: [] for klass in Device.__subclasses__()}
+        self._drivers = {klass: [] for klass in Driver.__subclasses__()}
 
         self.refresh()
 
@@ -87,7 +121,7 @@ class DriverManager(metaclass=Singleton):
             drv_pkg = importlib.import_module(name)
             _drv = []
             for _, klass in inspect.getmembers(drv_pkg, inspect.isclass):
-                if issubclass(klass, Device):
+                if type(klass) == Driver:
                     _drv.append(klass)
             logger.debug(f'"{name}" contains {len(_drv)} driver(s)')
             for klass in _drv:

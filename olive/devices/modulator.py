@@ -39,16 +39,16 @@ class AcustoOpticalModulator(Modulator, metaclass=ABCMeta):
         super().__init__()
         self._channels = []
 
-    async def get_frequency(self, ch):
+    def get_frequency(self, ch):
         pass
 
-    async def set_frequency(self, ch, frequency):
+    def set_frequency(self, ch, frequency):
         pass
 
-    async def get_power(self, ch):
+    def get_power(self, ch):
         pass
 
-    async def set_power(self, ch, power):
+    def set_power(self, ch, power):
         pass
 
 
