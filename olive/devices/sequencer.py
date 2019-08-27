@@ -1,4 +1,4 @@
-from olive.devices.base import Device
+from olive.core import Device
 
 __all__ = ["Sequencer"]
 

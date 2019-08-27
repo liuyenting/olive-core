@@ -1,19 +1,16 @@
 from abc import ABCMeta, abstractmethod
-from collections import OrderedDict
 import logging
 from typing import NamedTuple
 
-from olive.devices.base import Device
+from olive.core import Device
 
 __all__ = ["AcustoOpticalModulator", "ElectroOpticalModulator"]
 
 logger = logging.getLogger(__name__)
 
 
-class Modulator(Device, metaclass=ABCMeta):
-    @abstractmethod
-    def __init__(self):
-        super().__init__()
+class Modulator(Device):
+    pass
 
 
 class ChannelInfo(NamedTuple):
@@ -24,8 +21,15 @@ class ChannelInfo(NamedTuple):
     power: int
 
 
-class AcustoOpticalModulator(Modulator, metaclass=ABCMeta):
+class AcustoOpticalModulator(Modulator, Device):
     """
+    This primitive device refers to devices using acousto-optic effect to diffract and
+    shift the frequency of light using sound waves at radio frequency.
+
+    An oscillating (frequency) electric signal drives (power) the piezoelectric
+    transducer to vibrate, which creates sound waves in the material. The moving
+    periodic planes of expansion and compression change the refraction index.
+
     - channels
         - name
         - freqency
@@ -52,8 +56,15 @@ class AcustoOpticalModulator(Modulator, metaclass=ABCMeta):
         pass
 
 
-class ElectroOpticalModulator(Modulator, metaclass=ABCMeta):
+class ElectroOpticalModulator(Modulator, Device):
     """
+    This primitive device refers to devices in which a signal-controlled element
+    exhibiting an electro-optic effect is used to modulate a beam of light.
+
+    The elector-optic effect is the change in the refractive index of a material
+    resulting from the application of a DC (bias) or low-frequency (gain) electric
+    field.
+
     - channel (1)
         - gain
         - bias

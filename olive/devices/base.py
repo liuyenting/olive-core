@@ -48,50 +48,23 @@ class Device(metaclass=ABCMeta):
 
     @abstractmethod
     def initialize(self):
-        """
-        Initialize and register the device.
-
-        Note:
-            When overloading this function, please remember to use
-                super().initialize()
-            to ensure this device is registered to the DeviceManager.
-        """
         self._register()
 
     @abstractmethod
     def close(self):
-        """
-        Close and unregister the device.
-
-        Note:
-            When overloading this function, remember to use
-                super().close()
-            to ensure this device is unregsitered from the DeviceManager.
-        """
         self._unregister()
 
     @abstractmethod
     def enumerate_attributes(self):
-        """Get attributes supported by the device."""
+        pass
 
     @abstractmethod
     def get_attribute(self, name):
-        """
-        Get the value of device attributes.
-
-        Args:
-            name (str): documented attribute name
-        """
+        pass
 
     @abstractmethod
     def set_attribute(self, name, value):
-        """
-        Set the value of device attributes.
-
-        Args:
-            name (str): documented attribute name
-            value : new value of the specified attribute
-        """
+        pass
 
     @classmethod
     def _determine_category(cls):

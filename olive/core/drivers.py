@@ -1,18 +1,16 @@
-from abc import ABCMeta, abstractmethod
+from abc import abstractmethod
 import importlib
 import inspect
 import itertools
 import logging
 import pkgutil
-from typing import get_type_hints
 
 from olive.core.utils import Singleton
 import olive.devices
-from olive.devices.base import Device
 
 import olive.drivers
 
-__all__ = ["DriverManager"]
+__all__ = ["Driver", "DriverManager", "DriverType"]
 
 logger = logging.getLogger(__name__)
 
@@ -21,32 +19,53 @@ class DriverType(type):
     """All drivers belong to this type."""
 
 
-class Driver(type):
-    """New type for drivers."""
-
-    def __new__(cls, name, bases, dct):
-        print(get_type_hints(cls))
-        return super().__new__(cls, name, bases, dct)
+class Driver(metaclass=DriverType):
+    @abstractmethod
+    def __init__(self):
+        """Abstract __init__ to prevent instantiation."""
 
     """
     Driver initialization.
     """
 
+    @abstractmethod
     def initialize(self):
         pass
 
+    @abstractmethod
     def shutdown(self):
         pass
 
+    @abstractmethod
+    def enumerate_devices(self):
+        """List supported devices."""
+
     """
-    Device initialization.
+    Driver attributes.
     """
 
-    def open(self):
-        pass
+    @abstractmethod
+    def enumerate_attributes(self):
+        """Get attributes supported by the driver."""
 
-    def close(self):
-        pass
+    @abstractmethod
+    def get_attribute(self, name):
+        """
+        Get the value of driver attribute.
+
+        Args:
+            name (str): documented attribute name
+        """
+
+    @abstractmethod
+    def set_attribute(self, name, value):
+        """
+        Set the value of driver attribute.
+
+        Args:
+            name (str): documented attribute name
+            value : new value of the specified attribute
+        """
 
 
 class DriverManager(metaclass=Singleton):

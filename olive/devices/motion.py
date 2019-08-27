@@ -1,6 +1,6 @@
 import logging
 
-from olive.devices.base import Device
+from olive.core import Device
 
 __all__ = ["Galvo"]
 
@@ -28,4 +28,4 @@ class RotaryStage(Stage):
     pass
 
 
-# TODO difference between stage controller and axes, composite?
+# TODO difference between stage controller and axes, use parent
