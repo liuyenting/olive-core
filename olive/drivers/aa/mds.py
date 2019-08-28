@@ -59,9 +59,7 @@ class MDSnC(AcustoOpticalModulator):
     ##
 
     def open(self):
-        """
-        Open connection with the synthesizer.
-        """
+        """Open connection to the synthesizer and seize its internal control."""
         self.handle.open()
 
         # use version string to probe validity
@@ -70,13 +68,13 @@ class MDSnC(AcustoOpticalModulator):
         except UnableToParseVersionError:
             raise UnsupportedDeviceError
 
-        #self._set_control_voltage(ControlVoltage.FIVE_VOLT)
+        self._set_control_voltage(ControlVoltage.FIVE_VOLT)
         self._set_control_mode(ControlMode.EXTERNAL)
 
         super().open()
 
     def close(self):
-        #self._save_parameters()
+        self._save_parameters()
         self._set_control_mode(ControlMode.INTERNAL)
         self.handle.close()
 
@@ -138,10 +136,12 @@ class MDSnC(AcustoOpticalModulator):
     def _get_line_status(self, channel):
         self.handle.reset_input_buffer()
         self.handle.write(f"L{channel}\r".encode())
-        data = self.handle.read_until('\r').decode("utf-8")
+        data = self.handle.read_until("\r").decode("utf-8")
         return self._parse_line_status(data)
 
-    def _parse_line_status(self, data, pattern=r"l(\d)F(\d+\.\d+)P(\d+\.\d+)S([01])"):
+    def _parse_line_status(
+        self, data, pattern=r"l(\d)F(\d+\.\d+)P(\s*[+-]?\d+\.\d+)S([01])"
+    ):
         matches = re.search(pattern, data)
         if matches:
             return LineStatus(
@@ -151,7 +151,8 @@ class MDSnC(AcustoOpticalModulator):
                 switch=bool(matches.group(4)),
             )
         else:
-            raise UnableToParseLineStatusError(f'"{data}"')
+            # use repr() to show invisible characters
+            raise UnableToParseLineStatusError(f"trying to parse {repr(data)}")
 
     def _set_control_mode(self, mode: ControlMode):
         """Adjust driver mode."""
@@ -159,9 +160,19 @@ class MDSnC(AcustoOpticalModulator):
         self.handle.write(f"I{mode.value}\r".encode())
 
     def _set_control_voltage(self, voltage: ControlVoltage):
-        """Adjust external driver voltage."""
+        """
+        Adjust external driver voltage.
+
+        Note:
+            Due to unknown reason, fast control 'V0\r' will cause the controller to
+            return complete help message. Fallback to slower interactive mode, 'v\r0\r'.
+        """
         logger.info(f"switching control voltage to {voltage.name}")
-        self.handle.write(f"V{voltage.value}\r".encode())
+        # self.handle.write(f"V{voltage.value}\r".encode())
+        self.handle.write(b"v\r")
+        self.handle.read_until(">")
+        self.handle.write(f"{voltage.value}\r".encode())
+        self.handle.read_until("?")
 
     def _save_parameters(self):
         """Save parameters in the EEPROM."""
