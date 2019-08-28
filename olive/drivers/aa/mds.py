@@ -1,4 +1,5 @@
 import asyncio
+from enum import Enum
 import logging
 import re
 from typing import Union
@@ -7,12 +8,20 @@ from serial import Serial
 from serial.tools import list_ports
 
 from olive.core import Driver
+from olive.core.utils import retry
 from olive.devices import AcustoOpticalModulator
 from olive.devices.errors import UnsupportedDeviceError
+
+from olive.drivers.aa.errors import UnableToDetermineVersion
 
 __all__ = ["MultiDigitalSynthesizer"]
 
 logger = logging.getLogger(__name__)
+
+
+class ControlMode(Enum):
+    INTERNAL = 0
+    EXTERNAL = 1
 
 
 class MDSnC(AcustoOpticalModulator):
@@ -42,7 +51,13 @@ class MDSnC(AcustoOpticalModulator):
         )
 
         # use version string to probe validity
-        self._get_version()
+        try:
+            self._get_version()
+        except UnableToDetermineVersion:
+            self.close()
+            raise UnsupportedDeviceError
+
+        self._set_control_mode(ControlMode.EXTERNAL)
 
         super().open()
 
@@ -82,16 +97,31 @@ class MDSnC(AcustoOpticalModulator):
     def handle(self):
         return self._handle
 
-    def _get_version(self, pattern=r"MDS [vV]([\w\.]+).*//"):
-        # CR to trigger message dump
-        self.handle.write(b"\r")
+    """
+    Property accessors.
+    """
 
+    @retry(UnableToDetermineVersion, n_trials=2, logger=logger)
+    def _get_version(self, pattern=r"MDS [vV]([\w\.]+).*//"):
+        # trigger message dump
+        self.handle.write(b"\r")
+        # capture the help message
         data = self.handle.read_until("?").decode("utf-8")
+        print(f"\n** {self.handle.name} **\n{data}\n*****")
+        # scan for version string
         tokens = re.search(pattern, data, flags=re.MULTILINE)
         if tokens:
             return tokens.group(1)
         else:
-            raise UnsupportedDeviceError
+            raise UnableToDetermineVersion
+
+    """
+    Private helper functions and constants.
+    """
+
+    def _set_control_mode(self, mode: ControlMode):
+        logger.info(f"switching control mode to {mode.name}")
+        print("i{}\r".format(mode.value).encode())
 
 
 class MultiDigitalSynthesizer(Driver):
