@@ -1,12 +1,9 @@
 from abc import abstractmethod
-import logging
 from typing import NamedTuple
 
 from olive.core import Device
 
 __all__ = ["AcustoOpticalModulator", "ElectroOpticalModulator"]
-
-logger = logging.getLogger(__name__)
 
 
 class Modulator(Device):
