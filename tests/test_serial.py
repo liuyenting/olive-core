@@ -13,5 +13,12 @@ coloredlogs.install(
 logger = logging.getLogger(__name__)
 
 mds = MDS()
-devices = mds.enumerate_devices()
-pprint(devices)
+valid_devices = mds.enumerate_devices()
+pprint(valid_devices)
+dev = valid_devices[0]
+
+dev.open()
+print(dev.get_frequency(1))
+dev.set_frequency(1, 100)
+print(dev.get_frequency(1))
+dev.close()

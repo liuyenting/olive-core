@@ -1,5 +1,14 @@
-class AAErrors(Exception):
+class AAError(Exception):
     """Base class."""
 
-class UnableToDetermineVersion(AAErrors):
+
+class ParserError(AAError):
+    """Unknown response string."""
+
+
+class UnableToParseLineStatusError(ParserError):
+    """Unable to extract line status."""
+
+class UnableToParseVersionError(ParserError):
     """Unable to extract version string from response."""
+
