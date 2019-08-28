@@ -189,7 +189,7 @@ class MultiDigitalSynthesizer(Driver):
         super().initialize()
 
     def shutdown(self):
-        super().initialize()
+        super().shutdown()
 
     def enumerate_devices(self) -> Union[MDSnC]:
         loop = asyncio.get_event_loop()
@@ -224,11 +224,11 @@ class MultiDigitalSynthesizer(Driver):
     ##
 
     def enumerate_attributes(self):
-        pass
+        return tuple()
 
     def get_attribute(self, name):
-        pass
+        raise NotImplementedError("nothing to get")
 
     def set_attribute(self, name, value):
-        pass
+        raise NotImplementedError("nothing to set")
 

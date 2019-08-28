@@ -27,6 +27,10 @@ class Device(metaclass=DeviceType):
     Attributes:
         driver : driver that instantiate this device
         parent : parent device
+
+    Note:
+        Each device has its own thread executor to prevent external blocking calls
+        block the event loop.
     """
 
     @abstractmethod
@@ -121,6 +125,7 @@ class DeviceManager(metaclass=Singleton):
         self._devices = {klass: [] for klass in Device.__subclasses__()}
 
     def register(self, device):
+        # FIXME devic registration is completely detached right now
         category = device._determine_category()
         self._devices[category].append(device)
         logger.debug(f"new device {device} registered")

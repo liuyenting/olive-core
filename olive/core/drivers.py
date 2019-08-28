@@ -32,11 +32,11 @@ class Driver(metaclass=DriverType):
 
     @abstractmethod
     def initialize(self):
-        pass
+        """Initialize the library. Most notably for singleton instance."""
 
     @abstractmethod
     def shutdown(self):
-        pass
+        """Cleanup resources allocated by the library."""
 
     @abstractmethod
     def enumerate_devices(self) -> None:
