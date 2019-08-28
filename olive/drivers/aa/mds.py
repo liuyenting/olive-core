@@ -87,9 +87,6 @@ class MDSnC(AcustoOpticalModulator):
         self.handle.write(b"\r")
 
         data = self.handle.read_until("?").decode("utf-8")
-        print(f"** {self.handle.name} **")
-        print(data)
-        print("*****")
         tokens = re.search(pattern, data, flags=re.MULTILINE)
         if tokens:
             return tokens.group(1)
@@ -104,15 +101,16 @@ class MultiDigitalSynthesizer(Driver):
     ##
 
     def initialize(self):
-        pass
+        super().initialize()
 
     def shutdown(self):
-        pass
+        super().initialize()
 
     def enumerate_devices(self) -> Union[MDSnC]:
         loop = asyncio.get_event_loop()
 
         async def test_port(port):
+            """Test each port using their own thread."""
             device = MDSnC(self)
 
             def _test_port(port):
@@ -123,18 +121,20 @@ class MultiDigitalSynthesizer(Driver):
             return await loop.run_in_executor(device.executor, _test_port, port)
 
         ports = [info.device for info in list_ports.comports()]
-        testers = [test_port(port) for port in ports]
-        done, pending = loop.run_until_complete(asyncio.gather(*testers))
+        testers = asyncio.gather(
+            *[test_port(port) for port in ports], return_exceptions=True
+        )
+        results = loop.run_until_complete(testers)
 
         devices = []
-        for port, exception in done:
-            if isinstance(exception, UnsupportedDeviceError):
+        for port, result in zip(ports, results):
+            if isinstance(result, UnsupportedDeviceError):
                 continue
-            elif exception is None:
+            elif result is None:
                 devices.append(port)
             else:
                 # unknown exception occurred
-                raise exception
+                raise result
         return tuple(devices)
 
     ##

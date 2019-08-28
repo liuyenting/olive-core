@@ -2,9 +2,11 @@ from abc import abstractmethod
 import logging
 from typing import NamedTuple
 
-from olive.devices.base import Device
+from olive.core import Device
 
 __all__ = ["Camera", "CameraInfo"]
+
+logger = logging.getLogger(__name__)
 
 
 class CameraInfo(NamedTuple):  # TODO move this to generic device definition
