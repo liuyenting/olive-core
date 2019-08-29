@@ -1,8 +1,11 @@
+from abc import abstractmethod
+
 from olive.core import Device
 
 __all__ = ["Sequencer"]
 
 
 class Sequencer(Device):
-    def __init__(self):
-        pass
+    @abstractmethod
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)

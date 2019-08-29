@@ -6,16 +6,26 @@ from olive.core import Device
 __all__ = ["AcustoOpticalModulator", "ElectroOpticalModulator"]
 
 
-class Modulator(Device):
-    pass
-
-
 class ChannelInfo(NamedTuple):
     alias: str
     #: frequency in MHz
     frequency: float
     #: discrete power level
     power: int
+
+
+class Modulator(Device):
+    @abstractmethod
+    def is_enabled(self):
+        """Is the chanel enabled?"""
+
+    @abstractmethod
+    def enable(self, force=True):
+        """Enable a channel."""
+
+    @abstractmethod
+    def disable(self, force=True):
+        """Disable a channel."""
 
 
 class AcustoOpticalModulator(Modulator, Device):
@@ -36,20 +46,24 @@ class AcustoOpticalModulator(Modulator, Device):
     """
 
     @abstractmethod
-    def __init__(self, driver):
-        super().__init__(driver)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self._channels = []
 
+    @abstractmethod
     def get_frequency(self, channel):
         pass
 
-    def set_frequency(self, channel, frequency):
+    @abstractmethod
+    def set_frequency(self, channel, frequency, force=False):
         pass
 
+    @abstractmethod
     def get_power(self, channel):
         pass
 
-    def set_power(self, channel, power):
+    @abstractmethod
+    def set_power(self, channel, power, force=False):
         pass
 
 
@@ -76,5 +90,5 @@ class ElectroOpticalModulator(Modulator, Device):
     """
 
     @abstractmethod
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)

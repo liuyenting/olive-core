@@ -11,5 +11,5 @@ class Sensor(Device):
 
 class PowerMeter(Sensor, Device):
     @abstractmethod
-    def __init__(self, driver):
-        super().__init__(driver)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)

@@ -19,8 +19,8 @@ class Galvo(Device):
 
 class Stage(Device):
     @abstractmethod
-    def __init__(self, driver, parent):
-        super().__init__(driver, parent)
+    def __init__(self,*args, **kwargs):
+        super().__init__(*args, **kwargs)
 
 
 class LinearStage(Stage, Device):
@@ -30,8 +30,8 @@ class LinearStage(Stage, Device):
     """
 
     @abstractmethod
-    def __init__(self, driver, parent):
-        super().__init__(driver, parent)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
 
 class RotaryStage(Stage, Device):
@@ -40,8 +40,8 @@ class RotaryStage(Stage, Device):
     """
 
     @abstractmethod
-    def __init__(self, driver, parent):
-        super().__init__(driver, parent)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
 
 class MotionController(Device):

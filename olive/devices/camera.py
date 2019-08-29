@@ -31,8 +31,8 @@ class Attribute(NamedTuple):  # TODO move this to generic device definition
 
 class Camera(Device):
     @abstractmethod
-    def __init__(self, driver):
-        super().__init__(driver)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
     """
     High level functions

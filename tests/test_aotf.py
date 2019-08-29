@@ -12,13 +12,28 @@ coloredlogs.install(
 
 logger = logging.getLogger(__name__)
 
-mds = MDS()
-valid_devices = mds.enumerate_devices()
-pprint(valid_devices)
-dev = valid_devices[0]
 
-dev.open()
-print(dev.get_frequency(1))
-dev.set_frequency(1, 100)
-print(dev.get_frequency(1))
-dev.close()
+def select_device():
+    mds = MDS()
+    valid_devices = mds.enumerate_devices()
+    logger.info(f"found {len(valid_devices)} device(s)")
+    return valid_devices[0]
+
+
+def main():
+    device = select_device()
+
+    device.open()
+
+    fmin, fmax = device.get_property("freq_range")
+    logger.info(f"frequency range [{fmin}, {fmax}]")
+
+    device.set_frequency(4, (fmax + fmin) / 2)
+    print(device.get_frequency(4))
+    print(device._get_power_range(4))
+
+    device.close()
+
+
+if __name__ == "__main__":
+    main()
