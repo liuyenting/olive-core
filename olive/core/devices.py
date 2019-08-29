@@ -46,10 +46,13 @@ class Device(metaclass=DeviceType):
     """
 
     @abstractmethod
-    def open(self):
+    def open(self, test=False):
         """
         Open and register the device.
 
+        Args:
+            test (bool): are we testing the device only
+                If mocking is supported, enable test to avoid full-scale initialization.
         Note:
             When overloading this function, please remember to use
                 super().initialize()
@@ -75,7 +78,6 @@ class Device(metaclass=DeviceType):
     def enumerate_properties(self):
         """Get properties supported by the device."""
 
-    @abstractmethod
     def get_property(self, name):
         """
         Get the value of device property.
@@ -84,8 +86,9 @@ class Device(metaclass=DeviceType):
             name (str): documented property name
             value : new value of the specified property
         """
+        func = getattr(self, f"_get_{name}")
+        return func()
 
-    @abstractmethod
     def set_property(self, name, value):
         """
         Set the value of device property.
@@ -93,6 +96,7 @@ class Device(metaclass=DeviceType):
         Args:
             name (str): documented property name
         """
+        setattr(self, f"_set_{name}")
 
     """
     Driver-device associations.

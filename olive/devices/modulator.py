@@ -46,11 +46,6 @@ class AcustoOpticalModulator(Modulator, Device):
     """
 
     @abstractmethod
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._channels = []
-
-    @abstractmethod
     def get_frequency(self, channel):
         pass
 

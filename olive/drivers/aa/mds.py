@@ -95,13 +95,6 @@ class MDSnC(AcustoOpticalModulator):
     def enumerate_properties(self):
         return ("version", "freq_range")
 
-    def get_property(self, name):
-        func = getattr(self, f"_get_{name}")
-        return func()
-
-    def set_property(self, name, value):
-        setattr(self, f"_set_{name}")
-
     ##
 
     def is_enabled(self, channel):

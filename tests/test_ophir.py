@@ -1,6 +1,31 @@
-from serial import Serial
+import logging
+from pprint import pprint
 
-ser = Serial(port="COM5", baudrate=38400, timeout=1, write_timeout=1)
-ser.write(b"$SX\r")
-data = ser.read_until("\r").decode("utf-8", errors='backslashreplace')
-print(data)
+import coloredlogs
+
+from olive.drivers.ophir.meters import Nova2
+
+
+coloredlogs.install(
+    level="DEBUG", fmt="%(asctime)s %(levelname)s %(message)s", datefmt="%H:%M:%S"
+)
+
+logger = logging.getLogger(__name__)
+
+
+def select_device():
+    return Nova2(None, 'COM5', 38400)
+
+
+def main():
+    device = select_device()
+
+    device.open()
+
+    print(device.get_property('head_type'))
+
+    device.close()
+
+
+if __name__ == "__main__":
+    main()
