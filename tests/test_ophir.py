@@ -22,11 +22,13 @@ def select_device():
 def main():
     device = select_device()
 
-    device.open()
+    device.open(test=True)
+
+    return
 
     print(device.get_property("head_type"))
     print(device.get_property("current_range"))
-    print(device.get_property('unit'))
+    print(device.get_property("unit"))
 
     device.close()
 

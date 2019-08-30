@@ -4,16 +4,29 @@ from concurrent.futures import ThreadPoolExecutor
 import itertools
 import logging
 import multiprocessing as mp
-from typing import Tuple
+from typing import Tuple, NamedTuple
 
 from olive.core.utils import Singleton
 
-__all__ = ["Device", "DeviceManager", "DeviceType"]
+__all__ = ["Device", "DeviceInfo", "DeviceManager", "DeviceType"]
 
 logger = logging.getLogger(__name__)
 
 #: default thread pool uses 5 times the number of cores
 MAX_WORKERS = mp.cpu_count() * 2
+
+
+class DeviceInfo(NamedTuple):
+    version: str
+    vendor: str
+    model: str
+    serial_number: str
+
+    def __repr__(self) -> str:
+        if self.version:
+            return f"<{self.vendor}, {self.model}, Rev={self.version}, S/N={self.serial_number}>"
+        else:
+            return f"<{self.vendor}, {self.model}, S/N={self.serial_number}>"
 
 
 class DeviceType(type):
@@ -46,13 +59,18 @@ class Device(metaclass=DeviceType):
     """
 
     @abstractmethod
-    def open(self, test=False):
+    def test_open(self):
+        """
+        Test open the device.
+
+        Test open is used during enumeration, if mocking is supported, this can avoid full-scale device initialization. Device should automgaically close by this function afterward.
+        """
+
+    @abstractmethod
+    def open(self):
         """
         Open and register the device.
 
-        Args:
-            test (bool): are we testing the device only
-                If mocking is supported, enable test to avoid full-scale initialization.
         Note:
             When overloading this function, please remember to use
                 super().initialize()
@@ -73,6 +91,10 @@ class Device(metaclass=DeviceType):
     """
     Device properties.
     """
+
+    @abstractmethod
+    def info(self) -> DeviceInfo:
+        """Return device info."""
 
     @abstractmethod
     def enumerate_properties(self):

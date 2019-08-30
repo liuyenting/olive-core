@@ -4,23 +4,9 @@ from typing import NamedTuple
 
 from olive.core import Device
 
-__all__ = ["Camera", "CameraInfo"]
+__all__ = ["Camera"]
 
 logger = logging.getLogger(__name__)
-
-
-class CameraInfo(NamedTuple):  # TODO move this to generic device definition
-    #: version of the API
-    version: str
-    #: vendor name of the camera
-    vendor: str
-    #: modle name of the camera
-    model: str
-    #: camera serial number
-    serial_number: str
-
-    def __repr__(self) -> str:
-        return f"<CameraInfo {self.vendor}, {self.model}, S/N={self.serial_number}>"
 
 
 class Attribute(NamedTuple):  # TODO move this to generic device definition

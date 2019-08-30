@@ -14,7 +14,9 @@ According to the manual, there are 8 types of head:
 from enum import Enum
 import logging
 
+from olive.core import DeviceInfo
 from olive.devices import PowerSensor
+from olive.devices.errors import UnsupportedDeviceError
 
 __all__ = ["Photodiode", "DiffuserSetting"]
 
@@ -33,18 +35,22 @@ class Photodiode(PowerSensor):
     """
 
     def __init__(self, driver, parent):
-        if parent is None:
-            raise TypeError("parent device is required")
         super().__init__(driver, parent=parent)
         self._handle = self.parent.handle
 
     ##
 
-    def open(self):
+    def open(self, test=False):
         self.parent.open()
 
-        serial = self._get_serial_number()  # TODO move to Device, mandatory
-        logger.debug(f"s/n={serial}")
+        if test:
+            try:
+                logger.info(f'.. {self.info()}')
+            except SyntaxError:
+                raise UnsupportedDeviceError
+            finally:
+                self.close()
+            return
 
         super().open()
 
@@ -53,6 +59,15 @@ class Photodiode(PowerSensor):
         super().close()
 
     ##
+
+    def info(self) -> DeviceInfo:
+        self.handle.write(b"$HI\r")
+        response = self.handle.read_until("\r").decode("utf-8")
+        try:
+            _, sn, name, _ = tuple(response.strip("* ").split())
+        except ValueError:
+            raise SyntaxError('unable to parse device info')
+        return DeviceInfo(version=None, vendor="Ophir", model=name, serial_number=sn)
 
     def enumerate_properties(self):
         return (
@@ -141,8 +156,3 @@ class Photodiode(PowerSensor):
     Private helper functions and constants.
     """
 
-    def _get_serial_number(self):
-        self.handle.write(b"$HI\r")
-        response = self.handle.read_until("\r").decode("utf-8")
-        _, serial, name, capabilities = tuple(response.strip("* ").split())
-        return serial

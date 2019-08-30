@@ -8,7 +8,7 @@ from typing import Union
 from serial import Serial
 from serial.tools import list_ports
 
-from olive.core import Driver
+from olive.core import Driver, DeviceInfo
 from olive.core.utils import retry
 from olive.devices import AcustoOpticalModulator
 from olive.devices.errors import UnsupportedDeviceError
@@ -56,19 +56,20 @@ class MDSnC(AcustoOpticalModulator):
     ##
 
     @retry(UnsupportedDeviceError, logger=logger)
+    def test_open(self):
+        self.handle.open()
+        try:
+            logger.info(f".. {self.info()}")
+        except SyntaxError:
+            raise UnsupportedDeviceError
+        finally:
+            self.handle.close()
+
     def open(self):
         """Open connection to the synthesizer and seize its internal control."""
         self.handle.open()
 
-        try:
-            # use version string to probe validity
-            response = self._get_command_list()
-            self._parse_version(response)
-        except SyntaxError:
-            raise UnsupportedDeviceError
-
-        # save discrete power range in single run
-        self._discrete_power_range = self._parse_discrete_power_range(response)
+        self._discrete_power_range = self._get_discrete_power_range()
 
         self._set_control_voltage(ControlVoltage.FIVE_VOLT)
         self._set_control_mode(ControlMode.EXTERNAL)
@@ -79,15 +80,37 @@ class MDSnC(AcustoOpticalModulator):
         self._save_parameters()
         self._set_control_mode(ControlMode.INTERNAL)
 
-        self.handle.flush()
         self.handle.close()
 
         super().close()
 
     ##
 
+    def info(self, pattern=r"([\w]+)\s+") -> DeviceInfo:
+        # trigger command list dump
+        self.handle.write(b"\r")
+        response = self.handle.read_until("?").decode("utf-8")
+        # firmware version
+        try:
+            version = self._parse_version(response)
+        except ValueError:
+            raise SyntaxError("unable to parse version")
+
+        # serial number
+        self.handle.write(b"q\r")
+        response = self.handle.read_until("?").decode("utf-8")
+        logger.debug(f"response=[{repr(response)}]")
+        matches = re.search(pattern, response)
+        logger.debug(f"matches={matches}")
+        if matches:
+            sn = matches.group(1)
+        else:
+            raise SyntaxError("unable to parse serial number")
+
+        return DeviceInfo(version=version, vendor="AA", model="MDSnC", serial_number=sn)
+
     def enumerate_properties(self):
-        return ("version", "freq_range")
+        return ("control_mode", "control_voltage", "discrete_power_range", "freq_range")
 
     ##
 
@@ -156,27 +179,16 @@ class MDSnC(AcustoOpticalModulator):
     Property accessors.
     """
 
-    def _get_command_list(self):
-        # trigger message dump
-        self.handle.write(b"\r")
-        # capture the prompt
-        return self.handle.read_until("?").decode("utf-8")
-
-    def _parse_version(self, response, pattern=r"MDS [vV]([\w\.]+).*//"):
-        # scan for version string
-        matches = re.search(pattern, response, flags=re.MULTILINE)
-        if matches:
-            return matches.group(1)
-        else:
-            raise SyntaxError("unable to parse version string")
-
-    def _parse_discrete_power_range(
-        self, response, pattern=r"-> P[p]{4} = Power adj \([p]{4} = (\d+)->(\d+)\)"
+    def _get_discrete_power_range(
+        self, pattern=r"-> P[p]{4} = Power adj \([p]{4} = (\d+)->(\d+)\)"
     ):
         """
         Use fast channel command description to determine range, instead of verify
         values one-by-one.
         """
+        # trigger command list dump
+        self.handle.write(b"\r")
+        response = self.handle.read_until("?").decode("utf-8")
         matches = re.search(pattern, response, flags=re.MULTILINE)
         if matches:
             return (int(matches.group(1)), int(matches.group(2)))
@@ -206,6 +218,58 @@ class MDSnC(AcustoOpticalModulator):
 
         return (freq_min, freq_max)
 
+    def _set_control_mode(self, mode: ControlMode):
+        """Adjust driver mode."""
+        logger.debug(f"switching control mode to {mode.name}")
+        self.handle.write(f"I{mode.value}\r".encode())
+
+    def _set_control_voltage(self, voltage: ControlVoltage):
+        """
+        Adjust external driver voltage.
+
+        Note:
+            Due to unknown reason, fast control 'V0\r' will cause the controller to
+            return complete help message. Fallback to slower interactive mode, 'v\r0\r'.
+        """
+        logger.debug(f"switching control voltage to {voltage.name}")
+        # self.handle.write(f"V{voltage.value}\r".encode())
+        self.handle.write(b"v\r")
+        self.handle.read_until(">")
+        self.handle.write(f"{voltage.value}\r".encode())
+        self.handle.read_until("?")
+
+    """
+    Private helper functions and constants.
+    """
+
+    def _parse_version(self, response, pattern=r"MDS [vV]([\w\.]+).*//"):
+        # scan for version string
+        matches = re.search(pattern, response, flags=re.MULTILINE)
+        if matches:
+            return matches.group(1)
+        else:
+            raise SyntaxError("unable to parse version string")
+
+    def _get_line_status(self, channel):
+        self.handle.reset_input_buffer()
+        self.handle.write(f"L{channel}\r".encode())
+        data = self.handle.read_until("\r").decode("utf-8")
+        return self._parse_line_status(data)
+
+    def _parse_line_status(
+        self, data, pattern=r"l(\d)F(\d+\.\d+)P(\s*[+-]?\d+\.\d+)S([01])"
+    ):
+        matches = re.search(pattern, data)
+        if matches:
+            return LineStatus(
+                channel=int(matches.group(1)),
+                frequency=float(matches.group(2)),
+                power=float(matches.group(3)),
+                switch=(matches.group(4) == "1"),
+            )
+        else:
+            raise SyntaxError("unable to parse line status")
+
     def _get_power_range(self, test_on):
         """
         Test power range for _current_ frequency setting.
@@ -231,50 +295,6 @@ class MDSnC(AcustoOpticalModulator):
             self.enable(test_on)
 
         return (power_min, power_max)
-
-    """
-    Private helper functions and constants.
-    """
-
-    def _get_line_status(self, channel):
-        self.handle.reset_input_buffer()
-        self.handle.write(f"L{channel}\r".encode())
-        data = self.handle.read_until("\r").decode("utf-8")
-        return self._parse_line_status(data)
-
-    def _parse_line_status(
-        self, data, pattern=r"l(\d)F(\d+\.\d+)P(\s*[+-]?\d+\.\d+)S([01])"
-    ):
-        matches = re.search(pattern, data)
-        if matches:
-            return LineStatus(
-                channel=int(matches.group(1)),
-                frequency=float(matches.group(2)),
-                power=float(matches.group(3)),
-                switch=(matches.group(4) == "1"),
-            )
-        else:
-            raise SyntaxError("unable to parse line status")
-
-    def _set_control_mode(self, mode: ControlMode):
-        """Adjust driver mode."""
-        logger.debug(f"switching control mode to {mode.name}")
-        self.handle.write(f"I{mode.value}\r".encode())
-
-    def _set_control_voltage(self, voltage: ControlVoltage):
-        """
-        Adjust external driver voltage.
-
-        Note:
-            Due to unknown reason, fast control 'V0\r' will cause the controller to
-            return complete help message. Fallback to slower interactive mode, 'v\r0\r'.
-        """
-        logger.debug(f"switching control voltage to {voltage.name}")
-        # self.handle.write(f"V{voltage.value}\r".encode())
-        self.handle.write(b"v\r")
-        self.handle.read_until(">")
-        self.handle.write(f"{voltage.value}\r".encode())
-        self.handle.read_until("?")
 
     def _save_parameters(self):
         """Save parameters in the EEPROM."""
@@ -307,8 +327,7 @@ class MultiDigitalSynthesizer(Driver):
 
             def _test_device(device):
                 logger.info(f"testing {device.handle.name}...")
-                device.open()
-                device.close()
+                device.test_open()
 
             return await loop.run_in_executor(device.executor, _test_device, device)
 

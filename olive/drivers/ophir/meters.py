@@ -7,8 +7,9 @@ import zlib
 from serial import Serial
 from serial.tools import list_ports
 
-from olive.core import Driver
+from olive.core import Driver, DeviceInfo
 from olive.devices import SensorAdapter
+from olive.devices.errors import UnsupportedDeviceError
 
 from olive.drivers.ophir.sensors import Photodiode
 
@@ -41,6 +42,24 @@ class OphirPowerMeter(SensorAdapter):
         self._handle = ser
 
     ##
+
+    def info(self) -> DeviceInfo:
+        # mode name and serial number
+        self.handle.write(b"$II\r")
+        response = self.handle.read_until("\r").decode("utf-8")
+        try:
+            _, sn, name = tuple(response.strip("* ").split())
+        except ValueError:
+            raise SyntaxError("unable to parse device info")
+
+        # ROM version
+        self.handle.write(b"$VE\r")
+        response = self.handle.read_until("\r").decode("utf-8")
+        version = response.strip("* ").split()[0]
+
+        return DeviceInfo(
+            version=version, vendor="Ophir", model=name, serial_number=sn
+        )
 
     def enumerate_properties(self):
         return ("head_type",)
@@ -90,20 +109,30 @@ class Nova2(OphirPowerMeter):
     Compatible with all standard Ophir Thermopile, BeamTrack, Pyroelectric and Photodiode sensors.
     """
 
+    def test_open(self):
+        self.open()
+        try:
+            logger.info(f".. {self.info()}")
+        except SyntaxError:
+            raise UnsupportedDeviceError
+        finally:
+            # fast close
+            self.handle.close()
+
     def open(self):
         self.handle.open()
         self._set_full_duplex()
-
         super().open()
 
     def close(self):
         self._save_configuration()
+        self.handle.close()
         super().close()
 
     ##
 
     def enumerate_properties(self):
-        return tuple() + super().enumerate_properties()
+        return super().enumerate_properties()
 
     ##
 
