@@ -25,8 +25,12 @@ def main():
 
     device.open()
 
-    print(device.get_property("current_range"))
-    print(device.get_property("unit"))
+    valid_wavelength = device.get_property("valid_wavelengths")
+    logger.info(f"valid wavelength {valid_wavelength}")
+
+    unit = device.get_property("unit")
+    for i in range(5):
+        print(f"{device.get_reading()}{unit}")
 
     device.close()
 

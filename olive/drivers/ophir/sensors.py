@@ -45,21 +45,28 @@ class Photodiode(PowerSensor):
     def test_open(self):
         self.handle.open()
         try:
-            logger.info(f'.. {self.info()}')
+            logger.info(f".. {self.info()}")
         except SyntaxError:
             raise UnsupportedDeviceError
         finally:
             self.handle.close()
 
+    def open(self):
+        super().open()
+
+        # using a power sensor, auto switch to 'Power screen'
+        self.handle.write(b"$FP\r")
+        self.handle.read_until("\r")
+
     ##
 
     def info(self) -> DeviceInfo:
         self.handle.write(b"$HI\r")
-        response = self.handle.read_until("\r").decode("utf-8")
         try:
+            response = self.handle.read_until("\r").decode("utf-8")
             _, sn, name, _ = tuple(response.strip("* ").split())
-        except ValueError:
-            raise SyntaxError('unable to parse device info')
+        except (ValueError, UnicodeDecodeError):
+            raise SyntaxError("unable to parse device info")
         return DeviceInfo(version=None, vendor="Ophir", model=name, serial_number=sn)
 
     def enumerate_properties(self):
@@ -74,7 +81,13 @@ class Photodiode(PowerSensor):
     ##
 
     def get_reading(self):
-        pass
+        self.handle.write(b"$SP\r")
+        response = self.handle.read_until("\r").decode("utf-8")
+        try:
+            return float(response.strip("* "))
+        except ValueError:
+            if "OVER" in response:
+                raise ValueError("sensor reading out-of-range")
 
     def set_wavelength(self):
         pass

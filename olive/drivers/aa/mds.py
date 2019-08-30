@@ -89,11 +89,11 @@ class MDSnC(AcustoOpticalModulator):
     def info(self, pattern=r"([\w]+)\s+") -> DeviceInfo:
         # trigger command list dump
         self.handle.write(b"\r")
-        response = self.handle.read_until("?").decode("utf-8")
         # firmware version
         try:
+            response = self.handle.read_until("?").decode("utf-8")
             version = self._parse_version(response)
-        except ValueError:
+        except (ValueError, UnicodeDecodeError):
             raise SyntaxError("unable to parse version")
 
         # serial number

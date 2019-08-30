@@ -19,7 +19,7 @@ __all__ = ["Ophir", "Nova2"]
 logger = logging.getLogger(__name__)
 
 
-class OphirPowerMeter(SensorAdapter):
+class OphirMeter(SensorAdapter):
     """
     Base class for Ophir power meters.
 
@@ -57,10 +57,10 @@ class OphirPowerMeter(SensorAdapter):
     def info(self) -> DeviceInfo:
         # mode name and serial number
         self.handle.write(b"$II\r")
-        response = self.handle.read_until("\r").decode("utf-8")
         try:
+            response = self.handle.read_until("\r").decode("utf-8")
             _, sn, name = tuple(response.strip("* ").split())
-        except ValueError:
+        except (ValueError, UnicodeDecodeError):
             raise SyntaxError("unable to parse device info")
 
         # ROM version
@@ -104,7 +104,7 @@ class OphirPowerMeter(SensorAdapter):
             raise RuntimeError("failed to save instrument configuration")
 
 
-class Nova2(OphirPowerMeter):
+class Nova2(OphirMeter):
     """
     Handheld Laser Power & Energy Meter. P/N 7Z01550.
 
@@ -188,7 +188,7 @@ class Ophir(Driver):
 
             return await loop.run_in_executor(device.executor, _test_device, device)
 
-        klasses = OphirPowerMeter.__subclasses__()
+        klasses = OphirMeter.__subclasses__()
         baudrates = (38400, 19200, 9600)
         ports = [info.device for info in list_ports.comports()]
 
