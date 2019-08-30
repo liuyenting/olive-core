@@ -13,12 +13,6 @@ from olive.core.utils import retry
 from olive.devices import AcustoOpticalModulator
 from olive.devices.errors import UnsupportedDeviceError
 
-from olive.drivers.aa.errors import (
-    UnableToParseDiscretePowerRangeError,
-    UnableToParseLineStatusError,
-    UnableToParseVersionError,
-)
-
 __all__ = ["MultiDigitalSynthesizer"]
 
 logger = logging.getLogger(__name__)
@@ -61,7 +55,7 @@ class MDSnC(AcustoOpticalModulator):
 
     ##
 
-    @retry(UnableToParseVersionError, logger=logger)
+    @retry(UnsupportedDeviceError, logger=logger)
     def open(self):
         """Open connection to the synthesizer and seize its internal control."""
         self.handle.open()
@@ -70,7 +64,7 @@ class MDSnC(AcustoOpticalModulator):
             # use version string to probe validity
             response = self._get_command_list()
             self._parse_version(response)
-        except UnableToParseVersionError:
+        except SyntaxError:
             raise UnsupportedDeviceError
 
         # save discrete power range in single run
@@ -174,7 +168,7 @@ class MDSnC(AcustoOpticalModulator):
         if matches:
             return matches.group(1)
         else:
-            raise UnableToParseVersionError
+            raise SyntaxError("unable to parse version string")
 
     def _parse_discrete_power_range(
         self, response, pattern=r"-> P[p]{4} = Power adj \([p]{4} = (\d+)->(\d+)\)"
@@ -187,7 +181,7 @@ class MDSnC(AcustoOpticalModulator):
         if matches:
             return (int(matches.group(1)), int(matches.group(2)))
         else:
-            raise UnableToParseDiscretePowerRangeError
+            raise SyntaxError("unable to parse discrete power range")
 
     def _get_freq_range(self, test_on=1):
         """
@@ -260,8 +254,7 @@ class MDSnC(AcustoOpticalModulator):
                 switch=(matches.group(4) == "1"),
             )
         else:
-            # use repr() to show invisible characters
-            raise UnableToParseLineStatusError(f"trying to parse {repr(data)}")
+            raise SyntaxError("unable to parse line status")
 
     def _set_control_mode(self, mode: ControlMode):
         """Adjust driver mode."""
