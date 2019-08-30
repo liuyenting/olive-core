@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 def select_device():
     mds = MDS()
+    mds.initialize()
     valid_devices = mds.enumerate_devices()
     logger.info(f"found {len(valid_devices)} device(s)")
     return valid_devices[0]

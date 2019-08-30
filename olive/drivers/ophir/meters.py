@@ -1,13 +1,14 @@
 from abc import abstractmethod
+import asyncio
+from itertools import product
 import logging
-import struct
 from typing import Union
-import zlib
 
 from serial import Serial
 from serial.tools import list_ports
 
 from olive.core import Driver, DeviceInfo
+from olive.core.utils import retry
 from olive.devices import SensorAdapter
 from olive.devices.errors import UnsupportedDeviceError
 
@@ -41,6 +42,16 @@ class OphirPowerMeter(SensorAdapter):
         ser.write_timeout = timeout
         self._handle = ser
 
+    def enumerate_sensors(self) -> Union[Photodiode, None]:
+        self.handle.write(b"$HT\r")
+        response = self.handle.read_until("\r").decode("utf-8")
+        # LaserStar and Nova-II append the measurement, split them by space
+        response = response.strip("* ").split()[0]
+        try:
+            return ({"SI": Photodiode, "XX": None}[response],)
+        except KeyError:
+            raise RuntimeError(f'unknown head type "{response}"')
+
     ##
 
     def info(self) -> DeviceInfo:
@@ -57,12 +68,10 @@ class OphirPowerMeter(SensorAdapter):
         response = self.handle.read_until("\r").decode("utf-8")
         version = response.strip("* ").split()[0]
 
-        return DeviceInfo(
-            version=version, vendor="Ophir", model=name, serial_number=sn
-        )
+        return DeviceInfo(version=version, vendor="Ophir", model=name, serial_number=sn)
 
     def enumerate_properties(self):
-        return ("head_type",)
+        return tuple()
 
     ##
 
@@ -73,16 +82,6 @@ class OphirPowerMeter(SensorAdapter):
     """
     Property accessors.
     """
-
-    def _get_head_type(self):
-        self.handle.write(b"$HT\r")
-        response = self.handle.read_until("\r").decode("utf-8")
-        # LaserStar and Nova-II append the measurement, split them by space
-        response = response.strip("* ").split()[0]
-        try:
-            return {"SI": Photodiode, "XX": None}[response]
-        except KeyError:
-            raise RuntimeError(f'unknown head type "{response}"')
 
     """
     Private helper functions and constants.
@@ -99,7 +98,10 @@ class OphirPowerMeter(SensorAdapter):
             return
 
     def _save_configuration(self):
-        self.handle.write(b"$IC")
+        self.handle.write(b"$IC\r")
+        response = self.handle.read_until("\r").decode("utf-8")
+        if response[0] == "?":
+            raise RuntimeError("failed to save instrument configuration")
 
 
 class Nova2(OphirPowerMeter):
@@ -109,8 +111,9 @@ class Nova2(OphirPowerMeter):
     Compatible with all standard Ophir Thermopile, BeamTrack, Pyroelectric and Photodiode sensors.
     """
 
+    @retry(UnsupportedDeviceError, logger=logger)
     def test_open(self):
-        self.open()
+        self.handle.open()
         try:
             logger.info(f".. {self.info()}")
         except SyntaxError:
@@ -173,9 +176,74 @@ class Ophir(Driver):
     def shutdown(self):
         super().shutdown()
 
-    def enumerate_devices(self) -> Union[Photodiode]:
-        # TODO test out different baudrate as well
-        pass
+    def enumerate_devices(self) -> Union[Photodiode, None]:
+        loop = asyncio.get_event_loop()
+
+        async def test_device(device):
+            """Test each port using their own thread."""
+
+            def _test_device(device):
+                logger.debug(f"testing {device.handle.name}...")
+                device.test_open()
+
+            return await loop.run_in_executor(device.executor, _test_device, device)
+
+        klasses = OphirPowerMeter.__subclasses__()
+        baudrates = (38400, 19200, 9600)
+        ports = [info.device for info in list_ports.comports()]
+
+        logger.info("looking for controllers...")
+        # each port can only test 1 combination at once
+        controllers = []
+        for klass, baudrate in product(*[klasses, baudrates]):
+            logger.debug(f"combination {klass} ({baudrate} bps)")
+            _controllers = [klass(self, port, baudrate) for port in ports]
+            testers = asyncio.gather(
+                *[test_device(controller) for controller in _controllers],
+                return_exceptions=True,
+            )
+            results = loop.run_until_complete(testers)
+
+            for controller, result in zip(_controllers, results):
+                if isinstance(result, UnsupportedDeviceError):
+                    continue
+                elif result is None:
+                    # remove from test cycle
+                    ports.remove(controller.handle.port)
+                    controllers.append(controller)
+                else:
+                    # unknown exception occurred
+                    raise result
+
+        logger.info("interrogating controllers...")
+        valid_sensors = []
+        # scan each controller for their connected sensor
+        for controller in controllers:
+            # temporary open the controller
+            controller.open()
+            # retrieve sensor devices
+            _sensors = [
+                klass(self, controller) for klass in controller.enumerate_sensors()
+            ]
+            # close the controller
+            controller.close()
+
+            # test the sensor candidates
+            testers = asyncio.gather(
+                *[test_device(sensor) for sensor in _sensors], return_exceptions=True
+            )
+            results = loop.run_until_complete(testers)
+
+            for sensor, result in zip(_sensors, results):
+                if isinstance(result, UnsupportedDeviceError):
+                    continue
+                elif result is None:
+                    valid_sensors.append(sensor)
+                else:
+                    # unknown exception occurred
+                    raise result
+
+        return tuple(valid_sensors)
 
     ##
 

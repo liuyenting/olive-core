@@ -99,9 +99,7 @@ class MDSnC(AcustoOpticalModulator):
         # serial number
         self.handle.write(b"q\r")
         response = self.handle.read_until("?").decode("utf-8")
-        logger.debug(f"response=[{repr(response)}]")
         matches = re.search(pattern, response)
-        logger.debug(f"matches={matches}")
         if matches:
             sn = matches.group(1)
         else:
@@ -326,7 +324,7 @@ class MultiDigitalSynthesizer(Driver):
             """Test each port using their own thread."""
 
             def _test_device(device):
-                logger.info(f"testing {device.handle.name}...")
+                logger.debug(f"testing {device.handle.name}...")
                 device.test_open()
 
             return await loop.run_in_executor(device.executor, _test_device, device)

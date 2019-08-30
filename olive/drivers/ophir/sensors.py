@@ -15,6 +15,7 @@ from enum import Enum
 import logging
 
 from olive.core import DeviceInfo
+from olive.core.utils import retry
 from olive.devices import PowerSensor
 from olive.devices.errors import UnsupportedDeviceError
 
@@ -40,23 +41,15 @@ class Photodiode(PowerSensor):
 
     ##
 
-    def open(self, test=False):
-        self.parent.open()
-
-        if test:
-            try:
-                logger.info(f'.. {self.info()}')
-            except SyntaxError:
-                raise UnsupportedDeviceError
-            finally:
-                self.close()
-            return
-
-        super().open()
-
-    def close(self):
-        self.parent.close()
-        super().close()
+    @retry(UnsupportedDeviceError, logger=logger)
+    def test_open(self):
+        self.handle.open()
+        try:
+            logger.info(f'.. {self.info()}')
+        except SyntaxError:
+            raise UnsupportedDeviceError
+        finally:
+            self.handle.close()
 
     ##
 

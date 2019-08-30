@@ -54,6 +54,8 @@ class Device(metaclass=DeviceType):
 
         self._executor = ThreadPoolExecutor(max_workers=1)
 
+        self._is_opened = False
+
     """
     Device initialization.
     """
@@ -63,7 +65,7 @@ class Device(metaclass=DeviceType):
         """
         Test open the device.
 
-        Test open is used during enumeration, if mocking is supported, this can avoid full-scale device initialization. Device should automgaically close by this function afterward.
+        Test open is used during enumeration, if mocking is supported, this can avoid full-scale device initialization. This function should be _self-contained_.
         """
 
     @abstractmethod
@@ -76,6 +78,8 @@ class Device(metaclass=DeviceType):
                 super().initialize()
             to ensure this device is registered to the DeviceManager.
         """
+        self._is_opened = True
+        # TODO registration
 
     @abstractmethod
     def close(self):
@@ -87,6 +91,8 @@ class Device(metaclass=DeviceType):
                 super().close()
             to ensure this device is unregsitered from the DeviceManager.
         """
+        # TODO unregistration
+        self._is_opened = False
 
     """
     Device properties.
@@ -149,6 +155,10 @@ class Device(metaclass=DeviceType):
     @property
     def executor(self):
         return self._executor
+
+    @property
+    def is_opened(self):
+        return self._is_opened
 
 
 class DeviceManager(metaclass=Singleton):
