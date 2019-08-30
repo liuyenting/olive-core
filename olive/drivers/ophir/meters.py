@@ -59,7 +59,7 @@ class OphirPowerMeter(SensorAdapter):
         self.handle.write(b"$HT\r")
         response = self.handle.read_until("\r").decode("utf-8")
         # LaserStar and Nova-II append the measurement, split them by space
-        response = response.strip("* ").split(" ")[0]
+        response = response.strip("* ").split()[0]
         try:
             return {"SI": Photodiode, "XX": None}[response]
         except KeyError:
@@ -145,6 +145,7 @@ class Ophir(Driver):
         super().shutdown()
 
     def enumerate_devices(self) -> Union[Photodiode]:
+        # TODO test out different baudrate as well
         pass
 
     ##

@@ -11,13 +11,19 @@ According to the manual, there are 8 types of head:
 - Pyroelectric
 - nanoJoule meter
 """
+from enum import Enum
 import logging
 
 from olive.devices import PowerSensor
 
-__all__ = ["Photodiode"]
+__all__ = ["Photodiode", "DiffuserSetting"]
 
 logger = logging.getLogger(__name__)
+
+
+class DiffuserSetting(Enum):
+    FILTER_OUT = "1"
+    FILTER_IN = "2"
 
 
 class Photodiode(PowerSensor):
@@ -35,15 +41,27 @@ class Photodiode(PowerSensor):
     ##
 
     def open(self):
-        pass
+        self.parent.open()
+
+        serial = self._get_serial_number()  # TODO move to Device, mandatory
+        logger.debug(f"s/n={serial}")
+
+        super().open()
 
     def close(self):
-        pass
+        self.parent.close()
+        super().close()
 
     ##
 
     def enumerate_properties(self):
-        return ("supported_wavelength",)
+        return (
+            "current_range",  # TODO move to PowerSensor
+            "diffuser",
+            "unit",  # TODO move to Sensor
+            "valid_ranges",  # TODO move to PowerSensor
+            "valid_wavelengths",
+        )
 
     ##
 
@@ -51,7 +69,7 @@ class Photodiode(PowerSensor):
         pass
 
     def set_wavelength(self):
-        self.parent.handle.write(b"")
+        pass
 
     ##
 
@@ -63,10 +81,53 @@ class Photodiode(PowerSensor):
     Property accessors.
     """
 
-    def _get_supported_wavelength(self):
+    def _get_current_range(self):
+        """
+        Return presnetly active range.
+
+        Note:
+            Since index of AUTO is 1, and dBm is 2, subscript needs to be offset by 2.
+        """
+        self.handle.write(b"$AR\r")
+        response = self.handle.read_until("\r").decode("utf-8")
+        index, *options = tuple(response.strip("* ").split())
+        return options[int(index) + 2]
+
+    def _get_diffuser(self):
+        self.handle.write(b"$FQ0\r")
+        response = self.handle.read_until("\r").decode("utf-8")
+        mode, *options = tuple(response.strip("* ").split())
+        return DiffuserSetting(mode)
+
+    def _set_diffuser(self, setting: DiffuserSetting):
+        self.handle.write(f"$FQ{setting.value}\r".encode())
+        response = self.handle.read_until("\r").decode("utf-8")
+        mode = response.strip("* ").split()[0]
+        try:
+            DiffuserSetting(mode)
+        except ValueError:
+            raise ValueError(f"failed to set diffuser property ({setting})")
+
+    def _get_unit(self):
+        self.handle.write(b"$SI\r")
+        response = self.handle.read_until("\r").decode("utf-8")
+        unit = response.strip("* ").split()[0]
+        try:
+            # some units use abbreviations
+            return {"d": "dBm", "l": "lux", "c": "fc"}[unit]
+        except KeyError:
+            return unit
+
+    def _get_valid_ranges(self):
+        self.handle.write(b"$AR\r")
+        response = self.handle.read_until("\r").decode("utf-8")
+        _, *options = tuple(response.strip("* ").split())
+        return tuple(options)
+
+    def _get_valid_wavelengths(self):
         self.handle.write(b"$AW\r")
         response = self.handle.read_until("\r").decode("utf-8")
-        mode, *args = tuple(response.strip("* ").split(" "))
+        mode, *args = tuple(response.strip("* ").split())
         if mode == "CONTINUOUS":
             fmin, fmax, *options = tuple(args)
             return (fmin, fmax)
@@ -75,3 +136,13 @@ class Photodiode(PowerSensor):
             return options
         else:
             raise RuntimeError(f'unknown mode "{mode}""')
+
+    """
+    Private helper functions and constants.
+    """
+
+    def _get_serial_number(self):
+        self.handle.write(b"$HI\r")
+        response = self.handle.read_until("\r").decode("utf-8")
+        _, serial, name, capabilities = tuple(response.strip("* ").split())
+        return serial

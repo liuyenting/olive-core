@@ -2,7 +2,7 @@ from abc import abstractmethod
 
 from olive.core import Device
 
-__all__ = ["Sensor", "SensorAdapter"]
+__all__ = ["Sensor", "SensorAdapter", "PowerSensor"]
 
 
 class SensorAdapter(Device):

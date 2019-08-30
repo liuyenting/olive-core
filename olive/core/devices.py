@@ -86,7 +86,7 @@ class Device(metaclass=DeviceType):
             name (str): documented property name
             value : new value of the specified property
         """
-        func = getattr(self, f"_get_{name}")
+        func = self._get_accessor("_get", name)
         return func()
 
     def set_property(self, name, value):
@@ -96,7 +96,17 @@ class Device(metaclass=DeviceType):
         Args:
             name (str): documented property name
         """
-        setattr(self, f"_set_{name}")
+        func = self._get_accessor("_set", name)
+        func(value)
+
+    def _get_accessor(self, prefix, name):
+        try:
+            return getattr(self, f"{prefix}_{name}")
+        except AttributeError:
+            try:
+                return getattr(self.parent, f"{prefix}_{name}")
+            except AttributeError:
+                raise AttributeError(f'unknown property "{name}"')
 
     """
     Driver-device associations.
