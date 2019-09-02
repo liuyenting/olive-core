@@ -32,6 +32,33 @@ class Sensor(Device):
             self.parent.close()
         super().close()
 
+    ##
+
+    @abstractmethod
+    def readout(self):
+        """Retrieve measured info from the sensor."""
+
+    @abstractmethod
+    def get_current_range(self):
+        """Get sensor read-out value range."""
+
+    @abstractmethod
+    def set_current_range(self, value):
+        """Set sensor measurement range."""
+
+    @abstractmethod
+    def get_unit(self):
+        """Get readout unit."""
+
+    @abstractmethod
+    def get_valid_ranges(self):
+        """
+        Get valid sensor measurement range.
+
+        Returns:
+            (tuple): options that can provide to set_current_range
+        """
+
 
 class SensorAdapter(Device):
     """
@@ -52,10 +79,6 @@ class PowerSensor(Sensor):
     proportional to the beam’s power, _usually_ calibrated with a defined accuracy to a
     specified standard and used as the input of a power meter.
     """
-
-    @abstractmethod
-    def get_reading(self):
-        """Get power reading from the sensor."""
 
     @abstractmethod
     def set_wavelength(self):
