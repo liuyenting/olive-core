@@ -54,8 +54,6 @@ class Device(metaclass=DeviceType):
 
         self._executor = ThreadPoolExecutor(max_workers=1)
 
-        self._is_opened = False
-
     """
     Device initialization.
     """
@@ -78,7 +76,6 @@ class Device(metaclass=DeviceType):
                 super().initialize()
             to ensure this device is registered to the DeviceManager.
         """
-        self._is_opened = True
         # TODO registration
 
     @abstractmethod
@@ -92,7 +89,6 @@ class Device(metaclass=DeviceType):
             to ensure this device is unregsitered from the DeviceManager.
         """
         # TODO unregistration
-        self._is_opened = False
 
     """
     Device properties.
@@ -156,10 +152,6 @@ class Device(metaclass=DeviceType):
     def executor(self):
         return self._executor
 
-    @property
-    def is_opened(self):
-        return self._is_opened
-
 
 class DeviceManager(metaclass=Singleton):
     """
@@ -169,6 +161,14 @@ class DeviceManager(metaclass=Singleton):
     def __init__(self):
         # populate categories
         self._devices = {klass: [] for klass in Device.__subclasses__()}
+
+    def set_requirements(self, requirements):
+        """Device shopping list."""
+        # TODO
+
+    def link(self, klass, device):
+        """Link registered device to shopping list item."""
+        # TOD
 
     def register(self, device):
         # FIXME devic registration is completely detached right now
@@ -184,6 +184,13 @@ class DeviceManager(metaclass=Singleton):
     def get_devices(self):
         return self._devices
 
+    ##
+
     @property
     def devices(self) -> Tuple[Device]:
         return tuple(set(itertools.chain.from_iterable(self._devices.values())))
+
+    @property
+    def is_satisfied(self) -> bool:
+        """Is the shopping list satisfied?"""
+        # TODO

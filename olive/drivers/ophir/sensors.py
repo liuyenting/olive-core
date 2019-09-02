@@ -35,7 +35,7 @@ class WavelengthSupport(Enum):
     DISCRETE = "DISCRETE"
 
 
-class Photodiode(PowerSensor):
+class Photodiode(PowerSensor):  # TODO extract common scheme to OphirSensor
     """
     Photodiode sensors have a high degree of linearity over a large range of light
     power levels.
@@ -175,7 +175,7 @@ class Photodiode(PowerSensor):
         try:
             mode = WavelengthSupport(mode)
             if mode == WavelengthSupport.DISCRETE:
-                raise RuntimeError('DISCRETE head does not support favorite wavelength')
+                raise RuntimeError("DISCRETE head does not support favorite wavelength")
             return tuple(args[3:])
         except ValueError:
             raise ValueError(f'unknown mode "{mode}"')
