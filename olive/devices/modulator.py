@@ -46,11 +46,19 @@ class AcustoOpticalModulator(Modulator, Device):
     """
 
     @abstractmethod
+    def get_frequency_range(self, channel):
+        pass
+
+    @abstractmethod
     def get_frequency(self, channel):
         pass
 
     @abstractmethod
     def set_frequency(self, channel, frequency, force=False):
+        pass
+
+    @abstractmethod
+    def get_power_range(self, channel):
         pass
 
     @abstractmethod

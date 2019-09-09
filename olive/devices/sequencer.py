@@ -15,7 +15,7 @@ class Sequencer(metaclass=SequencerType):
     """
     A sequencer runs a sequence of instructions, in order to manipulate devices in
     timely manners.
-    """"
+    """
 
     @abstractmethod
     def __init__(self):
@@ -23,7 +23,11 @@ class Sequencer(metaclass=SequencerType):
 
 
 class SoftwareSequencer(Sequencer):
-    pass
+    """
+    We can directly use software sequencer.
+    """
+    def __init__(self):
+        super().__init__()
 
 
 class HardwareSequencer(SoftwareSequencer):
@@ -33,4 +37,6 @@ class HardwareSequencer(SoftwareSequencer):
     Note:
         Therefore, it is a subset of the SoftwareSequencer.
     """
-    pass
+    @abstractmethod
+    def __init__(self):
+        super().__init__()

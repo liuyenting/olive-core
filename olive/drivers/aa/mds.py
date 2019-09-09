@@ -108,7 +108,7 @@ class MDSnC(AcustoOpticalModulator):
         return DeviceInfo(version=version, vendor="AA", model="MDSnC", serial_number=sn)
 
     def enumerate_properties(self):
-        return ("control_mode", "control_voltage", "discrete_power_range", "freq_range")
+        return ("control_mode", "control_voltage", "discrete_power_range")
 
     ##
 
@@ -137,6 +137,25 @@ class MDSnC(AcustoOpticalModulator):
             else:
                 logger.warning(msg)
 
+    def get_frequency_range(self, channel):
+        state_ori = self.is_enabled(channel)
+        self.disable(channel)
+        freq_ori = self.get_frequency(channel)
+
+        # test lower bound
+        self.set_frequency(channel, 0)
+        freq_min = self.get_frequency(channel)
+        # test upper bound
+        self.set_frequency(channel, 1000)
+        freq_max = self.get_frequency(channel)
+
+        # restore original state
+        self.set_frequency(channel, freq_ori)
+        if state_ori:
+            self.enable(channel)
+
+        return (freq_min, freq_max)
+
     def get_frequency(self, channel):
         status = self._get_line_status(channel)
         return status.frequency
@@ -152,6 +171,29 @@ class MDSnC(AcustoOpticalModulator):
                 raise ValueError(msg)
             else:
                 logger.warning(msg)
+
+    def get_power_range(self, channel):
+        """
+        Test power range for _current_ frequency setting.
+        """
+        state_ori = self.is_enabled(channel)
+        self.disable(channel)
+        power_ori = self.get_power(channel)
+
+        dmin, dmax = self._discrete_power_range
+        # test lower bound
+        self.handle.write(f"L{channel}P{dmin}\r".encode())
+        power_min = self.get_power(channel)
+        # test upper bound
+        self.handle.write(f"L{channel}P{dmax}\r".encode())
+        power_max = self.get_power(channel)
+
+        # restore original state
+        self.set_power(channel, power_ori)
+        if state_ori:
+            self.enable(channel)
+
+        return (power_min, power_max)
 
     def get_power(self, channel):
         status = self._get_line_status(channel)
@@ -192,29 +234,6 @@ class MDSnC(AcustoOpticalModulator):
             return (int(matches.group(1)), int(matches.group(2)))
         else:
             raise SyntaxError("unable to parse discrete power range")
-
-    def _get_freq_range(self, test_on=1):
-        """
-        Args:
-            test_on (int, optional): test frequency setting on this line
-        """
-        state_ori = self.is_enabled(test_on)
-        self.disable(test_on)
-        freq_ori = self.get_frequency(test_on)
-
-        # test lower bound
-        self.set_frequency(test_on, 0)
-        freq_min = self.get_frequency(test_on)
-        # test upper bound
-        self.set_frequency(test_on, 1000)
-        freq_max = self.get_frequency(test_on)
-
-        # restore original state
-        self.set_frequency(test_on, freq_ori)
-        if state_ori:
-            self.enable(test_on)
-
-        return (freq_min, freq_max)
 
     def _set_control_mode(self, mode: ControlMode):
         """Adjust driver mode."""
@@ -267,32 +286,6 @@ class MDSnC(AcustoOpticalModulator):
             )
         else:
             raise SyntaxError("unable to parse line status")
-
-    def _get_power_range(self, test_on):
-        """
-        Test power range for _current_ frequency setting.
-
-        Args:
-            test_on (int): test power range on this line
-        """
-        state_ori = self.is_enabled(test_on)
-        self.disable(test_on)
-        power_ori = self.get_power(test_on)
-
-        dmin, dmax = self._discrete_power_range
-        # test lower bound
-        self.handle.write(f"L{test_on}P{dmin}\r".encode())
-        power_min = self.get_power(test_on)
-        # test upper bound
-        self.handle.write(f"L{test_on}P{dmax}\r".encode())
-        power_max = self.get_power(test_on)
-
-        # restore original state
-        self.set_power(test_on, power_ori)
-        if state_ori:
-            self.enable(test_on)
-
-        return (power_min, power_max)
 
     def _save_parameters(self):
         """Save parameters in the EEPROM."""

@@ -2,26 +2,29 @@ import logging
 import sys
 
 import coloredlogs
-from PySide2.QtWidgets import QApplication
 
-from olive.gui import MainWindow
+from olive.core import Dispatcher, DriverManager
+from olive.core.scripts import AOTFCalibration
 
 # disable tifffile warning
-logging.getLogger('tifffile').setLevel(logging.ERROR)
+logging.getLogger("tifffile").setLevel(logging.ERROR)
 
 coloredlogs.install(
-    level='DEBUG',
-    fmt='%(asctime)s %(levelname)s %(message)s',
-    datefmt='%H:%M:%S'
+    level="DEBUG", fmt="%(asctime)s %(levelname)s %(message)s", datefmt="%H:%M:%S"
 )
 
+
 def main():
-    app = QApplication(sys.argv)
+    drv_mgr = DriverManager()
 
-    mw = MainWindow()
-    mw.show()
+    aotf_cal_script = AOTFCalibration()
+    dispatcher = Dispatcher(aotf_cal_script)
 
-    sys.exit(app.exec_())
+    # TODO associate requirements with actual devices
+
+    dispatcher.initialize()
+    dispatcher.run()
+    dispatcher.shutdown()
 
 
 if __name__ == "__main__":
