@@ -39,7 +39,7 @@ class Device(metaclass=DeviceType):
 
     Attributes:
         driver : driver that instantiate this device
-        parent : parent device
+        parent (Device): parent device
 
     Note:
         Each device has its own thread executor to prevent external blocking calls
@@ -70,25 +70,13 @@ class Device(metaclass=DeviceType):
     def open(self):
         """
         Open and register the device.
-
-        Note:
-            When overloading this function, please remember to use
-                super().initialize()
-            to ensure this device is registered to the DeviceManager.
         """
-        # TODO registration
 
     @abstractmethod
     def close(self):
         """
         Close and unregister the device.
-
-        Note:
-            When overloading this function, remember to use
-                super().close()
-            to ensure this device is unregsitered from the DeviceManager.
         """
-        # TODO unregistration
 
     """
     Device properties.
@@ -166,9 +154,9 @@ class DeviceManager(metaclass=Singleton):
         """Device shopping list."""
         # TODO
 
-    def link(self, klass, device):
+    def assign(self, klass, device):
         """Link registered device to shopping list item."""
-        # TOD
+        # TODO
 
     def register(self, device):
         # FIXME devic registration is completely detached right now

@@ -11,3 +11,5 @@ class SequencerPage(QtWidgets.QWizardPage):
         self.setTitle("Sequencer")
         self.setSubTitle("Please decide how the execution steps will be regulated.")
 
+    def initializePage(self):
+        pass

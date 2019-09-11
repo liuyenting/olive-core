@@ -1,6 +1,6 @@
+import asyncio
 import logging
 
-from .resources import DeviceManager
 
 __all__ = ["Dispatcher"]
 
@@ -20,7 +20,9 @@ class Dispatcher(object):
 
     def initialize(self):
         """Initialize all the devices."""
-        pass
+        loop = asyncio.get_event_loop()
+
+        # TODO
 
     def shutdown(self):
         """Shutdown all the devices."""

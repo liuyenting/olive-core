@@ -11,3 +11,6 @@ class IntroPage(QtWidgets.QWizardPage):
 
         self.setTitle("Intro")
         self.setSubTitle("")
+
+    def initializePage(self):
+        pass

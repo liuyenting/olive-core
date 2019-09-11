@@ -45,7 +45,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Olive")
 
         # DEBUG, (800, 600)
-        self.init_window_size((800, 600))
+        self.init_window_size((1024, 768))
 
         self.setup_menubar()
         self.setup_toolbar()

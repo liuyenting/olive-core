@@ -10,3 +10,6 @@ class DevicesPage(QtWidgets.QWizardPage):
 
         self.setTitle("Devices")
         self.setSubTitle("Please assign which hardwares will perform these steps.")
+
+    def initializePage(self):
+        pass

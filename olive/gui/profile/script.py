@@ -14,3 +14,6 @@ class ScriptPage(QtWidgets.QWizardPage):
             "Please select a script that can describe the necessary acquisition steps."
         )
 
+    def initializePage(self):
+        pass
+

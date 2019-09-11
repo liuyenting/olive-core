@@ -1,10 +1,11 @@
 import logging
+from pprint import pprint
 import sys
 
 import coloredlogs
 
 from olive.core import Dispatcher, DriverManager
-from olive.core.scripts import AOTFCalibration
+from olive.scripts.calibration import AOTFCalibration
 
 # disable tifffile warning
 logging.getLogger("tifffile").setLevel(logging.ERROR)
@@ -16,7 +17,8 @@ coloredlogs.install(
 
 def main():
     drv_mgr = DriverManager()
-
+    pprint(drv_mgr)
+    """
     aotf_cal_script = AOTFCalibration()
     dispatcher = Dispatcher(aotf_cal_script)
 
@@ -25,6 +27,7 @@ def main():
     dispatcher.initialize()
     dispatcher.run()
     dispatcher.shutdown()
+    """
 
 
 if __name__ == "__main__":
