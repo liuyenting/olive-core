@@ -1,15 +1,41 @@
 import logging
 import os
 
+import coloredlogs
+
 from PySide2.QtCore import Qt, QSize
 from PySide2.QtGui import QIcon
-from PySide2.QtWidgets import QDesktopWidget, QDockWidget, QMainWindow, QToolBar
+from PySide2.QtWidgets import (
+    QDesktopWidget,
+    QDockWidget,
+    QMainWindow,
+    QToolBar,
+    QStatusBar,
+)
 
 from olive.gui.resources import ICON
 
 __all__ = ["MainWindow"]
 
+coloredlogs.install(
+    level="DEBUG", fmt="%(asctime)s %(levelname)s %(message)s", datefmt="%H:%M:%S"
+)
+
 logger = logging.getLogger(__name__)
+
+
+class StatusBarLogger(logging.Handler):
+    def __init__(self, statusbar: QStatusBar, timeout=5000):
+        super().__init__()
+        self.statusbar = statusbar
+        self.timeout = timeout
+
+    def emit(self, record):
+        message = self.format(record)
+        self.statusbar.showMessage(message, self.timeout)
+
+    def writes(self, message):
+        pass
 
 
 class MainWindow(QMainWindow):
@@ -21,11 +47,14 @@ class MainWindow(QMainWindow):
         # DEBUG, (800, 600)
         self.init_window_size((800, 600))
 
-        self.create_acq_profile_toolbar()
+        self.setup_menubar()
+        self.setup_toolbar()
+        self.setup_dockwidgets()
+        self.setup_statusbar()
 
-        self.center()
-        self.create_z_window()
-        self.create_temporal_window()
+        logger.info("Done")
+
+    ##
 
     def init_window_size(self, size=None, ratio=0.7):
         """
@@ -37,41 +66,50 @@ class MainWindow(QMainWindow):
             size = QSize(*size)
         self.resize(size)
 
-    def create_acq_profile_toolbar(self):
-        toolbar = QToolBar("Profile")
-        toolbar.actionTriggered.connect(self.debug)
+    ##
 
-        action = toolbar.addAction(ICON("XY.png"), "XY")
-        action.setCheckable(True)
+    def setup_menubar(self):
+        menubar = self.menuBar()
 
-        action = toolbar.addAction(ICON("Z.png"), "Z")
-        action.setCheckable(True)
+        """
+        File
+        """
+        file_menu = menubar.addMenu("File")
+        file_menu.addAction('New Profile')
+        file_menu.addSeparator()
+        file_menu.addAction("Quit")
 
-        action = toolbar.addAction(ICON("C.png"), "Excitation")
-        action.setCheckable(True)
+        """
+        Tools
+        """
+        tools_menu = menubar.addMenu("Tools")
 
-        action = toolbar.addAction(ICON("T.png"), "Temporal")
-        action.setCheckable(True)
+        """
+        Views
+        """
+        views_menu = menubar.addMenu("Views")
 
-        self.addToolBar(Qt.TopToolBarArea, toolbar)
+        """
+        Help
+        """
+        help_menu = menubar.addMenu("Help")
+        help_menu.addAction("About")
 
-    def debug(self, action):
-        status = "show" if action.isChecked() else "hide"
+    def setup_toolbar(self):
+        pass
 
-        logger.debug(f"{action.text()} {status}")
+    def setup_dockwidgets(self):
+        pass
 
-    def center(self):
-        win = QDockWidget('Viewer')
-        self.setCentralWidget(win)
+    def setup_statusbar(self):
+        handler = StatusBarLogger(self.statusBar())
+        logging.getLogger().addHandler(handler)
 
-    def create_temporal_window(self):
-        win = QDockWidget("Temporal")
-        win.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
 
-        self.addDockWidget(Qt.LeftDockWidgetArea, win)
+if __name__ == "__main__":
+    from PySide2.QtWidgets import QApplication
 
-    def create_z_window(self):
-        win = QDockWidget("Z")
-        win.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
-        #TODO return toggleViewAction -> toolbar
-        self.addDockWidget(Qt.LeftDockWidgetArea, win)
+    app = QApplication()
+    mw = MainWindow()
+    mw.show()
+    app.exec_()
