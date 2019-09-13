@@ -113,12 +113,3 @@ class MainWindow(QMainWindow):
     def setup_statusbar(self):
         handler = StatusBarLogger(self.statusBar())
         logging.getLogger().addHandler(handler)
-
-
-if __name__ == "__main__":
-    from PySide2.QtWidgets import QApplication
-
-    app = QApplication()
-    mw = MainWindow()
-    mw.show()
-    app.exec_()

@@ -15,10 +15,21 @@ coloredlogs.install(
 )
 
 
-def main():
+def main_gui():
+    from PySide2.QtWidgets import QApplication
+
+    from olive.gui import MainWindow
+
+    app = QApplication()
+    mw = MainWindow()
+    mw.show()
+    app.exec_()
+
+
+def main_cli():
     aotf_cal_script = AOTFCalibration()
     pprint(aotf_cal_script.get_features())
 
 
 if __name__ == "__main__":
-    main()
+    main_cli()
