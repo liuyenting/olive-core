@@ -16,18 +16,8 @@ coloredlogs.install(
 
 
 def main():
-    drv_mgr = DriverManager()
-    pprint(drv_mgr)
-    """
     aotf_cal_script = AOTFCalibration()
-    dispatcher = Dispatcher(aotf_cal_script)
-
-    # TODO associate requirements with actual devices
-
-    dispatcher.initialize()
-    dispatcher.run()
-    dispatcher.shutdown()
-    """
+    pprint(aotf_cal_script.get_features())
 
 
 if __name__ == "__main__":

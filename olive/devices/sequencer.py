@@ -1,10 +1,12 @@
 from abc import abstractmethod
+from functools import wraps
+import logging
 
-from olive.core import Device
-
-__all__ = ["SoftwareSequencer", 'HardwareSequencer']
+__all__ = ["SoftwareSequencer", "HardwareSequencer"]
 
 ##
+
+logger = logging.getLogger(__name__)
 
 
 class SequencerType(type):
@@ -26,6 +28,7 @@ class SoftwareSequencer(Sequencer):
     """
     We can directly use software sequencer.
     """
+
     def __init__(self):
         super().__init__()
 
@@ -37,6 +40,22 @@ class HardwareSequencer(SoftwareSequencer):
     Note:
         Therefore, it is a subset of the SoftwareSequencer.
     """
+
     @abstractmethod
     def __init__(self):
         super().__init__()
+
+    """
+    # TODO
+
+    - digital input
+    - digital output
+
+    - analog input
+    - analog output (static)
+    - analog waveform
+
+    - digital trigger
+        - edge
+        - level
+    """
