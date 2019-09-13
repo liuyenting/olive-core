@@ -1,6 +1,7 @@
 import asyncio
 import logging
 
+from olive.core import DeviceManager
 
 __all__ = ["Dispatcher"]
 
