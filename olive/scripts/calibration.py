@@ -2,7 +2,7 @@ import logging
 
 from scipy.optimize import minimize
 
-from olive.core.script import Script
+from olive.core.script import Script, ChannelsFeature
 from olive.devices import AcustoOpticalModulator, PowerSensor, SoftwareSequencer
 
 __all__ = ["AOTFCalibration"]
@@ -10,15 +10,17 @@ __all__ = ["AOTFCalibration"]
 logger = logging.getLogger(__name__)
 
 
-class AOTFCalibration(Script):
+class AOTFCalibration(Script, ChannelsFeature):
     """
     Automagically calibrate AOTF frequencies and power range.
+
+    This script will calibrate modulation frequencies for selected channels.
     """
 
     sequencer = SoftwareSequencer
 
-    power = PowerSensor
     aotf = AcustoOpticalModulator
+    power = PowerSensor
 
     # TODO how to map functions?
 

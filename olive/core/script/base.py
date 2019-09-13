@@ -4,7 +4,7 @@ import logging
 
 from olive.core import DeviceType
 
-__all__ = ["Script", "TimeSeriesFeature", "ChannelsFeature"]
+__all__ = ["Script", "ChannelsFeature", "TimeSeriesFeature", "ValueInspectorFeature"]
 
 logger = logging.getLogger(__name__)
 
@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 - tiles
 - z stack
 - channels
+- value inspector
 """
 
 
@@ -38,6 +39,10 @@ class TimeSeriesFeature(ScriptFeature):
 
 
 class ChannelsFeature(ScriptFeature):
+    pass
+
+
+class ValueInspectorFeature(ScriptFeature):
     pass
 
 
