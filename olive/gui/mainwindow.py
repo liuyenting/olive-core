@@ -88,6 +88,13 @@ class MainWindow(QMainWindow):
         Views
         """
         views_menu = menubar.addMenu("Views")
+        views_menu.addAction("Script Debugger Toolbar")
+        views_menu.addAction("Parameters Toolbar")
+        views_menu.addAction("Acquisition Toolbar")
+        views_menu.addSeparator()
+        views_menu.addAction("Mono View")
+        views_menu.addAction("Dual View")
+        views_menu.addAction("Quad View")
 
         """
         Help

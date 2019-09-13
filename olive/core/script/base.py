@@ -1,11 +1,46 @@
 from abc import ABCMeta, abstractmethod
 import logging
 
+
 from olive.core import DeviceType
 
 __all__ = ["Script"]
 
 logger = logging.getLogger(__name__)
+
+
+class ScriptFeatureType(type):
+    """All script features belong to this type."""
+
+
+##
+
+"""
+- time series
+- virtual sheet
+- tiles
+- z stack
+- channels
+"""
+
+
+class ScriptFeature(metaclass=ScriptFeatureType):
+    @abstractmethod
+    def __init__(self):
+        pass
+
+
+class TimeSeriesFeature(ScriptFeature):
+    def set_timepoints(self, n):
+        pass
+
+    def set_interval(self, interval):
+        pass
+
+class ChannelsFeature(ScriptFeature):
+    pass
+
+##
 
 
 class Script(metaclass=ABCMeta):
