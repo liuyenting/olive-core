@@ -22,6 +22,19 @@ def main_gui():
 
     app = QApplication()
     mw = MainWindow()
+    """
+    TODO
+
+    1) profile wizard
+    2) retrieve {
+        script object,
+        sequencer object,
+        alias-device relationship (+ device class) [ADR]
+       }
+    3) launcher dispatcher, feed script and ADR
+    4) initialize sequencer and devices by dispatcher
+    5) TODO, dunno what happened next
+    """
     mw.show()
     app.exec_()
 
@@ -29,6 +42,8 @@ def main_gui():
 def main_cli():
     aotf_cal_script = AOTFCalibration()
     pprint(aotf_cal_script.get_features())
+
+    dispatcher = Dispatcher(aotf_cal_script)
 
 
 if __name__ == "__main__":
