@@ -1,95 +1,116 @@
-from abc import ABCMeta, abstractmethod
+from abc import abstractmethod
 import logging
 from typing import NamedTuple
 
-__all__ = ['Camera', 'CameraInfo']
+from olive.core import Device
+
+__all__ = ["Camera"]
+
+logger = logging.getLogger(__name__)
 
 
-class CameraInfo(NamedTuple):
-    #: version of the API
-    version : str
-    #: vendor name of the camera
-    vendor : str
-    #: modle name of the camera
-    model : str
-    #: camera serial number
-    serial_number : str
-    
-    def __repr__(self) -> str:
-        return f'<CameraInfo {self.vendor}, {self.model}, S/N={self.serial_number}>'
+class Attribute(NamedTuple):  # TODO move this to generic device definition
+    readable: bool
+    writable: bool
+    name: str
 
-class Attribute(NamedTuple):
-    readable : bool
-    writable : bool
-    name : str
-    
-class Camera(metaclass=ABCMeta):
-    def __init__(self):
-        pass
 
-    # High level functions
-    #   - Snap: Capture all or a portion of a single image to the user buffer
-    #   - Grab: Perform an acquisition that loops continually on one or more internal buffers.
-    #   - Sequence: Aquire a specified number of internal buffers and then stops.
+class Camera(Device):
+    @abstractmethod
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    """
+    High level functions
+        - Snap: Capture all or a portion of a single image to the user buffer
+        - Grab: Perform an acquisition that loops continually on one or more internal buffers.
+        - Sequence: Aquire a specified number of internal buffers and then stops.
+    """
+
     def snap(self):
         pass
-    
+
     def configure_grab(self):
         pass
-    
+
     def grab(self):
         pass
-    
+
     def sequence(self):
         pass
 
-    def open_camera(self):
-        pass
+    """
+    Acquisition:
+        Configure, start, stop, and unconfigure an image acquisition.
+    """
 
-    def close_camera(self):
-        pass
-    
-    @abstractmethod
-    def enumerate_cameras(self):
-        """Returns a list of supported camera hardwares."""
-        pass
-    
-    def enumerate_attributes(self):
-        """Gets the attributes supported by the camera."""
-        pass 
-    # Low level functions
-    #   - Acquisition: Configure, start, stop, and unconfigure an image acquisition.
     def configure_acquisition(self):
         pass
 
-    def start_acquisition(self): 
+    def start_acquisition(self):
         """
         Starts an acquisition.
 
         Use stop_acquisition() to stop the acquisition.
-        """  
+        """
         pass
 
     def get_image(self):
         """Get data of the specified frame."""
         pass
-    
+
     def stop_acquisition(self):
         """Stops an acquistion."""
-        pass 
-    
+        pass
+
     def unconfigure_acquisition(self):
         pass
-    #   - Attribute: Examine and change the acquisition or camera attributes.
-    def read_attributes(self):
-        pass
-    
-    def write_attributes(self):
-        pass
-    #   - Event: Register events.
-    #   - Register: Access registers.
-    #   - Session: Open, close, or enumerate sessions.
-    #   - Utility: Get detailed error information.
+
+    """
+    Attribute:
+        Examine and change the acquisition or camera attributes.
+    """
+
+    # def enumerate_attributes(self):
+    #    pass
+
+    # def get_attribute(self, name):
+    #    pass
+
+    # def set_attribute(self, name, value):
+    #    pass
+
+    """
+    Event:
+        Register events.
+    """
+
+    """
+    Register:
+        Access registers.
+
+    Note:
+        DO WE NEED THIS?
+    """
+
+    """
+    Session:
+        Open, close, or enumerate sessions.
+    """
+
+    # def enumerate_devices(cls):
+    #    pass
+
+    # def initialize(self):
+    #    pass
+
+    # def close(self):
+    #    pass
+
+    """
+    Utility:
+        Get detailed error information.
+    """
 
     """
      Snap2
@@ -101,7 +122,7 @@ class Camera(metaclass=ABCMeta):
      Enumerate Cameras
      Enumerate Attributes
     Enumerate Video Modes
-    
+
     --- low level ---
      Configure Acquisition
     Configure Ring Acquisition
