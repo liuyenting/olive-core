@@ -4,14 +4,9 @@ import logging
 
 from olive.core import DeviceType
 
-__all__ = ["Script"]
+__all__ = ["Script", "TimeSeriesFeature", "ChannelsFeature"]
 
 logger = logging.getLogger(__name__)
-
-
-class ScriptFeatureType(type):
-    """All script features belong to this type."""
-
 
 ##
 
@@ -22,6 +17,10 @@ class ScriptFeatureType(type):
 - z stack
 - channels
 """
+
+
+class ScriptFeatureType(type):
+    """All script features belong to this type."""
 
 
 class ScriptFeature(metaclass=ScriptFeatureType):
@@ -37,8 +36,10 @@ class TimeSeriesFeature(ScriptFeature):
     def set_interval(self, interval):
         pass
 
+
 class ChannelsFeature(ScriptFeature):
     pass
+
 
 ##
 
@@ -55,6 +56,11 @@ class Script(metaclass=ABCMeta):
         pass
 
     ##
+
+    def get_features(self):
+        """Get supported features of the script."""
+        klasses = self.__bases__
+        return [klass for klass in klasses if issubclass(klass, ScriptFeatureType)]
 
     def get_requirements(self):
         """Retreieve device requirement of the script."""

@@ -106,6 +106,8 @@ class MainWindow(QMainWindow):
         pass
 
     def setup_dockwidgets(self):
+        # TODO populate dockwidgets using supported script features
+        # NOTE who to query the features? dispatcher?
         pass
 
     def setup_statusbar(self):
