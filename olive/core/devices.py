@@ -4,6 +4,7 @@ from concurrent.futures import ThreadPoolExecutor
 import itertools
 import logging
 import multiprocessing as mp
+import tempfile
 from typing import Tuple, NamedTuple
 
 from olive.core.utils import Singleton
@@ -39,7 +40,7 @@ class Device(metaclass=DeviceType):
 
     Attributes:
         driver : driver that instantiate this device
-        parent : parent device
+        parent (Device): parent device
 
     Note:
         Each device has its own thread executor to prevent external blocking calls
@@ -70,25 +71,13 @@ class Device(metaclass=DeviceType):
     def open(self):
         """
         Open and register the device.
-
-        Note:
-            When overloading this function, please remember to use
-                super().initialize()
-            to ensure this device is registered to the DeviceManager.
         """
-        # TODO registration
 
     @abstractmethod
     def close(self):
         """
         Close and unregister the device.
-
-        Note:
-            When overloading this function, remember to use
-                super().close()
-            to ensure this device is unregsitered from the DeviceManager.
         """
-        # TODO unregistration
 
     """
     Device properties.
@@ -158,20 +147,33 @@ class DeviceManager(metaclass=Singleton):
     Device bookkeeping.
     """
 
+    class RegisteredDevice(object):
+        def __init__(self, alias, klass):
+            self.alias = alias
+            self.klass = klass
+            self.device = None
+
     def __init__(self):
         # populate categories
         self._devices = {klass: [] for klass in Device.__subclasses__()}
 
     def set_requirements(self, requirements):
         """Device shopping list."""
-        # TODO
+        for alias, klass in requirements:
+            new_device = self.RegisteredDevice(alias, klass)
+            self._devices[alias] = new_device
 
-    def link(self, klass, device):
+            # map to unique identifier
+            identifier = next(tempfile._get_candidate_names())
+            self._devices[identifier] = new_device
+
+    def assign(self, alias, device):
         """Link registered device to shopping list item."""
-        # TOD
+        logger.debug(f'{device} is assigned to {alias}')
+        self._devices[alias].device = device
 
+    # TODO how to cleanup register/unregister calls
     def register(self, device):
-        # FIXME devic registration is completely detached right now
         category = device._determine_category()
         self._devices[category].append(device)
         logger.debug(f"new device {device} registered")
@@ -193,4 +195,4 @@ class DeviceManager(metaclass=Singleton):
     @property
     def is_satisfied(self) -> bool:
         """Is the shopping list satisfied?"""
-        # TODO
+        return not any(device for device in self._devices if device.device is None)

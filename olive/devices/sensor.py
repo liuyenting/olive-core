@@ -73,7 +73,7 @@ class SensorAdapter(Device):
 ##
 
 
-class PowerSensor(Sensor):
+class PowerSensor(Sensor, Device):
     """
     Power sensor is a detector that absorbs a laser beam and outputs a signal
     proportional to the beam’s power, _usually_ calibrated with a defined accuracy to a

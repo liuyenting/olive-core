@@ -13,13 +13,55 @@ class Galvo(Device):
     A beam steering device.
     """
 
+    # TODO galvo REQUIRES sequencer waveform support
+    @abstractmethod
     def __init__(self):
+        pass
+
+    ##
+
+    def get_table_size(self):
+        pass
+
+    def get_waveform(self):
+        pass
+
+    def set_waveform(self):
+        pass
+
+    ##
+
+    def get_amplitude_range(self):
+        pass
+
+    def get_amplitude(self):
+        pass
+
+    def set_amplitude(self):
+        pass
+
+    def get_offset(self):
+        pass
+
+    def set_offset(self):
+        pass
+
+    def get_frequency(self):
+        pass
+
+    def set_frequency(self):
+        pass
+
+    def get_phase_shift(self):
+        pass
+
+    def set_phase_shift(self):
         pass
 
 
 class Stage(Device):
     @abstractmethod
-    def __init__(self,*args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
 
