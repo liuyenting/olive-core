@@ -3,7 +3,8 @@ import logging
 from PySide2.QtWidgets import QWizard
 
 from olive.gui.profile import (
-    PathPage,
+    NewFilePage,
+    OpenFilePage,
     ScriptPage,
     SequencerPage,
     DevicesPage,
@@ -24,12 +25,15 @@ class ProfileWizard(QWizard):
 
         self.setModal(True)
 
-        # TODO shunt the intro page
-        self.addPage(PathPage(create_new))
+        if create_new:
+            self.addPage(NewFilePage())
+        else:
+            self.addPage(OpenFilePage())
         self.addPage(ScriptPage())
         self.addPage(SequencerPage())
         self.addPage(DevicesPage())
         self.addPage(SummaryPage())
 
     def get_configured_profile(self):
+        print(self.field('profile_path'))
         return None

@@ -4,7 +4,6 @@ import logging
 
 __all__ = ["SoftwareSequencer", "HardwareSequencer"]
 
-##
 
 logger = logging.getLogger(__name__)
 

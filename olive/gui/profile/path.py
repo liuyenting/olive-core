@@ -1,3 +1,4 @@
+from abc import abstractmethod
 import logging
 import os
 
@@ -11,28 +12,25 @@ from PySide2.QtWidgets import (
     QWizardPage,
 )
 
-__all__ = ["PathPage"]
+__all__ = ["NewFilePage", "OpenFilePage"]
 
 logger = logging.getLogger(__name__)
 
 
-class PathPage(QWizardPage):
-    def __init__(self, create_new):
+class FilePage(QWizardPage):
+    def __init__(self, home=None):
         super().__init__()
 
-        self._create_new = create_new
+        if not home:
+            home = os.path.expanduser("~")
+        self._home = home
 
         self.setTitle("Intro")
-
-        if self.create_new:
-            self.setSubTitle("Create a new profile.")
-        else:
-            raise NotImplementedError("open an existing profile is not supported yet")
 
         profile_path_label = QLabel("New profile path")
         profile_path_lineedit = QLineEdit()
         profile_path_button = QPushButton("...")
-        profile_path_button.clicked.connect(self._get_profile_path)
+        profile_path_button.clicked.connect(self._update_profile_path)
         profile_path_layout = QHBoxLayout()
         profile_path_layout.addWidget(profile_path_lineedit)
         profile_path_layout.addWidget(profile_path_button)
@@ -46,34 +44,43 @@ class PathPage(QWizardPage):
 
     def initializePage(self):
         # ask immediately
-        self._get_profile_path()
+        self._update_profile_path()
+
+    def validateCurrentPage(self):
+        # TODO [create]->create new profile fd, [open]->deserialize from file
+        return True
 
     ##
 
-    @property
-    def create_new(self):
-        return self._create_new
-
-    ##
-
-    def _get_profile_path(self, home=None):
-        if self.create_new:
-            title = "Where to save the profile?"
-            dialog_func = QFileDialog.getSaveFileName
-        else:
-            title = "Where is the profile?"
-            dialog_func = QFileDialog.getOpenFileName
-
-        # default to start from user home directory
-        if not home:
-            home = os.path.expanduser("~")
-
-        profile_path, _ = dialog_func(self, title, home, "Profile (*.json)")
-
-        # update local field
+    @abstractmethod
+    def _update_profile_path(self, profile_path):
         self.setField("profile_path", profile_path)
-        if self.create_new:
-            logger.info(f'save profile to "{profile_path}"')
-        else:
-            logger.info(f'open profile from "{profile_path}"')
-        return profile_path
+
+
+class NewFilePage(FilePage):
+    def __init__(self):
+        super().__init__()
+
+        self.setSubTitle("Create a new profile.")
+
+    def _update_profile_path(self):
+        profile_path, _ = QFileDialog.getSaveFileName(
+            self, "Where to save the profile?", self._home, "Profile (*.json)"
+        )
+        logger.info(f'save profile to "{profile_path}"')
+        super()._update_profile_path(profile_path)
+
+
+class OpenFilePage(FilePage):
+    def __init__(self):
+        super().__init__()
+
+        raise NotImplementedError("open an existing profile is not supported yet")
+
+    def _update_profile_path(self):
+        profile_path, _ = QFileDialog.getOpenFileName(
+            self, "Where is the profile?", self._home, "Profile (*.json)"
+        )
+        logger.info(f'open profile from "{profile_path}"')
+        super()._update_profile_path(profile_path)
+

@@ -27,7 +27,7 @@ class ScriptFeatureType(type):
 class ScriptFeature(metaclass=ScriptFeatureType):
     @abstractmethod
     def __init__(self):
-        pass
+        self.keywords = dict()
 
 
 class TimeSeriesFeature(ScriptFeature):

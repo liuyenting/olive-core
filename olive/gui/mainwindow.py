@@ -1,9 +1,11 @@
+import inspect
 import logging
 
 from PySide2.QtCore import QSize
 from PySide2.QtGui import QIcon
 from PySide2.QtWidgets import QAction, QDesktopWidget, QMainWindow, QStatusBar
 
+import olive.gui.features
 from olive.gui.profile import ProfileWizard
 from olive.gui.resources import ICON
 
@@ -38,6 +40,8 @@ class MainWindow(QMainWindow):
 
         self.setup_menubar()
         self.setup_toolbar()
+
+        self.features = []
         self.setup_dockwidgets()
         self.setup_statusbar()
 
@@ -65,7 +69,7 @@ class MainWindow(QMainWindow):
         """
         file_menu = menubar.addMenu("File")
         self._new_menu_action(file_menu, "New Profile", self.new_profile_action)
-        self._new_menu_action(file_menu, 'Open Profile', None).setDisabled(True)
+        self._new_menu_action(file_menu, "Open Profile", None).setDisabled(True)
         file_menu.addSeparator()
         file_menu.addAction("Quit")
 
@@ -93,6 +97,12 @@ class MainWindow(QMainWindow):
         Create all the dockwidgets, but hide them all during startup. Their
         visibilities depend on loaded script.
         """
+        # disable tabs
+        self.setDockOptions(QMainWindow.AnimatedDocks)
+
+        for klass in inspect.getmembers(olive.gui.features, inspect.isclass):
+            print(f"{klass}")
+
         # TODO populate dockwidgets using supported script features
         # NOTE who to query the features? dispatcher?
         pass
