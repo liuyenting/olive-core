@@ -1,8 +1,10 @@
 from collections import namedtuple
 
+from PySide2.QtGui import QIntValidator
 from PySide2.QtWidgets import (
     QComboBox,
     QHBoxLayout,
+    QLabel,
     QLineEdit,
     QVBoxLayout,
 )
@@ -18,8 +20,14 @@ class TimeSeriesFeature(Feature):
     def __init__(self):
         super().__init__("Time Series")
 
-        interval_value = QLineEdit()
+        timepoints_label = QLabel("# of timepoints:")
+        timepoints_value = QLineEdit()
+        timepoints_validator = QIntValidator()
+        timepoints_validator.setBottom(1)
+        timepoints_value.setValidator(timepoints_validator)
 
+        interval_label = QLabel("Interval:")
+        interval_value = QLineEdit()
         interval_unit = QComboBox()
         interval_unit.addItem("min", self.UnitOption(60, 0.5, 360))
         interval_unit.addItem("s", self.UnitOption(1, 1e-3, 600))
@@ -32,9 +40,13 @@ class TimeSeriesFeature(Feature):
         interval_layout.addWidget(interval_unit)
 
         layout = QVBoxLayout()
+        layout.addWidget(timepoints_label)
+        layout.addWidget(timepoints_value)
+        layout.addWidget(interval_label)
         layout.addLayout(interval_layout)
+        layout.insertStretch(-1)
 
-        self.setLayout(layout)
+        self.widget.setLayout(layout)
 
     ##
 
