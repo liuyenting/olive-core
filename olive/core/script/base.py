@@ -50,7 +50,12 @@ class ValueInspectorFeature(ScriptFeature):
 
 
 class ScriptType(ScriptFeatureType):
-    """All concrete script belong to this type."""
+    """
+    All concrete script belong to this type.
+
+    Script are combinations of features and concrete instructions, and to avoid
+    metaclass conflict, ScriptType is a subclass of ScriptFeatureType.
+    """
 
 
 class Script(metaclass=ScriptType):

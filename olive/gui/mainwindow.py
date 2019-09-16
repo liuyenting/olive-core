@@ -1,25 +1,14 @@
 import logging
-import os
 
-import coloredlogs
-
-from PySide2.QtCore import Qt, QSize
+from PySide2.QtCore import QSize
 from PySide2.QtGui import QIcon
-from PySide2.QtWidgets import (
-    QDesktopWidget,
-    QDockWidget,
-    QMainWindow,
-    QToolBar,
-    QStatusBar,
-)
+from PySide2.QtWidgets import QAction, QDesktopWidget, QMainWindow, QStatusBar
 
+from olive.gui.profile import ProfileWizard
 from olive.gui.resources import ICON
 
 __all__ = ["MainWindow"]
 
-coloredlogs.install(
-    level="DEBUG", fmt="%(asctime)s %(levelname)s %(message)s", datefmt="%H:%M:%S"
-)
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +64,7 @@ class MainWindow(QMainWindow):
         File
         """
         file_menu = menubar.addMenu("File")
-        file_menu.addAction('New Profile')
+        self._new_menu_action(file_menu, "New Profile", self.new_profile_action)
         file_menu.addSeparator()
         file_menu.addAction("Quit")
 
@@ -85,16 +74,9 @@ class MainWindow(QMainWindow):
         tools_menu = menubar.addMenu("Tools")
 
         """
-        Views
+        Window
         """
-        views_menu = menubar.addMenu("Views")
-        views_menu.addAction("Script Debugger Toolbar")
-        views_menu.addAction("Parameters Toolbar")
-        views_menu.addAction("Acquisition Toolbar")
-        views_menu.addSeparator()
-        views_menu.addAction("Mono View")
-        views_menu.addAction("Dual View")
-        views_menu.addAction("Quad View")
+        window_menu = menubar.addMenu("Window")
 
         """
         Help
@@ -106,6 +88,10 @@ class MainWindow(QMainWindow):
         pass
 
     def setup_dockwidgets(self):
+        """
+        Create all the dockwidgets, but hide them all during startup. Their
+        visibilities depend on loaded script.
+        """
         # TODO populate dockwidgets using supported script features
         # NOTE who to query the features? dispatcher?
         pass
@@ -113,3 +99,29 @@ class MainWindow(QMainWindow):
     def setup_statusbar(self):
         handler = StatusBarLogger(self.statusBar())
         logging.getLogger().addHandler(handler)
+
+    ##
+
+    def new_profile_action(self):
+        wizard = ProfileWizard()
+        wizard.exec_()
+        if wizard.get_configured_profile():
+            # TODO valid profile, start populating dock widgets
+            pass
+
+    ##
+
+    def _new_menu_action(self, menu, name, callback, checkable=False, **kwargs):
+        action = menu.addAction(name)
+        if checkable:
+            self._new_checkable_action(action, callback, **kwargs)
+        else:
+            self._new_triggerable_action(action, callback, **kwargs)
+
+    def _new_triggerable_action(self, action, callback):
+        action.triggered.connect(callback)
+
+    def _new_checkable_action(self, action, callback, checked=False):
+        action.setCheckable(True)
+        action.setChecked(checked)
+        action.toggled.connect(callback)

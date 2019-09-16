@@ -10,7 +10,7 @@ class IntroPage(QtWidgets.QWizardPage):
         super().__init__(parent)
 
         self.setTitle("Intro")
-        self.setSubTitle("")
+        self.setSubTitle("Create or open a profile.")
 
     def initializePage(self):
         pass

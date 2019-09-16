@@ -25,7 +25,7 @@ def main_gui():
     """
     TODO
 
-    1) profile wizard
+    V 1) profile wizard
     2) retrieve {
         script object,
         sequencer object,
@@ -47,4 +47,4 @@ def main_cli():
 
 
 if __name__ == "__main__":
-    main_cli()
+    main_gui()
