@@ -32,7 +32,7 @@ class MainWindow(QMainWindow):
         Initial window size. If not specified, default to 70% of the screen size.
         """
         if size is None:
-            size = QDesktopWidget().availableGeometry().size() * ratio
+            size = QDesktopWidget().availableSubitemGeometry().size() * ratio
         elif isinstance(size, tuple):
             size = QSize(*size)
         self.resize(size)
@@ -61,7 +61,7 @@ class MainWindow(QMainWindow):
         logger.debug(f"{action.text()} {status}")
 
     def center(self):
-        win = QDockWidget('Viewer')
+        win = QDockWidget("Viewer")
         self.setCentralWidget(win)
 
     def create_temporal_window(self):
@@ -73,5 +73,5 @@ class MainWindow(QMainWindow):
     def create_z_window(self):
         win = QDockWidget("Z")
         win.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
-        #TODO return toggleViewAction -> toolbar
+        # TODO return toggleViewAction -> toolbar
         self.addDockWidget(Qt.LeftDockWidgetArea, win)
