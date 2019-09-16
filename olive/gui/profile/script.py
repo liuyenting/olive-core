@@ -6,8 +6,8 @@ __all__ = ['ScriptPage']
 
 
 class ScriptPage(QtWidgets.QWizardPage):
-    def __init__(self, parent):
-        super().__init__(parent)
+    def __init__(self):
+        super().__init__()
 
         self.setTitle("Script")
         self.setSubTitle(

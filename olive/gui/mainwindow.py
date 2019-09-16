@@ -65,6 +65,7 @@ class MainWindow(QMainWindow):
         """
         file_menu = menubar.addMenu("File")
         self._new_menu_action(file_menu, "New Profile", self.new_profile_action)
+        self._new_menu_action(file_menu, 'Open Profile', None).setDisabled(True)
         file_menu.addSeparator()
         file_menu.addAction("Quit")
 
@@ -103,7 +104,7 @@ class MainWindow(QMainWindow):
     ##
 
     def new_profile_action(self):
-        wizard = ProfileWizard()
+        wizard = ProfileWizard(create_new=True)
         wizard.exec_()
         if wizard.get_configured_profile():
             # TODO valid profile, start populating dock widgets
@@ -117,11 +118,12 @@ class MainWindow(QMainWindow):
             self._new_checkable_action(action, callback, **kwargs)
         else:
             self._new_triggerable_action(action, callback, **kwargs)
-
-    def _new_triggerable_action(self, action, callback):
-        action.triggered.connect(callback)
+        return action
 
     def _new_checkable_action(self, action, callback, checked=False):
         action.setCheckable(True)
         action.setChecked(checked)
         action.toggled.connect(callback)
+
+    def _new_triggerable_action(self, action, callback):
+        action.triggered.connect(callback)
