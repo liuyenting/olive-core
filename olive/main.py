@@ -15,20 +15,36 @@ coloredlogs.install(
 )
 
 
-def main():
-    drv_mgr = DriverManager()
-    pprint(drv_mgr)
+def main_gui():
+    from PySide2.QtWidgets import QApplication
+
+    from olive.gui import MainWindow
+
+    app = QApplication()
+    mw = MainWindow()
     """
+    TODO
+
+    V 1) profile wizard
+    2) retrieve {
+        script object,
+        sequencer object,
+        alias-device relationship (+ device class) [ADR]
+       }
+    3) launcher dispatcher, feed script and ADR
+    4) initialize sequencer and devices by dispatcher
+    5) TODO, dunno what happened next
+    """
+    mw.show()
+    app.exec_()
+
+
+def main_cli():
     aotf_cal_script = AOTFCalibration()
+    pprint(aotf_cal_script.get_features())
+
     dispatcher = Dispatcher(aotf_cal_script)
-
-    # TODO associate requirements with actual devices
-
-    dispatcher.initialize()
-    dispatcher.run()
-    dispatcher.shutdown()
-    """
 
 
 if __name__ == "__main__":
-    main()
+    main_gui()

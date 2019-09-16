@@ -1,32 +1,39 @@
 import logging
 
-from PySide2 import QtWidgets
+from PySide2.QtWidgets import QWizard
 
-from olive.gui.profile import IntroPage, ScriptPage, SequencerPage, DevicesPage
+from olive.gui.profile import (
+    NewFilePage,
+    OpenFilePage,
+    ScriptPage,
+    SequencerPage,
+    DevicesPage,
+    SummaryPage,
+)
 
 __all__ = ["ProfileWizard"]
 
 logger = logging.getLogger(__name__)
 
 
-class ProfileWizard(QtWidgets.QWizard):
-    def __init__(self):
+class ProfileWizard(QWizard):
+    def __init__(self, create_new=False):
         super().__init__()
 
-        self.addPage(IntroPage(self))
-        self.addPage(ScriptPage(self))
-        self.addPage(SequencerPage(self))
-        self.addPage(DevicesPage(self))
+        self.setWindowTitle("Profile Wizard")
+        self.setWizardStyle(QWizard.ModernStyle)
 
+        self.setModal(True)
 
-if __name__ == "__main__":
-    from PySide2 import QtWidgets
+        if create_new:
+            self.addPage(NewFilePage())
+        else:
+            self.addPage(OpenFilePage())
+        self.addPage(ScriptPage())
+        self.addPage(SequencerPage())
+        self.addPage(DevicesPage())
+        self.addPage(SummaryPage())
 
-    app = QtWidgets.QApplication()
-    wizard = ProfileWizard()
-
-    wizard.setWindowTitle("Create new profile")
-    wizard.setWizardStyle(QtWidgets.QWizard.ModernStyle)
-    wizard.show()
-
-    app.exec_()
+    def get_configured_profile(self):
+        print(self.field('profile_path'))
+        return None

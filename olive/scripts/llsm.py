@@ -1,6 +1,6 @@
-from olive.core.devices import Camera, AcustoOptoModulator
+from olive.devices import AcustoOpticalModulator
 
-from .base import Script
+from olive.core.script import Script
 
 
 class LLSM(Script):
@@ -8,8 +8,8 @@ class LLSM(Script):
     Script for Lattice LightSheet Microscopes (LLSM).
     """
 
-    aotf = AcustoOptoModulator
-    camera = Camera
+    aotf = AcustoOpticalModulator
+    # camera = Camera # TODO debug failed here due to hamamatsu
 
     def setup(self):
         pass

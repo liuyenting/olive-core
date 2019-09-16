@@ -1,4 +1,4 @@
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta, abstractmethod, ABC
 import logging
 
 
@@ -27,7 +27,7 @@ class ScriptFeatureType(type):
 class ScriptFeature(metaclass=ScriptFeatureType):
     @abstractmethod
     def __init__(self):
-        pass
+        self.keywords = dict()
 
 
 class TimeSeriesFeature(ScriptFeature):
@@ -49,13 +49,19 @@ class ValueInspectorFeature(ScriptFeature):
 ##
 
 
-class Script(metaclass=ABCMeta):
+class ScriptType(ScriptFeatureType):
+    """
+    All concrete script belong to this type.
+
+    Script are combinations of features and concrete instructions, and to avoid
+    metaclass conflict, ScriptType is a subclass of ScriptFeatureType.
+    """
+
+
+class Script(metaclass=ScriptType):
     """
     Define how the system behave per acquisition request.
     """
-
-    #: device name in the script and their managed ID
-    _device_alias = {}
 
     def __init__(self):
         pass
@@ -64,8 +70,11 @@ class Script(metaclass=ABCMeta):
 
     def get_features(self):
         """Get supported features of the script."""
-        klasses = self.__bases__
-        return [klass for klass in klasses if issubclass(klass, ScriptFeatureType)]
+        return tuple(
+            klass
+            for klass in self.__class__.__bases__
+            if issubclass(klass, ScriptFeature)
+        )
 
     def get_requirements(self):
         """Retreieve device requirement of the script."""
