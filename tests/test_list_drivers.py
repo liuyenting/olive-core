@@ -1,25 +1,34 @@
-import importlib
-import pkgutil
 from pprint import pprint
 
-import olive.drivers
+import coloredlogs
 
+from olive.core import DeviceManager, DriverManager
 
-def iter_namespace(ns_pkg):
-    # Specifying the second argument (prefix) to iter_modules makes the
-    # returned name an absolute name instead of a relative one. This allows
-    # import_module to work without having to do additional modification to
-    # the name.
-    return pkgutil.iter_modules(ns_pkg.__path__, ns_pkg.__name__ + ".")
+coloredlogs.install(
+    level="DEBUG", fmt="%(asctime)s %(levelname)s %(message)s", datefmt="%H:%M:%S"
+)
 
+drv_mgr = DriverManager()
+dev_mgr = DeviceManager()
 
-drivers = {
-    name: importlib.import_module(name)
-    for finder, name, ispkg in iter_namespace(olive.drivers)
-}
-pprint(drivers)
+print("\n** all drivers **")
+pprint(drv_mgr.drivers)
 
-for name, module in drivers.items():
-    print()
-    print(name)
-    pprint(module.__dict__['__all__'])
+print("\n** categorized drivers **")
+pprint(drv_mgr._drivers)
+
+Drv = drv_mgr.drivers[0]
+
+print("\n** before instantiation")
+pprint(dev_mgr.devices)
+
+dev = Drv()
+dev.initialize(None)
+
+print("\n** after instantiation")
+pprint(dev_mgr.devices)
+
+dev.close()
+
+print("\n** after cleanup**")
+pprint(dev_mgr.devices)
