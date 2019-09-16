@@ -1,5 +1,5 @@
 from .devices import *
-from .path import *
+from .file import *
 from .script import *
 from .sequencer import *
 from .summary import *

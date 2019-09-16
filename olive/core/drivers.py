@@ -3,11 +3,10 @@ import importlib
 import inspect
 import itertools
 import logging
-import pkgutil
 from typing import get_type_hints
 
 from olive.core import Device
-from olive.core.utils import Singleton
+from olive.core.utils import enumerate_namespace_subclass, Singleton
 import olive.devices
 
 import olive.drivers
@@ -98,7 +97,7 @@ class DriverManager(metaclass=Singleton):
         for drivers in self._drivers.values():
             del drivers[:]
 
-        for driver in DriverManager._enumerate_drivers():
+        for driver in enumerate_namespace_subclass(olive.drivers, Driver):
             category = driver._determine_category()
             self._drivers[category].append(driver)
 
@@ -108,52 +107,6 @@ class DriverManager(metaclass=Singleton):
     @property
     def drivers(self):
         return tuple(set(itertools.chain.from_iterable(self._drivers.values())))
-
-    """
-    Namespace deep scan.
-    """
-
-    @staticmethod
-    def _iter_namespace(pkg_name):
-        """
-        Iterate over a namespace package.
-
-        Args:
-            pkg_name (type): namespace package to iterate over
-
-        Returns:
-            (tuple): tuple containing
-                finder (FileFinder): module location
-                name (str): fully qualified name of the found item
-                is_pkg (bool): whether the found path is a package
-        """
-        return pkgutil.iter_modules(pkg_name.__path__, pkg_name.__name__ + ".")
-
-    @staticmethod
-    def _enumerate_drivers():
-        """
-        Iterate over the driver namespace and list out all potential drivers.
-
-        Args:
-            category (Device): device type class
-
-        Returns:
-            (list): a list of drivers
-        """
-        drv = []
-        drv_pkgs = DriverManager._iter_namespace(olive.drivers)
-        for _, name, is_pkg in drv_pkgs:
-            drv_pkg = importlib.import_module(name)
-            _drv = []
-            for _, klass in inspect.getmembers(drv_pkg, inspect.isclass):
-                if issubclass(klass, Driver):
-                    _drv.append(klass)
-            logger.debug(f'"{name}" contains {len(_drv)} driver(s)')
-            for klass in _drv:
-                logger.debug(f".. {klass.__name__}")
-            drv.extend(_drv)
-        logger.info(f"{len(drv)} driver(s) loaded")
-        return drv
 
     """
     Driver classification.

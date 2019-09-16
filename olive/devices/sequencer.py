@@ -44,6 +44,15 @@ class HardwareSequencer(SoftwareSequencer):
     def __init__(self):
         super().__init__()
 
+    @property
+    def digital(self):
+        # TODO manipulate dict?
+        pass
+
+    @property
+    def analog(self):
+        pass
+
     """
     # TODO
 

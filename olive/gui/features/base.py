@@ -21,7 +21,9 @@ class Feature(QDockWidget):
         self.setWindowTitle(title)
 
         self.setAllowedAreas(Qt.LeftDockWidgetArea)
-        self.setFeatures(QDockWidget.DockWidgetMovable)
+        self.setFeatures(
+            QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable
+        )
 
         self.widget = QWidget()
         self.setWidget(self.widget)

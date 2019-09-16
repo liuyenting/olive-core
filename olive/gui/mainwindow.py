@@ -3,13 +3,7 @@ import logging
 
 from PySide2.QtCore import Qt, QSize
 from PySide2.QtGui import QIcon
-from PySide2.QtWidgets import (
-    QAction,
-    QDesktopWidget,
-    QMainWindow,
-    QStatusBar,
-    QWidget,
-)
+from PySide2.QtWidgets import QAction, QDesktopWidget, QMainWindow, QStatusBar, QWidget
 
 import olive.gui.features
 from olive.gui.profile import ProfileWizard
@@ -113,7 +107,7 @@ class MainWindow(QMainWindow):
 
         for name, klass in inspect.getmembers(olive.gui.features, inspect.isclass):
             widget = klass()
-            # TODO hide
+            widget.setVisible(True)  # DEBUG show all
             self.addDockWidget(default_area, widget)
             self.features[name] = widget
 
