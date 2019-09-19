@@ -1,5 +1,6 @@
 from __future__ import annotations
 from abc import abstractmethod
+from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 import itertools
 import logging
@@ -7,7 +8,7 @@ import multiprocessing as mp
 import tempfile
 from typing import Tuple, NamedTuple
 
-from olive.core.utils import Singleton
+from olive.core.utils import Graph, Singleton
 
 __all__ = ["Device", "DeviceInfo", "DeviceManager", "DeviceType"]
 
@@ -169,7 +170,7 @@ class DeviceManager(metaclass=Singleton):
 
     def assign(self, alias, device):
         """Link registered device to shopping list item."""
-        logger.debug(f'{device} is assigned to {alias}')
+        logger.debug(f"{device} is assigned to {alias}")
         self._devices[alias].device = device
 
     # TODO how to cleanup register/unregister calls
@@ -196,3 +197,23 @@ class DeviceManager(metaclass=Singleton):
     def is_satisfied(self) -> bool:
         """Is the shopping list satisfied?"""
         return not any(device for device in self._devices if device.device is None)
+
+
+def query_device_hierarchy():
+    """
+    Request function to query hierarchy for specific device.
+
+    Returns:
+        (func): a function that can find the shortest inheritance path
+    """
+    # build graph
+    g = Graph((Device,) + Device.__subclasses__())
+    for device_klass in g.nodes:
+        g.add_edges(device_klass, device_klass.__subclasses__())
+
+    def query_func(device):
+        """Find the shortest path but drop the root."""
+        path = g.find_path(Device, device)
+        return tuple(path[1:])
+
+    return query_func

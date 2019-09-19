@@ -310,7 +310,7 @@ class MultiDigitalSynthesizer(Driver):
     def shutdown(self):
         super().shutdown()
 
-    def enumerate_devices(self) -> Union[MDSnC]:
+    def enumerate_devices(self) -> MDSnC:
         loop = asyncio.get_event_loop()
 
         async def test_device(device):

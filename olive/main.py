@@ -40,11 +40,18 @@ def main_gui():
 
 
 def main_cli():
-    aotf_cal_script = AOTFCalibration()
-    pprint(aotf_cal_script.get_features())
+    # discover drivers
+    drv_mgr = DriverManager()
+    print(f"drivers: {drv_mgr.drivers}")
 
+    # load script
+    aotf_cal_script = AOTFCalibration()
+    print(f"features: {aotf_cal_script.get_features()}")
+
+    """
     dispatcher = Dispatcher(aotf_cal_script)
+    """
 
 
 if __name__ == "__main__":
-    main_gui()
+    main_cli()

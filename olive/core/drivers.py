@@ -1,12 +1,11 @@
 from abc import abstractmethod
-import importlib
-import inspect
 import itertools
 import logging
-from typing import get_type_hints
+from typing import get_type_hints, Union
 
 from olive.core import Device
-from olive.core.utils import enumerate_namespace_subclass, Singleton
+from olive.core.devices import query_device_hierarchy
+from olive.core.utils import enumerate_namespace_classes, Singleton
 import olive.devices
 
 import olive.drivers
@@ -40,6 +39,21 @@ class Driver(metaclass=DriverType):
     @abstractmethod
     def enumerate_devices(self) -> None:
         """List supported devices."""
+
+    @classmethod
+    def enumerate_supported_devices(cls):
+        hints = get_type_hints(cls.enumerate_devices)["return"]
+        try:
+            klasses = hints.__args__
+        except AttributeError:
+            # not a union
+            klasses = [hints]
+
+        # remap to device primitives
+        devices = []
+        for klass in klasses:
+            devices.extend(klass.__bases__)
+        return tuple(set(devices) & set(Device.__subclasses__()))
 
     """
     Driver attributes.
@@ -78,13 +92,13 @@ class DriverManager(metaclass=Singleton):
         - driver reload
 
     Attributes:
-        drivers (dict): list of known drivers
+        drivers (tuple): a list of known drivers
             This will return everything.
     """
 
-    def __init__(self, blacklist=[]):
-        # populate categories
-        self._drivers = {klass: [] for klass in Driver.__subclasses__()}
+    def __init__(self):
+        # populate device categories
+        self._drivers = {klass: [] for klass in Device.__subclasses__()}
 
         self.refresh()
 
@@ -97,12 +111,23 @@ class DriverManager(metaclass=Singleton):
         for drivers in self._drivers.values():
             del drivers[:]
 
-        for driver in enumerate_namespace_subclass(olive.drivers, Driver):
-            category = driver._determine_category()
-            self._drivers[category].append(driver)
+        drivers = enumerate_namespace_classes(
+            olive.drivers, lambda x: issubclass(x, Driver)
+        )
+        logger.info(f"found {len(drivers)} driver(s)")
 
-    def query_devices(self, category):
-        return tuple(self._drivers[category])
+        logger.info("categorizing drivers to their supported devices...")
+        for driver in drivers:
+            devices = driver.enumerate_supported_devices()
+            logger.debug(f"{driver.__name__} -> {len(devices)} device(s)")
+            for device in devices:
+                self._drivers[device].append(driver)
+                logger.debug(f".. {device.__name__}")
+
+    def query_drivers(self, device):
+        return tuple(self._drivers[device])
+
+    ##
 
     @property
     def drivers(self):
@@ -113,7 +138,7 @@ class DriverManager(metaclass=Singleton):
     """
 
     @staticmethod
-    def _supported_devices(driver):
+    def _inspect_supported_devices(driver):
         devices = []
         for klasses in get_type_hints(driver.enumerate_devices):
             # reverse lookup

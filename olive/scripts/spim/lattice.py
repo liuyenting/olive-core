@@ -1,9 +1,14 @@
-from olive.devices import AcustoOpticalModulator
+import logging
 
 from olive.core.script import Script
+from olive.devices import AcustoOpticalModulator
+
+__all__ = ["LatticeLightsheet"]
+
+logger = logging.getLogger(__name__)
 
 
-class LLSM(Script):
+class LatticeLightsheet(Script):
     """
     Script for Lattice LightSheet Microscopes (LLSM).
     """

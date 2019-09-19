@@ -4,7 +4,12 @@ import logging
 
 from olive.core import DeviceType
 
-__all__ = ["Script", "ChannelsFeature", "TimeSeriesFeature", "ValueInspectorFeature"]
+__all__ = [
+    "Script",
+    "ChannelsFeature",
+    "TimeSeriesFeature",
+    "ValueInspectorFeature",
+]
 
 logger = logging.getLogger(__name__)
 
@@ -63,8 +68,9 @@ class Script(metaclass=ScriptType):
     Define how the system behave per acquisition request.
     """
 
+    @abstractmethod
     def __init__(self):
-        pass
+        """Abstract __init__ to prevent instantiation."""
 
     ##
 
