@@ -48,9 +48,13 @@ def main_cli():
     aotf_cal_script = AOTFCalibration()
     print(f"features: {aotf_cal_script.get_features()}")
 
-    """
-    dispatcher = Dispatcher(aotf_cal_script)
-    """
+    # TODO scan for requirements
+    # TODO scan for connected hardwares using drivers
+
+    # TODO create relationship link
+
+    # TODO dispatch
+    # dispatcher = Dispatcher(aotf_cal_script)
 
 
 if __name__ == "__main__":
