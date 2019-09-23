@@ -1,6 +1,5 @@
 from abc import abstractmethod
 import logging
-from typing import NamedTuple
 
 from olive.core import Device
 
@@ -9,76 +8,55 @@ __all__ = ["Camera"]
 logger = logging.getLogger(__name__)
 
 
-class Attribute(NamedTuple):  # TODO move this to generic device definition
-    readable: bool
-    writable: bool
-    name: str
-
-
 class Camera(Device):
-    @abstractmethod
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
     """
     High level functions
-        - Snap: Capture all or a portion of a single image to the user buffer
-        - Grab: Perform an acquisition that loops continually on one or more internal buffers.
-        - Sequence: Aquire a specified number of internal buffers and then stops.
     """
 
+    @abstractmethod
     def snap(self):
-        pass
+        """Capture a single image to the user buffer."""
 
+    @abstractmethod
     def configure_grab(self):
         pass
 
+    @abstractmethod
     def grab(self):
-        pass
+        """Perform an acquisitino that loops continuously."""
 
+    @abstractmethod
     def sequence(self):
-        pass
+        """Acquire a specified number of images and then stops."""
 
     """
     Acquisition:
         Configure, start, stop, and unconfigure an image acquisition.
     """
 
+    @abstractmethod
     def configure_acquisition(self):
         pass
 
+    @abstractmethod
     def start_acquisition(self):
         """
         Starts an acquisition.
 
         Use stop_acquisition() to stop the acquisition.
         """
-        pass
 
+    @abstractmethod
     def get_image(self):
         """Get data of the specified frame."""
-        pass
 
+    @abstractmethod
     def stop_acquisition(self):
         """Stops an acquistion."""
-        pass
 
+    @abstractmethod
     def unconfigure_acquisition(self):
-        pass
-
-    """
-    Attribute:
-        Examine and change the acquisition or camera attributes.
-    """
-
-    # def enumerate_attributes(self):
-    #    pass
-
-    # def get_attribute(self, name):
-    #    pass
-
-    # def set_attribute(self, name, value):
-    #    pass
+        """Release resources used in the acquisition."""
 
     """
     Event:
@@ -92,20 +70,6 @@ class Camera(Device):
     Note:
         DO WE NEED THIS?
     """
-
-    """
-    Session:
-        Open, close, or enumerate sessions.
-    """
-
-    # def enumerate_devices(cls):
-    #    pass
-
-    # def initialize(self):
-    #    pass
-
-    # def close(self):
-    #    pass
 
     """
     Utility:
