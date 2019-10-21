@@ -74,15 +74,11 @@ class MDSnC(AcustoOpticalModulator):
         self._set_control_voltage(ControlVoltage.FIVE_VOLT)
         self._set_control_mode(ControlMode.EXTERNAL)
 
-        super().open()
-
     def close(self):
         self._save_parameters()
         self._set_control_mode(ControlMode.INTERNAL)
 
         self.handle.close()
-
-        super().close()
 
     ##
 
@@ -338,15 +334,4 @@ class MultiDigitalSynthesizer(Driver):
                 # unknown exception occurred
                 raise result
         return tuple(valid_devices)
-
-    ##
-
-    def enumerate_attributes(self):
-        return tuple()
-
-    def get_attribute(self, name):
-        raise NotImplementedError("nothing to get")
-
-    def set_attribute(self, name, value):
-        raise NotImplementedError("nothing to set")
 

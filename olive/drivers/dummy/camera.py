@@ -109,13 +109,3 @@ class PseudoCameraDriver(Driver):
         # TODO one camera only
         pass
 
-    ##
-
-    def enumerate_attributes(self):
-        return tuple()
-
-    def get_attribute(self, name):
-        raise NotImplementedError('nothing to get')
-
-    def set_attribute(self, name):
-        raise NotImplementedError("nothing to set")

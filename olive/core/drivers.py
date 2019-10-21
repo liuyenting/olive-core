@@ -55,34 +55,6 @@ class Driver(metaclass=DriverType):
             devices.extend(klass.__bases__)
         return tuple(set(devices) & set(Device.__subclasses__()))
 
-    """
-    Driver attributes.
-    """
-
-    @abstractmethod
-    def enumerate_attributes(self):
-        """Get attributes supported by the driver."""
-
-    @abstractmethod
-    def get_attribute(self, name):
-        """
-        Get the value of driver attribute.
-
-        Args:
-            name (str): documented attribute name
-        """
-
-    @abstractmethod
-    def set_attribute(self, name, value):
-        """
-        Set the value of driver attribute.
-
-        Args:
-            name (str): documented attribute name
-            value : new value of the specified attribute
-        """
-
-
 class DriverManager(metaclass=Singleton):
     """
     Driver bookkeeping.
@@ -106,9 +78,10 @@ class DriverManager(metaclass=Singleton):
 
     def refresh(self):
         """Refresh known driver list."""
-        # TODO deactivate first
-
+        # deactivate all
         for drivers in self._drivers.values():
+            for driver in drivers:
+                driver.shutdown()
             del drivers[:]
 
         drivers = enumerate_namespace_classes(
@@ -118,6 +91,7 @@ class DriverManager(metaclass=Singleton):
 
         logger.info("categorizing drivers to their supported devices...")
         for driver in drivers:
+            driver.initialize()
             devices = driver.enumerate_supported_devices()
             logger.debug(f"{driver.__name__} -> {len(devices)} device(s)")
             for device in devices:

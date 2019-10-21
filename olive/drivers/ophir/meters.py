@@ -244,14 +244,3 @@ class Ophir(Driver):
                     raise result
 
         return tuple(valid_sensors)
-
-    ##
-
-    def enumerate_attributes(self):
-        return tuple()
-
-    def get_attribute(self, name):
-        raise NotImplementedError("nothing to get")
-
-    def set_attribute(self, name, value):
-        raise NotImplementedError("nothing to set")
