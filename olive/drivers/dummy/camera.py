@@ -33,11 +33,6 @@ class PseudoCamera(Camera):
 
     ##
 
-    def info(self):
-        return DeviceInfo(
-            version="0.0", vendor="olive", model=self.sample, serial_number="DEADBEEF"
-        )
-
     def enumerate_properties(self):
         pass
 
@@ -77,6 +72,12 @@ class PseudoCamera(Camera):
     @property
     def buffer(self):
         return self._buffer
+
+    @property
+    def info(self):
+        return DeviceInfo(
+            version="0.0", vendor="olive", model=self.sample, serial_number="DEADBEEF"
+        )
 
     @property
     def sample(self):

@@ -51,7 +51,7 @@ class Photodiode(PowerSensor):  # TODO extract common scheme to OphirSensor
     def test_open(self):
         self.handle.open()
         try:
-            logger.info(f".. {self.info()}")
+            logger.info(f".. {self.info}")
         except SyntaxError:
             raise UnsupportedDeviceError
         finally:
@@ -65,15 +65,6 @@ class Photodiode(PowerSensor):  # TODO extract common scheme to OphirSensor
         self.handle.read_until("\r")
 
     ##
-
-    def info(self) -> DeviceInfo:
-        self.handle.write(b"$HI\r")
-        try:
-            response = self.handle.read_until("\r").decode("utf-8")
-            _, sn, name, _ = tuple(response.strip("* ").split())
-        except (ValueError, UnicodeDecodeError):
-            raise SyntaxError("unable to parse device info")
-        return DeviceInfo(version=None, vendor="Ophir", model=name, serial_number=sn)
 
     def enumerate_properties(self):
         return ("diffuser", "favorite_wavelengths", "valid_wavelengths")
@@ -146,8 +137,22 @@ class Photodiode(PowerSensor):  # TODO extract common scheme to OphirSensor
     ##
 
     @property
+    def busy(self):
+        return self.parent.busy
+
+    @property
     def handle(self):
         return self._handle
+
+    @property
+    def info(self) -> DeviceInfo:
+        self.handle.write(b"$HI\r")
+        try:
+            response = self.handle.read_until("\r").decode("utf-8")
+            _, sn, name, _ = tuple(response.strip("* ").split())
+        except (ValueError, UnicodeDecodeError):
+            raise SyntaxError("unable to parse device info")
+        return DeviceInfo(version=None, vendor="Ophir", model=name, serial_number=sn)
 
     """
     Property accessors.

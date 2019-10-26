@@ -42,6 +42,7 @@ class Device(metaclass=DeviceType):
     Attributes:
         driver : driver that instantiate this device
         parent (Device): parent device
+        timeout (int): timeout in milliseconds, None if never
 
     Note:
         Each device has its own thread executor to prevent external blocking calls
@@ -49,10 +50,12 @@ class Device(metaclass=DeviceType):
     """
 
     @abstractmethod
-    def __init__(self, driver, parent: Device = None):
+    def __init__(self, driver, parent: Device = None, timeout=None):
         """Abstract __init__ to prevent instantiation."""
         self._driver = driver
         self._parent = parent
+
+        self._timeout = timeout
 
         self._executor = ThreadPoolExecutor(max_workers=1)
 
@@ -83,10 +86,6 @@ class Device(metaclass=DeviceType):
     """
     Device properties.
     """
-
-    @abstractmethod
-    def info(self) -> DeviceInfo:
-        """Return device info."""
 
     @abstractmethod
     def enumerate_properties(self):
@@ -139,8 +138,23 @@ class Device(metaclass=DeviceType):
     """
 
     @property
+    @abstractmethod
+    def busy(self) -> bool:
+        """Is device busy?"""
+
+    @property
     def executor(self):
         return self._executor
+
+    @property
+    @abstractmethod
+    def info(self) -> DeviceInfo:
+        """Return device info."""
+
+    @property
+    def timeout(self):
+        """Device timeout in milliseconds."""
+        return self._timeout
 
 
 class DeviceManager(metaclass=Singleton):
