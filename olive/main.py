@@ -40,11 +40,22 @@ def main_gui():
 
 
 def main_cli():
-    aotf_cal_script = AOTFCalibration()
-    pprint(aotf_cal_script.get_features())
+    # discover drivers
+    drv_mgr = DriverManager()
+    print(f"drivers: {drv_mgr.drivers}")
 
-    dispatcher = Dispatcher(aotf_cal_script)
+    # load script
+    aotf_cal_script = AOTFCalibration()
+    print(f"features: {aotf_cal_script.get_features()}")
+
+    # TODO scan for requirements
+    # TODO scan for connected hardwares using drivers
+
+    # TODO create relationship link
+
+    # TODO dispatch
+    # dispatcher = Dispatcher(aotf_cal_script)
 
 
 if __name__ == "__main__":
-    main_gui()
+    main_cli()

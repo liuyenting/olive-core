@@ -30,9 +30,11 @@ class OphirMeter(SensorAdapter):
     """
 
     def __init__(self, driver, port, baudrate, timeout=1000):
-        super().__init__(driver)
+        super().__init__(driver, timeout=timeout)
 
-        if timeout:
+        # Serial use s instead of ms
+        timeout = self.timeout
+        if timeout is not None:
             timeout /= 1000
 
         ser = Serial()
@@ -54,6 +56,20 @@ class OphirMeter(SensorAdapter):
 
     ##
 
+    def enumerate_properties(self):
+        return tuple()
+
+    ##
+
+    @property
+    def busy(self):
+        return False
+
+    @property
+    def handle(self):
+        return self._handle
+
+    @property
     def info(self) -> DeviceInfo:
         # mode name and serial number
         self.handle.write(b"$II\r")
@@ -69,15 +85,6 @@ class OphirMeter(SensorAdapter):
         version = response.strip("* ").split()[0]
 
         return DeviceInfo(version=version, vendor="Ophir", model=name, serial_number=sn)
-
-    def enumerate_properties(self):
-        return tuple()
-
-    ##
-
-    @property
-    def handle(self):
-        return self._handle
 
     """
     Property accessors.
@@ -115,7 +122,7 @@ class Nova2(OphirMeter):
     def test_open(self):
         self.handle.open()
         try:
-            logger.info(f".. {self.info()}")
+            logger.info(f".. {self.info}")
         except SyntaxError:
             raise UnsupportedDeviceError
         finally:
@@ -244,14 +251,3 @@ class Ophir(Driver):
                     raise result
 
         return tuple(valid_sensors)
-
-    ##
-
-    def enumerate_attributes(self):
-        return tuple()
-
-    def get_attribute(self, name):
-        raise NotImplementedError("nothing to get")
-
-    def set_attribute(self, name, value):
-        raise NotImplementedError("nothing to set")

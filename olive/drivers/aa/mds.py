@@ -59,7 +59,7 @@ class MDSnC(AcustoOpticalModulator):
     def test_open(self):
         self.handle.open()
         try:
-            logger.info(f".. {self.info()}")
+            logger.info(f".. {self.info}")
         except SyntaxError:
             raise UnsupportedDeviceError
         finally:
@@ -74,38 +74,13 @@ class MDSnC(AcustoOpticalModulator):
         self._set_control_voltage(ControlVoltage.FIVE_VOLT)
         self._set_control_mode(ControlMode.EXTERNAL)
 
-        super().open()
-
     def close(self):
         self._save_parameters()
         self._set_control_mode(ControlMode.INTERNAL)
 
         self.handle.close()
 
-        super().close()
-
     ##
-
-    def info(self, pattern=r"([\w]+)\s+") -> DeviceInfo:
-        # trigger command list dump
-        self.handle.write(b"\r")
-        # firmware version
-        try:
-            response = self.handle.read_until("?").decode("utf-8")
-            version = self._parse_version(response)
-        except (ValueError, UnicodeDecodeError):
-            raise SyntaxError("unable to parse version")
-
-        # serial number
-        self.handle.write(b"q\r")
-        response = self.handle.read_until("?").decode("utf-8")
-        matches = re.search(pattern, response)
-        if matches:
-            sn = matches.group(1)
-        else:
-            raise SyntaxError("unable to parse serial number")
-
-        return DeviceInfo(version=version, vendor="AA", model="MDSnC", serial_number=sn)
 
     def enumerate_properties(self):
         return ("control_mode", "control_voltage", "discrete_power_range")
@@ -211,9 +186,37 @@ class MDSnC(AcustoOpticalModulator):
             else:
                 logger.warning(msg)
 
+    ##
+
+    @property
+    def busy(self):
+        return False
+
     @property
     def handle(self):
         return self._handle
+
+    @property
+    def info(self) -> DeviceInfo:
+        # trigger command list dump
+        self.handle.write(b"\r")
+        # firmware version
+        try:
+            response = self.handle.read_until("?").decode("utf-8")
+            version = self._parse_version(response)
+        except (ValueError, UnicodeDecodeError):
+            raise SyntaxError("unable to parse version")
+
+        # serial number
+        self.handle.write(b"q\r")
+        response = self.handle.read_until("?").decode("utf-8")
+        matches = re.search(r"([\w]+)\s+", response)
+        if matches:
+            sn = matches.group(1)
+        else:
+            raise SyntaxError("unable to parse serial number")
+
+        return DeviceInfo(version=version, vendor="AA", model="MDSnC", serial_number=sn)
 
     """
     Property accessors.
@@ -310,7 +313,7 @@ class MultiDigitalSynthesizer(Driver):
     def shutdown(self):
         super().shutdown()
 
-    def enumerate_devices(self) -> Union[MDSnC]:
+    def enumerate_devices(self) -> MDSnC:
         loop = asyncio.get_event_loop()
 
         async def test_device(device):
@@ -338,15 +341,4 @@ class MultiDigitalSynthesizer(Driver):
                 # unknown exception occurred
                 raise result
         return tuple(valid_devices)
-
-    ##
-
-    def enumerate_attributes(self):
-        return tuple()
-
-    def get_attribute(self, name):
-        raise NotImplementedError("nothing to get")
-
-    def set_attribute(self, name, value):
-        raise NotImplementedError("nothing to set")
 

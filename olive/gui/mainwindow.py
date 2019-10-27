@@ -120,9 +120,13 @@ class MainWindow(QMainWindow):
     def new_profile_action(self):
         wizard = ProfileWizard(create_new=True)
         wizard.exec_()
-        if wizard.get_configured_profile():
+        profile = wizard.get_configured_profile()
+        if profile:
             # TODO valid profile, start populating dock widgets
-            pass
+            from pprint import pprint
+
+            pprint(profile)
+            raise RuntimeError("DEBUG")
 
     ##
 

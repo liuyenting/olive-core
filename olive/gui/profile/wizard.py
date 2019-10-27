@@ -35,5 +35,4 @@ class ProfileWizard(QWizard):
         self.addPage(SummaryPage())
 
     def get_configured_profile(self):
-        print(self.field('profile_path'))
-        return None
+        return {'script': self.field('script')}

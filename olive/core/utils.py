@@ -1,3 +1,4 @@
+from collections import deque
 from functools import wraps
 import importlib
 import inspect
@@ -5,7 +6,7 @@ import logging
 import pkgutil
 import time
 
-__all__ = ["enumerate_namespace_subclass", "retry", "Singleton"]
+__all__ = ["DisjointSet", "enumerate_namespace_classes", "retry", "Singleton"]
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +19,70 @@ class Singleton(type):
             cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
             logger.debug('new singleton object "{}" created'.format(cls))
         return cls._instances[cls]
+
+
+class DisjointSet(object):
+    def __init__(self, nodes):
+        self.nodes = nodes
+        self._root = {node: node for node in nodes}
+        self._rank = {node: 0 for node in nodes}
+
+    def find(self, node):
+        root = self._root[node]
+        return node if root == node else self.find(root)
+
+    def union(self, node1, node2):
+        root1, root2 = self.find(node1), self.find(node2)
+        if root1 == root2:
+            return
+
+        rank1, rank2 = self._rank[root1], self._rank[root2]
+        if rank1 < rank2:
+            self._root[root1] = root2
+        elif rank1 > rank2:
+            self._root[root2] = root1
+        else:
+            self._root[root1] = self._root[root2] = root1
+            self._rank[root1] = self._rank[root2] = rank1 + 1
+
+    ##
+
+    @property
+    def root(self):
+        return self._root
+
+
+class Graph(object):
+    def __init__(self, nodes):
+        self._nodes = nodes
+        self._graph = {k: [] for k in nodes}
+
+    def add_edges(self, parent, children):
+        for child in children:
+            self.add_edge(parent, child)
+
+    def add_edge(self, parent, child):
+        if parent not in self._graph:
+            raise ValueError("unknown node")
+        self._graph[parent].append(child)
+
+    def find_path(self, start, end):
+        """Use linear BFS to find an acyclic path."""
+        paths = {start: [start]}
+        q = deque(start)
+        while len(q):
+            curr_node = q.popleft()
+            for next_node in self._graph[curr_node]:
+                if next_node not in paths:
+                    paths[next_node] = paths[curr_node] + [next_node]
+                    q.append(next_node)
+        return paths[end]
+
+    ##
+
+    @property
+    def nodes(self):
+        return self._nodes
 
 
 def retry(exception, n_trials=3, delay=1, backoff=2, logger=None):
@@ -72,28 +137,31 @@ def iter_namespace(pkg_name):
     return pkgutil.iter_modules(pkg_name.__path__, pkg_name.__name__ + ".")
 
 
-def enumerate_namespace_subclass(pkg, base):
+def enumerate_namespace_classes(pkg, predicate=lambda x: True, with_pkg=False):
     """
-    Iterate over namespace and list all subclasses.
+    Iterate over namespace and list all classes filtered by predicate.
 
     Args:
         pkg (package): namespace package of intereset
-        base (class): base class
+        predicate (function): the predicate function
 
     Returns:
-        (list): list of subclass of base
+        (list): list of classes
     """
+    logger.debug(f"filter over {pkg}.. ")
     klasses = []
     pkgs = iter_namespace(pkg)
     for _, name, is_pkg in pkgs:
         pkg = importlib.import_module(name)
         _klasses = []
         for _, klass in inspect.getmembers(pkg, inspect.isclass):
-            if issubclass(klass, base):
+            if predicate(klass):
                 _klasses.append(klass)
-        logger.debug(f'"{name}" contains {len(_klasses)} subclass(es)')
+        logger.debug(f'"{name}" -> {len(_klasses)} class(es)')
         for klass in _klasses:
+            if with_pkg:
+                klasses.append((pkg, klass))
+            else:
+                klasses.append(klass)
             logger.debug(f".. {klass.__name__}")
-        klasses.extend(_klasses)
-    logger.info(f"{len(klasses)} subclass(es) of {base.__name__} loaded")
     return klasses
