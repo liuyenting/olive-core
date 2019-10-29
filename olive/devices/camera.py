@@ -3,13 +3,14 @@ from collections import deque
 from ctypes import c_uint8
 from enum import auto, Enum
 import logging
+from multiprocessing import Lock
 from multiprocessing.sharedctypes import RawArray
 
 import numpy as np
 
 from olive.core import Device
 
-__all__ = ['BufferRetrieveMode', "Camera"]
+__all__ = ["BufferRetrieveMode", "Camera"]
 
 logger = logging.getLogger(__name__)
 
@@ -30,39 +31,71 @@ class RingBuffer(object):
         dtype (dtype, optional): data type
     """
 
-    def __init__(self, shape, nframes, dtype, allocator=lambda x: RawArray(c_uint8, x)):
+    def __init__(self, shape, dtype, nframes=1):
         self._shape, self._dtype = shape, dtype
 
-        # create raw arrays
-        self._frames = [allocator(self.frame_size) for _ in range(nframes)]
-        logger.info(f"buffer ALLOCATED, {nframes} frame(s), {shape}, {dtype}")
+        self._lock = Lock()
 
-        # bookkeeping
+        (ny, nx), dtype = self.shape, self.dtype
+        nbytes = (nx * ny) * np.dtype(dtype).itemsize
+        self._frames = [RawArray(c_uint8, nbytes) for _ in range(nframes)]
 
-    def qsize(self):
-        """Number of frames await for retrieval."""
-        return len(self._dirty)
+        self.reset()
+
+    ##
+
+    def reset(self):
+        with self._lock:
+            self._head = self._tail
+            self._full = False
+
+    def put(self, overwrite=False):
+        with self._lock:
+            if (not overwrite) and self.full():
+                raise RuntimeError("buffer full")
+
+            frame = self.frames[self._head]
+            self._advance()
+            return frame
+
+    def get(self):
+        with self._lock:
+            if self.empty():
+                return None
+
+            frame = self.frames[self._tail]
+            self._retreat()
+            return frame
 
     def empty(self):
-        return len(self._dirty) == 0
+        return (not self.full()) and (self._head == self._tail)
 
-    def flush(self):
-        while not self.empty():
-            self.push_clean(self.pop_dirty())
+    def full(self):
+        return self._full
 
-    def pop_dirty(self, block=True, timeout=None):
-        """Return a frame to read."""
-        return self._dirty.pop()
+    def capacity(self):
+        """Returns the maximum capacity of the buffer."""
+        return len(self.frames)
 
-    def push_dirty(self, item):
-        self._dirty.appendleft(item)
+    def size(self):
+        if not self._full:
+            if self._head >= self._tail:
+                return self._head - self._tail
+            else:
+                return self.capacity() + (self._head - self._tail)
 
-    def pop_clean(self, block=True, timeout=None):
-        """Return a frame to write."""
-        return self._clean.pop()
+    ##
 
-    def push_clean(self, item):
-        self._clean.appendleft(item)
+    def _advance(self):
+        if self.full():
+            self._tail = (self._tail + 1) % self.capacity()
+
+        self._head = (self._head + 1) % self.capacity()
+        self._full = self._head == self._tail
+
+    def _retreat(self):
+        self._full = False
+        self._tail = (self._tail + 1) % self.capacity()
 
     ##
 
@@ -73,11 +106,6 @@ class RingBuffer(object):
     @property
     def frames(self):
         return self._frames
-
-    @property
-    def frame_size(self):
-        (ny, nx), dtype = self.shape, self.dtype
-        return (nx * ny) * np.dtype(dtype).itemsize
 
     @property
     def shape(self):
@@ -133,9 +161,8 @@ class Camera(Device):
             self.configure_ring(nframes)
 
     def configure_ring(self, nframes):
-        _, shape = self.get_roi()
-        dtype = self.get_dtype()
-        self._buffer = RingBuffer(shape, nframes, dtype)
+        (_, shape), dtype = self.get_roi(), self.get_dtype()
+        self._buffer = RingBuffer(shape, dtype, nframes)
 
     @abstractmethod
     def start_acquisition(self):
@@ -164,10 +191,12 @@ class Camera(Device):
         return out
 
     @abstractmethod
-    def _extract_frame(
-        self, mode: BufferRetrieveMode = BufferRetrieveMode.Next, index=-1
-    ):
+    def _extract_frame(self, index=None):
         """Retrieve an acquired frame from the buffer WITHOUT making a copy."""
+        if index is None:
+            return self.buffer.get()
+        else:
+            return self.buffer.frames[index]
 
     def _release_frame(self, frame):
         """Release extracted frame, allowing it to be reused."""
