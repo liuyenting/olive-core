@@ -91,7 +91,3 @@ class ElectroOpticalModulator(Modulator, Device):
             - min
             - max
     """
-
-    @abstractmethod
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)

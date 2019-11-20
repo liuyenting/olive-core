@@ -132,12 +132,12 @@ class Nova2(OphirMeter):
     def open(self):
         self.handle.open()
         self._set_full_duplex()
-        super().open()
 
     def close(self):
-        self._save_configuration()
-        self.handle.close()
-        super().close()
+        if not self.children:
+            # no more children
+            self._save_configuration()
+            self.handle.close()
 
     ##
 
@@ -229,9 +229,7 @@ class Ophir(Driver):
             # temporary open the controller
             controller.open()
             # retrieve sensor devices
-            _sensors = [
-                klass(controller) for klass in controller.enumerate_sensors()
-            ]
+            _sensors = [klass(controller) for klass in controller.enumerate_sensors()]
             # close the controller
             controller.close()
 

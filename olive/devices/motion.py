@@ -1,9 +1,10 @@
 from abc import abstractmethod
 import logging
+from typing import Union
 
 from olive.core import Device
 
-__all__ = ["Galvo", "Stage", "LinearStage", "RotaryStage", "MotionController"]
+__all__ = ["Galvo", "LinearAxis", "RotaryAxis", "MotionController"]
 
 logger = logging.getLogger(__name__)
 
@@ -59,32 +60,24 @@ class Galvo(Device):
         pass
 
 
-class Stage(Device):
-    @abstractmethod
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+class Axis(Device):
+    pass
 
 
-class LinearStage(Stage, Device):
+class LinearAxis(Axis, Device):
     """
-    Linear stage is a component of a precise motion system used to restrict an object
+    Linear axis is a component of a precise motion system used to restrict an object
     to a single axis of _translation_.
     """
 
-    @abstractmethod
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
 
-
-class RotaryStage(Stage, Device):
+class RotaryAxis(Axis, Device):
     """
-    A rotary stage is a component of a motion system used to restrict an object to a single axis of _rotation_.
+    A rotary axis is a component of a motion system used to restrict an object to a single axis of _rotation_.
     """
-
-    @abstractmethod
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
 
 
 class MotionController(Device):
-    pass
+    @abstractmethod
+    def enumerate_axes(self) -> Union[Axis]:
+        """Enumerate connected axes."""
