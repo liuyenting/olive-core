@@ -230,7 +230,7 @@ class Ophir(Driver):
             controller.open()
             # retrieve sensor devices
             _sensors = [
-                klass(self, controller) for klass in controller.enumerate_sensors()
+                klass(controller) for klass in controller.enumerate_sensors()
             ]
             # close the controller
             controller.close()

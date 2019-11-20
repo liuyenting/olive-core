@@ -17,20 +17,8 @@ class Sensor(Device):
     """
 
     @abstractmethod
-    def __init__(self, driver, parent: "SensorAdapter" = None):
-        super().__init__(driver, parent=parent)
-
-    ##
-
-    def open(self):
-        if self.parent:
-            self.parent.open()
-        super().open()
-
-    def close(self):
-        if self.parent:
-            self.parent.close()
-        super().close()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
     ##
 
@@ -67,7 +55,7 @@ class SensorAdapter(Device):
 
     @abstractmethod
     def enumerate_sensors(self) -> Union[Sensor]:
-        """ENumerate connected sensors."""
+        """Enumerate connected sensors."""
 
 
 ##

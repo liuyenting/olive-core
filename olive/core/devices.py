@@ -53,7 +53,7 @@ class Device(metaclass=DeviceType):
     def __init__(self, driver, parent: Device = None, timeout=None):
         """Abstract __init__ to prevent instantiation."""
         self._driver = driver
-        self._parent = parent
+        self._parent, self._children = parent, []
 
         self._timeout = timeout
 
@@ -76,12 +76,29 @@ class Device(metaclass=DeviceType):
         """
         Open and register the device.
         """
+        try:
+            self.parent.register(self)
+        except AttributeError:
+            pass
+
+    def register(self, child):
+        self._children.append(child)
 
     @abstractmethod
     def close(self):
         """
         Close and unregister the device.
         """
+        try:
+            self.parent.unregister(self)
+        except AttributeError:
+            pass
+
+    def unregister(self, child):
+        try:
+            self._children.remove(child)
+        except ValueError:
+            logger.error("child not in parent, please file an issue")
 
     """
     Device properties.
@@ -124,6 +141,10 @@ class Device(metaclass=DeviceType):
     """
     Driver-device associations.
     """
+
+    @property
+    def children(self):
+        return self._children
 
     @property
     def driver(self):

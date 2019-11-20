@@ -41,8 +41,8 @@ class Photodiode(PowerSensor):  # TODO extract common scheme to OphirSensor
     power levels.
     """
 
-    def __init__(self, driver, parent):
-        super().__init__(driver, parent=parent)
+    def __init__(self, parent):
+        super().__init__(parent.driver, parent=parent)
         self._handle = self.parent.handle
 
     ##
@@ -58,11 +58,14 @@ class Photodiode(PowerSensor):  # TODO extract common scheme to OphirSensor
             self.handle.close()
 
     def open(self):
-        super().open()
-
         # using a power sensor, auto switch to 'Power screen'
         self.handle.write(b"$FP\r")
         self.handle.read_until("\r")
+
+        super().open()
+
+    def close(self):
+        super().close()
 
     ##
 
