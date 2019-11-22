@@ -61,7 +61,38 @@ class Galvo(Device):
 
 
 class Axis(Device):
-    pass
+    @abstractmethod
+    def home(self):
+        pass
+
+    @abstractmethod
+    def get_position(self):
+        pass
+
+    @abstractmethod
+    def set_absolute_position(self):
+        pass
+
+    @abstractmethod
+    def set_relative_position(self):
+        pass
+
+    @abstractmethod
+    def stop(self):
+        pass
+
+    ## constraints
+    @abstractmethod
+    def set_origin(self):
+        """Define current position as the origin."""
+
+    @abstractmethod
+    def get_limits(self):
+        pass
+
+    @abstractmethod
+    def set_limits(self):
+        pass
 
 
 class LinearAxis(Axis, Device):

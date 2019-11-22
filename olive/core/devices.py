@@ -26,7 +26,7 @@ class DeviceInfo(NamedTuple):
 
     def __repr__(self) -> str:
         if self.version:
-            return f"<{self.vendor}, {self.model}, Rev={self.version}, S/N={self.serial_number}>"
+            return f"<{self.vendor}, {self.model}, Ver={self.version}, S/N={self.serial_number}>"
         else:
             return f"<{self.vendor}, {self.model}, S/N={self.serial_number}>"
 
@@ -71,34 +71,73 @@ class Device(metaclass=DeviceType):
         Test open is used during enumeration, if mocking is supported, this can avoid full-scale device initialization. This function should be _self-contained_.
         """
 
-    @abstractmethod
     def open(self):
-        """
-        Open and register the device.
-        """
+        """Open the device and register with parent."""
+        if not self.is_opened:
+            # 1) open parent
+            try:
+                self.parent.open()
+            except AttributeError:
+                pass
+            # 2) open ourself
+            try:
+                self._open()
+            except NotImplementedError:
+                pass
+            # 3) cleanup children list
+            self._children = []
+        # 4) register ourself
         try:
             self.parent.register(self)
         except AttributeError:
             pass
 
-    def register(self, child):
-        self._children.append(child)
+    def _open(self):
+        """Concrete open operation."""
+        raise NotImplementedError
 
-    @abstractmethod
-    def close(self):
-        """
-        Close and unregister the device.
-        """
+    def close(self, force=False):
+        """Close the device and unregister with parent."""
+        if not self.is_opened:
+            return
+
+        if self.children:
+            logger.warning("there are still children active")
+            if not force:
+                return
+        # 4) unregister ourself
         try:
             self.parent.unregister(self)
         except AttributeError:
             pass
+        # 3) cleanup children list, ignored
+        # 2) close ourself
+        try:
+            self._close()
+        except NotImplementedError:
+            pass
+        # 1) close parent
+        try:
+            self.parent.close()
+        except AttributeError:
+            pass
+
+    def _close(self):
+        """Concrete close operation."""
+        raise NotImplementedError
+
+    def register(self, child):
+        self._children.append(child)
+        logger.debug(f'"{child.info}" registered')
 
     def unregister(self, child):
         try:
             self._children.remove(child)
+            logger.debug(f'"{child.info}" unregistered')
         except ValueError:
-            logger.error("child not in parent, please file an issue")
+            raise ValueError(
+                "children was prematurely removed from watch list, please file an issue"
+            )
 
     """
     Device properties.
@@ -144,11 +183,16 @@ class Device(metaclass=DeviceType):
 
     @property
     def children(self):
-        return self._children
+        return tuple(self._children)
 
     @property
     def driver(self):
         return self._driver
+
+    @property
+    @abstractmethod
+    def is_opened(self):
+        """Is the device opened?"""
 
     @property
     def parent(self) -> Device:

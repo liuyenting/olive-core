@@ -157,6 +157,10 @@ class Photodiode(PowerSensor):  # TODO extract common scheme to OphirSensor
             raise SyntaxError("unable to parse device info")
         return DeviceInfo(version=None, vendor="Ophir", model=name, serial_number=sn)
 
+    @property
+    def is_opened(self):
+        return self.parent.is_opened
+
     """
     Property accessors.
     """

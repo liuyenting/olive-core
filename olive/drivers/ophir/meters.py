@@ -86,6 +86,10 @@ class OphirMeter(SensorAdapter):
 
         return DeviceInfo(version=version, vendor="Ophir", model=name, serial_number=sn)
 
+    @property
+    def is_opened(self):
+        return self.handle.is_open
+
     """
     Property accessors.
     """
@@ -134,10 +138,9 @@ class Nova2(OphirMeter):
         self._set_full_duplex()
 
     def close(self):
-        if not self.children:
-            # no more children
-            self._save_configuration()
-            self.handle.close()
+        # no more children
+        self._save_configuration()
+        self.handle.close()
 
     ##
 
@@ -149,14 +152,6 @@ class Nova2(OphirMeter):
     # TODO power meter related operations
 
     ##
-
-    """
-    Property accessors.
-    """
-
-    """
-    Private helper functions and constants.
-    """
 
     def _get_lcd_scanlines(self):
         """Returns an 80-character, 40-byte hex string."""
