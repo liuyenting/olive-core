@@ -1,11 +1,11 @@
 from __future__ import annotations
 from abc import abstractmethod
-from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 import itertools
 import logging
 import multiprocessing as mp
 import tempfile
+import trio
 from typing import Tuple, NamedTuple
 
 from olive.core.utils import Graph, Singleton
@@ -64,24 +64,24 @@ class Device(metaclass=DeviceType):
     """
 
     @abstractmethod
-    def test_open(self):
+    async def test_open(self):
         """
         Test open the device.
 
         Test open is used during enumeration, if mocking is supported, this can avoid full-scale device initialization. This function should be _self-contained_.
         """
 
-    def open(self):
+    async def open(self):
         """Open the device and register with parent."""
         if not self.is_opened:
             # 1) open parent
             try:
-                self.parent.open()
+                await self.parent.open()
             except AttributeError:
                 pass
             # 2) open ourself
             try:
-                self._open()
+                await self._open()
             except NotImplementedError:
                 pass
             # 3) cleanup children list
@@ -92,11 +92,11 @@ class Device(metaclass=DeviceType):
         except AttributeError:
             pass
 
-    def _open(self):
+    async def _open(self):
         """Concrete open operation."""
         raise NotImplementedError
 
-    def close(self, force=False):
+    async def close(self, force=False):
         """Close the device and unregister with parent."""
         if not self.is_opened:
             return
@@ -113,16 +113,16 @@ class Device(metaclass=DeviceType):
         # 3) cleanup children list, ignored
         # 2) close ourself
         try:
-            self._close()
+            await self._close()
         except NotImplementedError:
             pass
         # 1) close parent
         try:
-            self.parent.close()
+            await self.parent.close()
         except AttributeError:
             pass
 
-    def _close(self):
+    async def _close(self):
         """Concrete close operation."""
         raise NotImplementedError
 
@@ -144,10 +144,10 @@ class Device(metaclass=DeviceType):
     """
 
     @abstractmethod
-    def enumerate_properties(self):
+    async def enumerate_properties(self):
         """Get properties supported by the device."""
 
-    def get_property(self, name):
+    async def get_property(self, name):
         """
         Get the value of device property.
 
@@ -158,7 +158,7 @@ class Device(metaclass=DeviceType):
         func = self._get_accessor("_get", name)
         return func()
 
-    def set_property(self, name, value):
+    async def set_property(self, name, value):
         """
         Set the value of device property.
 

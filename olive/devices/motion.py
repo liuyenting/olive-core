@@ -1,5 +1,7 @@
 from abc import abstractmethod
+import asyncio
 import logging
+import trio
 from typing import Union
 
 from olive.core import Device
@@ -61,37 +63,61 @@ class Galvo(Device):
 
 
 class Axis(Device):
+    ## position ##
     @abstractmethod
-    def home(self):
+    async def home(self):
         pass
 
     @abstractmethod
-    def get_position(self):
+    async def get_position(self):
         pass
 
     @abstractmethod
-    def set_absolute_position(self):
+    async def set_absolute_position(self, pos, blocking=True):
         pass
 
     @abstractmethod
-    def set_relative_position(self):
+    async def set_relative_position(self, pos, blocking=True):
+        pass
+
+    ## velocity ##
+    @abstractmethod
+    async def get_velocity(self):
         pass
 
     @abstractmethod
-    def stop(self):
+    async def set_velocity(self, vel):
         pass
 
-    ## constraints
+    ## acceleration ##
     @abstractmethod
-    def set_origin(self):
+    async def get_acceleration(self):
+        pass
+
+    @abstractmethod
+    async def set_acceleration(self, acc):
+        pass
+
+    ## constraints ##
+    @abstractmethod
+    async def set_origin(self):
         """Define current position as the origin."""
 
     @abstractmethod
-    def get_limits(self):
+    async def get_limits(self):
         pass
 
     @abstractmethod
-    def set_limits(self):
+    async def set_limits(self):
+        pass
+
+    ## utils ##
+    @abstractmethod
+    async def stop(self, emergency=False):
+        pass
+
+    @abstractmethod
+    async def wait(self):
         pass
 
 
@@ -110,5 +136,5 @@ class RotaryAxis(Axis, Device):
 
 class MotionController(Device):
     @abstractmethod
-    def enumerate_axes(self) -> Union[Axis]:
+    async def enumerate_axes(self) -> Union[Axis]:
         """Enumerate connected axes."""
