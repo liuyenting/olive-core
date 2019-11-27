@@ -65,7 +65,7 @@ class Galvo(Device):
 class Axis(Device):
     ## position ##
     @abstractmethod
-    async def home(self):
+    async def home(self, blocking=True):
         pass
 
     @abstractmethod
@@ -112,6 +112,10 @@ class Axis(Device):
         pass
 
     ## utils ##
+    @abstractmethod
+    async def calibrate(self):
+        pass
+
     @abstractmethod
     async def stop(self, emergency=False):
         pass

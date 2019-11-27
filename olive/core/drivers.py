@@ -55,6 +55,7 @@ class Driver(metaclass=DriverType):
             devices.extend(klass.__bases__)
         return tuple(set(devices) & set(Device.__subclasses__()))
 
+
 class DriverManager(metaclass=Singleton):
     """
     Driver bookkeeping.

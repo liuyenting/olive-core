@@ -8,6 +8,7 @@ from multiprocessing.sharedctypes import RawArray
 
 import numpy as np
 from psutil import virtual_memory
+import trio
 
 from olive.core import Device
 
@@ -41,56 +42,61 @@ class RingBuffer(object):
         self._frames = [RawArray(c_uint8, nbytes) for _ in range(nframes)]
 
         self._dirty, self._clean = deque(), deque()
+
+        self._read_index, self._write_index = 0, 0
+        self._is_full = False
+
         self.reset()
 
     ##
 
     def reset(self):
-        self._dirty.clear()
-        self._clean.clear()
-
-        for frame in self.frames:
-            self._clean.appendleft(frame)
-
-    def write(self, overwrite=False):
-        """
-        Request a frame to write in.
-        """
-        try:
-            frame = self._clean.pop()
-        except IndexError:
-            # no clean frame to pop
-            if overwrite:
-                frame = self._dirty.pop()
-            else:
-                raise IndexError("not enough internal buffer")
-        self._dirty.appendleft(frame)
-        return frame
-
-    def read(self):
-        """
-        Read a dirty frame.
-        """
-        try:
-            frame = self._dirty.pop()
-            self._clean.appendleft(frame)
-            return frame
-        except IndexError:
-            # no dirty frame to pop
-            return None
-
-    def empty(self):
-        return self.size() == 0
+        self._read_index, self._write_index = 0, 0
+        self._is_full = False
 
     def full(self):
-        return len(self._clean) == 0
+        return self._is_full
+
+    def empty(self):
+        return (not self.full()) and (self._read_index == self._write_index)
+
+    def write(self, frame=None, overwrite=False):
+        if self.full() and (not overwrite):
+            raise IndexError("not enough internal buffer")
+        if frame is not None:
+            self.frames[self._write_index][:] = frame
+
+        # retreate index
+        self._is_full = False
+        self._write_index = (self._write_index + 1) % self.capacity()
+
+    def read(self):
+        if self.empty():
+            return None
+        logger.debug(f"read from {self._read_index}")
+        frame = self.frames[self._read_index]
+
+        # advance index
+        if self.full():
+            self._write_index = (self._write_index + 1) % self.capacity()
+        self._read_index = (self._read_index + 1) % self.capacity()
+        self._is_full = self._read_index == self._write_index
+
+        return frame
 
     def capacity(self):
         """Returns the maximum capacity of the buffer."""
         return len(self.frames)
 
     def size(self):
-        return len(self._dirty)
+        if self.full():
+            return self.capacity()
+        else:
+            size = self._read_index - self._write_index
+            if size < 0:
+                return self.capacity() + size
+            else:
+                return size
 
     ##
 
@@ -128,27 +134,36 @@ class Camera(Device):
     High level
     """
 
-    def snap(self, out=None):
+    async def snap(self, out=None):
         """Capture a single image."""
-        self.configure_acquisition(1)
+        await self.configure_acquisition(1)
 
         self.start_acquisition()
-        out = self.get_image(out=out)
+        out = await self.get_image(out=out)
         self.stop_acquisition()
 
-        self.unconfigure_acquisition()
+        await self.unconfigure_acquisition()
 
         return out
 
-    def configure_grab(self):
+    async def configure_grab(self):
         pass
 
-    def grab(self):
+    async def grab(self):
         """Perform an acquisition that loops continuously."""
+        await self.configure_acquisition(100, continuous=True)
 
-    def sequence(self, frames):
+        self.start_acquisition()
+        with trio.CancelScope():
+            while True:
+                yield await self.get_image(mode=BufferRetrieveMode.Latest, copy=False)
+        self.stop_acquisition()
+
+        await self.unconfigure_acquisition()
+
+    async def sequence(self, frames):
         """Acquire a specified number of images and then stops."""
-        self.configure_acquisition(frames)
+        await self.configure_acquisition(frames)
 
         # prepare the buffer
         if isinstance(frames, np.ndarray):
@@ -161,27 +176,25 @@ class Camera(Device):
 
         self.start_acquisition()
         for i in range(n_frames):
-            yield self.get_image(out=frames[i, ...])
+            yield await self.get_image(mode=BufferRetrieveMode.Next, out=frames[i, ...])
         self.stop_acquisition()
 
-        self.unconfigure_acquisition()
-
-        return frames
+        await self.unconfigure_acquisition()
 
     """
     Low level
     """
 
-    def configure_acquisition(self, n_frames, continuous=False):
-        self.configure_ring(n_frames)
+    async def configure_acquisition(self, n_frames, continuous=False):
+        await self.configure_ring(n_frames)
 
         # continuous when
         #   - specified explicitly
         #   - limited buffer
         self._continous = continuous or (n_frames != len(self.buffer.frames))
 
-    def configure_ring(self, n_frames):
-        (_, shape), dtype = self.get_roi(), self.get_dtype()
+    async def configure_ring(self, n_frames):
+        (_, shape), dtype = await self.get_roi(), await self.get_dtype()
 
         ny, nx = shape
         nbytes = (nx * ny) * np.dtype(dtype).itemsize
@@ -198,7 +211,9 @@ class Camera(Device):
     def start_acquisition(self):
         """Starts an acquisition."""
 
-    def get_image(self, index=None, copy=True, out=None):
+    async def get_image(
+        self, mode: BufferRetrieveMode = BufferRetrieveMode.Next, copy=True, out=None
+    ):
         """
         Acquire specified frame.
 
@@ -206,7 +221,7 @@ class Camera(Device):
             TBA
         """
         # reinterpret as a numpy array
-        frame = self._get_image_data()
+        frame = await self._get_image_data(mode)
 
         # store the value
         if out is None:
@@ -215,20 +230,20 @@ class Camera(Device):
             out[:] = frame[:]
         return out
 
-    def _get_image_data(self):
+    async def _get_image_data(self, mode: BufferRetrieveMode = BufferRetrieveMode.Next):
         """Retrieve a frame from the host-side ring buffer WITHOUT making a copy."""
-        frame = self._extract_frame()
+        frame = await self._extract_frame(mode)
         return np.frombuffer(frame, dtype=self.buffer.dtype).reshape(self.buffer.shape)
 
     @abstractmethod
-    def _extract_frame(self, mode: BufferRetrieveMode = BufferRetrieveMode.Next):
-        """Retrieve new frame data from the camera."""
+    async def _extract_frame(self, mode: BufferRetrieveMode):
+        """Retrieve raw frame data from the camera."""
 
     @abstractmethod
     def stop_acquisition(self):
         """Stops an acquistion."""
 
-    def unconfigure_acquisition(self):
+    async def unconfigure_acquisition(self):
         """Release resources used in the acquisition."""
         self._buffer = None
         logger.debug("buffer UNREFERENCED")
@@ -238,15 +253,15 @@ class Camera(Device):
     """
 
     @abstractmethod
-    def get_dtype(self):
+    async def get_dtype(self):
         pass
 
     @abstractmethod
-    def get_exposure_time(self):
+    async def get_exposure_time(self):
         pass
 
     @abstractmethod
-    def set_exposure_time(self, value):
+    async def set_exposure_time(self, value):
         pass
 
     def get_max_memory_size(self):
@@ -259,15 +274,15 @@ class Camera(Device):
         self._max_memory_size = max_memory_size
 
     @abstractmethod
-    def get_max_roi_shape(self):
+    async def get_max_roi_shape(self):
         pass
 
     @abstractmethod
-    def get_roi(self):
+    async def get_roi(self):
         """Set region of interest."""
 
     @abstractmethod
-    def set_roi(self, pos0=None, shape=None):
+    async def set_roi(self, pos0=None, shape=None):
         """
         Set region of interest.
 
