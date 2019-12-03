@@ -14,21 +14,22 @@ __all__ = ["Device", "DeviceInfo", "DeviceManager", "DeviceType"]
 
 logger = logging.getLogger(__name__)
 
-#: default thread pool uses 5 times the number of cores
-MAX_WORKERS = mp.cpu_count() * 2
-
 
 class DeviceInfo(NamedTuple):
-    version: str
-    vendor: str
-    model: str
-    serial_number: str
+    version: str = ""
+    vendor: str = ""
+    model: str = ""
+    serial_number: str = ""
 
     def __repr__(self) -> str:
-        if self.version:
-            return f"<{self.vendor}, {self.model}, Ver={self.version}, S/N={self.serial_number}>"
-        else:
-            return f"<{self.vendor}, {self.model}, S/N={self.serial_number}>"
+        tokens = [
+            ("", self.vendor),
+            ("", self.model),
+            ("version=", self.version),
+            ("s/n=", self.serial_number),
+        ]
+        tokens[:] = [f"{name}{value}" for name, value in tokens if len(value) > 0]
+        return f"<{', '.join(tokens)}>"
 
 
 class DeviceType(type):
@@ -50,25 +51,19 @@ class Device(metaclass=DeviceType):
     """
 
     @abstractmethod
-    def __init__(self, driver, parent: Device = None, timeout=None):
+    def __init__(self, driver, parent: Device = None):
         """Abstract __init__ to prevent instantiation."""
         self._driver = driver
         self._parent, self._children = parent, []
 
-        self._timeout = timeout
-
-        self._executor = ThreadPoolExecutor(max_workers=1)
-
-    """
-    Device initialization.
-    """
+    ##
 
     @abstractmethod
     async def test_open(self):
         """
         Test open the device.
 
-        Test open is used during enumeration, if mocking is supported, this can avoid full-scale device initialization. This function should be _self-contained_.
+        Test open is used during enumeration, if mocking is supported, this can avoid full-scale device initialization.
         """
 
     async def open(self):
@@ -139,15 +134,13 @@ class Device(metaclass=DeviceType):
                 "children was prematurely removed from watch list, please file an issue"
             )
 
-    """
-    Device properties.
-    """
+    ##
 
     @abstractmethod
     async def enumerate_properties(self):
         """Get properties supported by the device."""
 
-    async def get_property(self, name):
+    def get_property(self, name):
         """
         Get the value of device property.
 
@@ -155,31 +148,32 @@ class Device(metaclass=DeviceType):
             name (str): documented property name
             value : new value of the specified property
         """
-        func = self._get_accessor("_get", name)
-        return func()
+        try:
+            func = self._get_accessor("_get", name)
+            return func()
+        except AttributeError:
+            return self.parent.get_property(name)
 
-    async def set_property(self, name, value):
+    def set_property(self, name, value):
         """
         Set the value of device property.
 
         Args:
             name (str): documented property name
         """
-        func = self._get_accessor("_set", name)
-        func(value)
+        try:
+            func = self._get_accessor("_set", name)
+            func(value)
+        except AttributeError:
+            self.parent.set_property(name, value)
 
     def _get_accessor(self, prefix, name):
         try:
             return getattr(self, f"{prefix}_{name}")
         except AttributeError:
-            try:
-                return getattr(self.parent, f"{prefix}_{name}")
-            except AttributeError:
-                raise AttributeError(f'unknown property "{name}"')
+            raise AttributeError(f'unknown property "{name}"')
 
-    """
-    Driver-device associations.
-    """
+    ##
 
     @property
     def children(self):
@@ -190,36 +184,23 @@ class Device(metaclass=DeviceType):
         return self._driver
 
     @property
-    @abstractmethod
+    def info(self)-> DeviceInfo:
+        """Return device info."""
+        raise NotImplementedError
+
+    @property
+    def is_busy(self) -> bool:
+        """Is device busy?"""
+        raise NotImplementedError
+
+    @property
     def is_opened(self):
         """Is the device opened?"""
+        raise NotImplementedError
 
     @property
     def parent(self) -> Device:
         return self._parent
-
-    """
-    Exceution.
-    """
-
-    @property
-    @abstractmethod
-    def busy(self) -> bool:
-        """Is device busy?"""
-
-    @property
-    def executor(self):
-        return self._executor
-
-    @property
-    @abstractmethod
-    def info(self) -> DeviceInfo:
-        """Return device info."""
-
-    @property
-    def timeout(self):
-        """Device timeout in milliseconds."""
-        return self._timeout
 
 
 class DeviceManager(metaclass=Singleton):

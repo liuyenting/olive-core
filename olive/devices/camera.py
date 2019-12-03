@@ -41,8 +41,6 @@ class RingBuffer(object):
         nbytes = (nx * ny) * np.dtype(dtype).itemsize
         self._frames = [RawArray(c_uint8, nbytes) for _ in range(nframes)]
 
-        self._dirty, self._clean = deque(), deque()
-
         self._read_index, self._write_index = 0, 0
         self._is_full = False
 
@@ -66,21 +64,16 @@ class RingBuffer(object):
         if frame is not None:
             self.frames[self._write_index][:] = frame
 
-        # retreate index
-        self._is_full = False
         self._write_index = (self._write_index + 1) % self.capacity()
+        self._is_full = self._read_index == self._write_index
 
     def read(self):
         if self.empty():
             return None
-        logger.debug(f"read from {self._read_index}")
         frame = self.frames[self._read_index]
 
-        # advance index
-        if self.full():
-            self._write_index = (self._write_index + 1) % self.capacity()
         self._read_index = (self._read_index + 1) % self.capacity()
-        self._is_full = self._read_index == self._write_index
+        self._is_full = False
 
         return frame
 
@@ -186,6 +179,7 @@ class Camera(Device):
     """
 
     async def configure_acquisition(self, n_frames, continuous=False):
+        print(f"CONFIGURE_ACQUISITION: n_frames: {n_frames}")
         await self.configure_ring(n_frames)
 
         # continuous when
@@ -194,7 +188,7 @@ class Camera(Device):
         self._continous = continuous or (n_frames != len(self.buffer.frames))
 
     async def configure_ring(self, n_frames):
-        (_, shape), dtype = await self.get_roi(), await self.get_dtype()
+        (_, shape), dtype = self.get_roi(), self.get_dtype()
 
         ny, nx = shape
         nbytes = (nx * ny) * np.dtype(dtype).itemsize
@@ -253,15 +247,15 @@ class Camera(Device):
     """
 
     @abstractmethod
-    async def get_dtype(self):
+    def get_dtype(self):
         pass
 
     @abstractmethod
-    async def get_exposure_time(self):
+    def get_exposure_time(self):
         pass
 
     @abstractmethod
-    async def set_exposure_time(self, value):
+    def set_exposure_time(self, value):
         pass
 
     def get_max_memory_size(self):
@@ -274,15 +268,15 @@ class Camera(Device):
         self._max_memory_size = max_memory_size
 
     @abstractmethod
-    async def get_max_roi_shape(self):
+    def get_max_roi_shape(self):
         pass
 
     @abstractmethod
-    async def get_roi(self):
+    def get_roi(self):
         """Set region of interest."""
 
     @abstractmethod
-    async def set_roi(self, pos0=None, shape=None):
+    def set_roi(self, pos0=None, shape=None):
         """
         Set region of interest.
 

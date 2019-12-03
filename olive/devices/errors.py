@@ -2,6 +2,14 @@ class DeviceError(Exception):
     """Base class."""
 
 
+class OutOfRangeError(DeviceError, ValueError):
+    """Parameter out-of-range."""
+
+
+class UnknownCommandError(DeviceError, SyntaxError):
+    """Unknown command."""
+
+
 class UnsupportedDeviceError(DeviceError):
     """Device not supported by current driver."""
 
