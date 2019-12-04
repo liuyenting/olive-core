@@ -58,11 +58,10 @@ class RingBuffer(object):
     def empty(self):
         return (not self.full()) and (self._read_index == self._write_index)
 
-    def write(self, frame=None, overwrite=False):
-        if self.full() and (not overwrite):
+    def write(self, frame):
+        if self.full():
             raise IndexError("not enough internal buffer")
-        if frame is not None:
-            self.frames[self._write_index][:] = frame
+        self.frames[self._write_index][:] = frame
 
         self._write_index = (self._write_index + 1) % self.capacity()
         self._is_full = self._read_index == self._write_index
@@ -129,7 +128,8 @@ class Camera(Device):
 
     async def snap(self, out=None):
         """Capture a single image."""
-        await self.configure_acquisition(1)
+        # NOTE ring buffer requires minimally of 2 frames
+        await self.configure_acquisition(2)
 
         self.start_acquisition()
         out = await self.get_image(out=out)
@@ -139,11 +139,9 @@ class Camera(Device):
 
         return out
 
-    async def configure_grab(self):
-        pass
-
     async def grab(self):
         """Perform an acquisition that loops continuously."""
+        # TODO probe the system for optimal size
         await self.configure_acquisition(100, continuous=True)
 
         self.start_acquisition()
@@ -179,7 +177,6 @@ class Camera(Device):
     """
 
     async def configure_acquisition(self, n_frames, continuous=False):
-        print(f"CONFIGURE_ACQUISITION: n_frames: {n_frames}")
         await self.configure_ring(n_frames)
 
         # continuous when
