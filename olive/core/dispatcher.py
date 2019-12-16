@@ -1,4 +1,3 @@
-import asyncio
 import logging
 
 from olive.core import DeviceManager
@@ -21,8 +20,6 @@ class Dispatcher(object):
 
     def initialize(self):
         """Initialize all the devices."""
-        loop = asyncio.get_event_loop()
-
         # TODO
 
     def shutdown(self):

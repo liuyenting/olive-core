@@ -40,6 +40,30 @@ class HardwareSequencer(SoftwareSequencer):
         Therefore, it is a subset of the SoftwareSequencer.
     """
 
+    class GPIO(object):
+        pass
+
+    class DigitalIO(GPIO):
+        pass
+
+    class DigitalInput(DigitalIO):
+        pass
+
+    class DigitalOutput(DigitalIO):
+        pass
+
+    class AnalogIO(GPIO):
+        pass
+
+    class AnalogInput(AnalogIO):
+        pass
+
+    class AnalogOutput(AnalogIO):
+        pass
+
+    class PatternBuffer(object):
+        pass
+
     @abstractmethod
     def __init__(self):
         super().__init__()

@@ -1,5 +1,4 @@
 from abc import abstractmethod
-from collections import deque
 from ctypes import c_uint8
 from enum import auto, Enum
 import logging
@@ -22,7 +21,7 @@ class BufferRetrieveMode(Enum):
     Next = auto()  # return next valid frame
 
 
-class RingBuffer(object):
+class FrameBuffer(object):
     """
     Buffer that mimics SimpleQueue object.
 
@@ -196,7 +195,7 @@ class Camera(Device):
             logger.warning(
                 f"exceeds memory limit ({available_size} bytes), coerce to {n_frames} frames"
             )
-        self._buffer = RingBuffer(shape, dtype, n_frames)
+        self._buffer = FrameBuffer(shape, dtype, n_frames)
 
     @abstractmethod
     def start_acquisition(self):

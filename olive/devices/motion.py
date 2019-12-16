@@ -1,12 +1,11 @@
 from abc import abstractmethod
-import asyncio
+from enum import auto, Enum
 import logging
-import trio
 from typing import Union
 
 from olive.core import Device
 
-__all__ = ["Galvo", "LinearAxis", "RotaryAxis", "MotionController"]
+__all__ = ["Galvo", "LimitStatus", "LinearAxis", "RotaryAxis", "MotionController"]
 
 logger = logging.getLogger(__name__)
 
@@ -62,53 +61,67 @@ class Galvo(Device):
         pass
 
 
+class LimitStatus(Enum):
+    WithinRange = auto()
+    UpperLimit = auto()
+    LowerLimit = auto()
+
+
 class Axis(Device):
     ## position ##
     @abstractmethod
-    async def home(self, blocking=True):
+    async def go_home(self, blocking=True):
         pass
 
     @abstractmethod
-    async def get_position(self):
+    def get_position(self):
         pass
 
     @abstractmethod
-    async def set_absolute_position(self, pos, blocking=True):
+    async def move_absolute(self, pos, blocking=True):
         pass
 
     @abstractmethod
-    async def set_relative_position(self, pos, blocking=True):
+    async def move_relative(self, pos, blocking=True):
+        pass
+
+    @abstractmethod
+    def move_continuous(self, vel):
         pass
 
     ## velocity ##
     @abstractmethod
-    async def get_velocity(self):
+    def get_velocity(self):
         pass
 
     @abstractmethod
-    async def set_velocity(self, vel):
+    def set_velocity(self, vel):
         pass
 
     ## acceleration ##
     @abstractmethod
-    async def get_acceleration(self):
+    def get_acceleration(self):
         pass
 
     @abstractmethod
-    async def set_acceleration(self, acc):
+    def set_acceleration(self, acc):
         pass
 
     ## constraints ##
     @abstractmethod
-    async def set_origin(self):
+    def set_origin(self):
         """Define current position as the origin."""
 
     @abstractmethod
-    async def get_limits(self):
+    def get_limits(self):
         pass
 
     @abstractmethod
-    async def set_limits(self):
+    def get_limit_status(self) -> LimitStatus:
+        pass
+
+    @abstractmethod
+    def set_limits(self):
         pass
 
     ## utils ##
@@ -117,7 +130,7 @@ class Axis(Device):
         pass
 
     @abstractmethod
-    async def stop(self, emergency=False):
+    def stop(self, emergency=False):
         pass
 
     @abstractmethod
