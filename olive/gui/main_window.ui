@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1360</width>
+    <height>871</height>
+   </rect>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true"/>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QGridLayout" name="main_grid">
+    <property name="leftMargin">
+     <number>0</number>
+    </property>
+    <property name="topMargin">
+     <number>0</number>
+    </property>
+    <property name="rightMargin">
+     <number>0</number>
+    </property>
+    <property name="bottomMargin">
+     <number>0</number>
+    </property>
+    <property name="spacing">
+     <number>0</number>
+    </property>
+    <item row="0" column="0">
+     <widget class="QSplitter" name="main_splitter">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+      <widget class="QFrame" name="controls">
+       <property name="frameShape">
+        <enum>QFrame::StyledPanel</enum>
+       </property>
+       <property name="frameShadow">
+        <enum>QFrame::Raised</enum>
+       </property>
+       <layout class="QGridLayout" name="control_grid">
+        <property name="leftMargin">
+         <number>0</number>
+        </property>
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <property name="rightMargin">
+         <number>0</number>
+        </property>
+        <property name="bottomMargin">
+         <number>0</number>
+        </property>
+        <property name="spacing">
+         <number>0</number>
+        </property>
+        <item row="1" column="0">
+         <widget class="QSplitter" name="controls_splitter">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <widget class="QTabWidget" name="managers">
+           <property name="currentIndex">
+            <number>2</number>
+           </property>
+           <property name="iconSize">
+            <size>
+             <width>36</width>
+             <height>36</height>
+            </size>
+           </property>
+           <widget class="QWidget" name="device_hub">
+            <attribute name="icon">
+             <iconset resource="resources/resources.qrc">
+              <normaloff>:/main_window/device_hub</normaloff>:/main_window/device_hub</iconset>
+            </attribute>
+            <attribute name="title">
+             <string/>
+            </attribute>
+            <attribute name="toolTip">
+             <string>Device Hub</string>
+            </attribute>
+           </widget>
+           <widget class="QWidget" name="channel_manager">
+            <attribute name="icon">
+             <iconset resource="resources/resources.qrc">
+              <normaloff>:/main_window/channel_manager</normaloff>:/main_window/channel_manager</iconset>
+            </attribute>
+            <attribute name="title">
+             <string/>
+            </attribute>
+            <attribute name="toolTip">
+             <string>Channel Manager</string>
+            </attribute>
+           </widget>
+           <widget class="QWidget" name="managers">
+            <attribute name="icon">
+             <iconset resource="resources/resources.qrc">
+              <normaloff>:/main_window/problems</normaloff>:/main_window/problems</iconset>
+            </attribute>
+            <attribute name="title">
+             <string/>
+            </attribute>
+            <attribute name="toolTip">
+             <string>Problems</string>
+            </attribute>
+            <widget class="QListView" name="listView">
+             <property name="geometry">
+              <rect>
+               <x>110</x>
+               <y>140</y>
+               <width>256</width>
+               <height>192</height>
+              </rect>
+             </property>
+            </widget>
+            <widget class="QFrame" name="frame">
+             <property name="geometry">
+              <rect>
+               <x>130</x>
+               <y>430</y>
+               <width>120</width>
+               <height>80</height>
+              </rect>
+             </property>
+             <property name="frameShape">
+              <enum>QFrame::StyledPanel</enum>
+             </property>
+             <property name="frameShadow">
+              <enum>QFrame::Raised</enum>
+             </property>
+            </widget>
+            <widget class="QWidget" name="gridLayoutWidget">
+             <property name="geometry">
+              <rect>
+               <x>180</x>
+               <y>40</y>
+               <width>160</width>
+               <height>80</height>
+              </rect>
+             </property>
+             <layout class="QGridLayout" name="gridLayout"/>
+            </widget>
+           </widget>
+          </widget>
+          <widget class="QWidget" name="acquisition_control" native="true">
+           <property name="styleSheet">
+            <string notr="true">background-color: rgb(170, 170, 255);</string>
+           </property>
+          </widget>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="viewer" native="true"/>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <action name="actionnew">
+   <property name="text">
+    <string>new</string>
+   </property>
+  </action>
+  <action name="actionnew2">
+   <property name="text">
+    <string>new2</string>
+   </property>
+  </action>
+ </widget>
+ <tabstops>
+  <tabstop>managers</tabstop>
+ </tabstops>
+ <resources>
+  <include location="resources/resources.qrc"/>
+ </resources>
+ <connections/>
+</ui>

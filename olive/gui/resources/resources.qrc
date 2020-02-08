@@ -1,0 +1,11 @@
+<RCC>
+  <qresource prefix="acquisition_control">
+    <file alias="stop">icons/stop.svg</file>
+    <file alias="pause">icons/pause.svg</file>
+  </qresource>
+  <qresource prefix="main_window">
+    <file alias="problems">icons/report_problem.svg</file>
+    <file alias="channel_manager">icons/color_lens.svg</file>
+    <file alias="device_hub">icons/device_hub.svg</file>
+  </qresource>
+</RCC>
