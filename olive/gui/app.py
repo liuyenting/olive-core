@@ -2,20 +2,13 @@ import logging
 import sys
 
 import qdarkstyle
-from qtpy.QtWidgets import QApplication, QMainWindow
+from qtpy.QtWidgets import QApplication
 
-from .main_window import Ui_MainWindow
+from .mainwindow import MainWindow
 
 __all__ = []
 
 logger = logging.getLogger(__name__)
-
-
-class MainWindow(QMainWindow):
-    def __init__(self):
-        super().__init__()
-        self.ui = Ui_MainWindow()
-        self.ui.setupUi(self)
 
 
 def launch():
