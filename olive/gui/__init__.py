@@ -1,1 +1,1 @@
-from .mainwindow import MainWindow
+from .app import launch

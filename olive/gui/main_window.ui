@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1360</width>
-    <height>871</height>
+    <width>608</width>
+    <height>560</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -23,7 +23,10 @@
    <string notr="true"/>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QGridLayout" name="main_grid">
+   <layout class="QHBoxLayout" name="central_widget_layout">
+    <property name="spacing">
+     <number>0</number>
+    </property>
     <property name="leftMargin">
      <number>0</number>
     </property>
@@ -36,154 +39,188 @@
     <property name="bottomMargin">
      <number>0</number>
     </property>
-    <property name="spacing">
-     <number>0</number>
-    </property>
-    <item row="0" column="0">
-     <widget class="QSplitter" name="main_splitter">
-      <property name="orientation">
-       <enum>Qt::Horizontal</enum>
+    <item>
+     <widget class="QFrame" name="portal">
+      <property name="lineWidth">
+       <number>0</number>
       </property>
-      <widget class="QFrame" name="controls">
-       <property name="frameShape">
-        <enum>QFrame::StyledPanel</enum>
-       </property>
-       <property name="frameShadow">
-        <enum>QFrame::Raised</enum>
-       </property>
-       <layout class="QGridLayout" name="control_grid">
-        <property name="leftMargin">
-         <number>0</number>
-        </property>
-        <property name="topMargin">
-         <number>0</number>
-        </property>
-        <property name="rightMargin">
-         <number>0</number>
-        </property>
-        <property name="bottomMargin">
-         <number>0</number>
-        </property>
-        <property name="spacing">
-         <number>0</number>
-        </property>
-        <item row="1" column="0">
-         <widget class="QSplitter" name="controls_splitter">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-          <widget class="QTabWidget" name="managers">
-           <property name="currentIndex">
-            <number>2</number>
-           </property>
-           <property name="iconSize">
-            <size>
-             <width>36</width>
-             <height>36</height>
-            </size>
-           </property>
-           <widget class="QWidget" name="device_hub">
-            <attribute name="icon">
-             <iconset resource="resources/resources.qrc">
-              <normaloff>:/main_window/device_hub</normaloff>:/main_window/device_hub</iconset>
-            </attribute>
-            <attribute name="title">
-             <string/>
-            </attribute>
-            <attribute name="toolTip">
-             <string>Device Hub</string>
-            </attribute>
-           </widget>
-           <widget class="QWidget" name="channel_manager">
-            <attribute name="icon">
-             <iconset resource="resources/resources.qrc">
-              <normaloff>:/main_window/channel_manager</normaloff>:/main_window/channel_manager</iconset>
-            </attribute>
-            <attribute name="title">
-             <string/>
-            </attribute>
-            <attribute name="toolTip">
-             <string>Channel Manager</string>
-            </attribute>
-           </widget>
-           <widget class="QWidget" name="managers">
-            <attribute name="icon">
-             <iconset resource="resources/resources.qrc">
-              <normaloff>:/main_window/problems</normaloff>:/main_window/problems</iconset>
-            </attribute>
-            <attribute name="title">
-             <string/>
-            </attribute>
-            <attribute name="toolTip">
-             <string>Problems</string>
-            </attribute>
-            <widget class="QListView" name="listView">
-             <property name="geometry">
-              <rect>
-               <x>110</x>
-               <y>140</y>
-               <width>256</width>
-               <height>192</height>
-              </rect>
-             </property>
-            </widget>
-            <widget class="QFrame" name="frame">
-             <property name="geometry">
-              <rect>
-               <x>130</x>
-               <y>430</y>
-               <width>120</width>
-               <height>80</height>
-              </rect>
-             </property>
-             <property name="frameShape">
-              <enum>QFrame::StyledPanel</enum>
-             </property>
-             <property name="frameShadow">
-              <enum>QFrame::Raised</enum>
-             </property>
-            </widget>
-            <widget class="QWidget" name="gridLayoutWidget">
-             <property name="geometry">
-              <rect>
-               <x>180</x>
-               <y>40</y>
-               <width>160</width>
-               <height>80</height>
-              </rect>
-             </property>
-             <layout class="QGridLayout" name="gridLayout"/>
-            </widget>
-           </widget>
-          </widget>
-          <widget class="QWidget" name="acquisition_control" native="true">
-           <property name="styleSheet">
-            <string notr="true">background-color: rgb(170, 170, 255);</string>
-           </property>
-          </widget>
-         </widget>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="viewer" native="true"/>
+      <layout class="QVBoxLayout" name="portal_buttons_layout">
+       <item>
+        <widget class="QToolButton" name="device_hub">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>Device Hub</string>
+         </property>
+         <property name="icon">
+          <iconset resource="resources/resources.qrc">
+           <normaloff>:/main_window/device_hub</normaloff>:/main_window/device_hub</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>48</width>
+           <height>48</height>
+          </size>
+         </property>
+         <property name="toolButtonStyle">
+          <enum>Qt::ToolButtonTextUnderIcon</enum>
+         </property>
+         <property name="autoRaise">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="protocol_editor">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>Protocol
+Editor</string>
+         </property>
+         <property name="icon">
+          <iconset resource="resources/resources.qrc">
+           <normaloff>:/main_window/protocol_editor</normaloff>:/main_window/protocol_editor</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>48</width>
+           <height>48</height>
+          </size>
+         </property>
+         <property name="toolButtonStyle">
+          <enum>Qt::ToolButtonTextUnderIcon</enum>
+         </property>
+         <property name="autoRaise">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="acquisition">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>Acquisition</string>
+         </property>
+         <property name="icon">
+          <iconset resource="resources/resources.qrc">
+           <normaloff>:/main_window/acquisition</normaloff>:/main_window/acquisition</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>48</width>
+           <height>48</height>
+          </size>
+         </property>
+         <property name="toolButtonStyle">
+          <enum>Qt::ToolButtonTextUnderIcon</enum>
+         </property>
+         <property name="autoRaise">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="vertical_spacer">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item>
+        <widget class="QToolButton" name="problems">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>Problems</string>
+         </property>
+         <property name="icon">
+          <iconset resource="resources/resources.qrc">
+           <normaloff>:/main_window/problems</normaloff>:/main_window/problems</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>48</width>
+           <height>48</height>
+          </size>
+         </property>
+         <property name="toolButtonStyle">
+          <enum>Qt::ToolButtonTextUnderIcon</enum>
+         </property>
+         <property name="autoRaise">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="exit">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>Exit</string>
+         </property>
+         <property name="icon">
+          <iconset resource="resources/resources.qrc">
+           <normaloff>:/main_window/exit</normaloff>:/main_window/exit</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>48</width>
+           <height>48</height>
+          </size>
+         </property>
+         <property name="toolButtonStyle">
+          <enum>Qt::ToolButtonTextUnderIcon</enum>
+         </property>
+         <property name="autoRaise">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item>
+     <widget class="QStackedWidget" name="workspace">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+        <horstretch>1</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <widget class="QWidget" name="page"/>
      </widget>
     </item>
    </layout>
   </widget>
-  <action name="actionnew">
-   <property name="text">
-    <string>new</string>
-   </property>
-  </action>
-  <action name="actionnew2">
-   <property name="text">
-    <string>new2</string>
-   </property>
-  </action>
  </widget>
- <tabstops>
-  <tabstop>managers</tabstop>
- </tabstops>
  <resources>
   <include location="resources/resources.qrc"/>
  </resources>
