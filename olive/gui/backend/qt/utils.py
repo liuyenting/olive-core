@@ -1,6 +1,7 @@
 from qtpy.uic import loadUi
 
-from . import resources_rc
+# mandatory import for uic files, early cached
+from . import resources_rc  # noqa
 
 __all__ = ["load_ui_file"]
 

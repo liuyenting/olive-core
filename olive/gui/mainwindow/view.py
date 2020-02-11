@@ -1,21 +1,16 @@
+from abc import ABC, abstractmethod
 import logging
-import os
 
-from qtpy.QtWidgets import QMainWindow
+from ..base import ViewBase
+from .presenter import Portal
 
-from ..utils import load_ui_file
-
-__all__ = ["MainWindow"]
+__all__ = ["MainWindowView"]
 
 logger = logging.getLogger(__name__)
 
 
-class MainWindowBase(object):
-    pass
+class MainWindowView(ViewBase):
+    @abstractmethod
+    def set_change_workspace(self, portal: Portal):
+        pass
 
-
-class MainWindow(MainWindowBase, QMainWindow):
-    def __init__(self):
-        super().__init__()
-        path = os.path.join(os.path.dirname(__file__), "view.ui")
-        load_ui_file(path, self)

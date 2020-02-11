@@ -4,7 +4,7 @@ import sys
 import qdarkstyle
 from qtpy.QtWidgets import QApplication
 
-from .mainwindow import MainWindow
+from olive.gui.backend.qt import mainwindow
 
 __all__ = []
 
@@ -15,7 +15,7 @@ def launch():
     app = QApplication(sys.argv)
     app.setStyleSheet(qdarkstyle.load_stylesheet())
 
-    window = MainWindow()
-    window.show()
+    v = mainwindow.MainWindowView()
+    p = mainwindow.MainWindowPresenter(v)
 
     sys.exit(app.exec_())
