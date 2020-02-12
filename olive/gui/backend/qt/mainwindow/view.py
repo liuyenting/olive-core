@@ -17,16 +17,25 @@ class MainWindowView(_MainWindowView, QMainWindowViewBase):
         path = os.path.join(os.path.dirname(__file__), "view.ui")
         super().__init__(path)
 
-        self._register_workspace_widgets()
+        self._workspace_index_lut = dict()
 
     ##
 
-    def set_change_workspace(self, action):
+    def set_change_workspace_action(self, action):
         self.device_hub.clicked.connect(partial(action, Portal.DeviceHub))
         self.protocol_editor.clicked.connect(partial(action, Portal.ProtocolEditor))
         self.acquisition.clicked.connect(partial(action, Portal.Acquisition))
 
+    def set_workspace(self, portal: Portal, view):
+        index = self.workspace.addWidget(view)
+        assert (
+            portal not in self._workspace_index_lut
+        ), f'portal "{portal.name}" already assigned a workspace'
+        self._workspace_index_lut[portal] = index
+
     ##
 
-    def _register_workspace_widgets(self):
-        pass
+    def change_workspace(self, portal: Portal):
+        index = self._workspace_index_lut[portal]
+        self.workspace.setCurrentIndex(index)
+

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1138</width>
-    <height>665</height>
+    <width>1110</width>
+    <height>687</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -79,7 +79,7 @@
      <property name="frameShadow">
       <enum>QFrame::Raised</enum>
      </property>
-     <layout class="QGridLayout" name="viewer_layout">
+     <layout class="QGridLayout" name="viewer_main_layout">
       <property name="leftMargin">
        <number>0</number>
       </property>
@@ -96,7 +96,10 @@
        <number>0</number>
       </property>
       <item row="0" column="0">
-       <layout class="QHBoxLayout" name="viewer_layout_2">
+       <layout class="QHBoxLayout" name="viewer_layout">
+        <property name="spacing">
+         <number>0</number>
+        </property>
         <item>
          <widget class="QFrame" name="view_type">
           <property name="frameShape">
@@ -115,7 +118,7 @@
               <string/>
              </property>
              <property name="icon">
-              <iconset resource="resources/resources.qrc">
+              <iconset resource="../resources/resources.qrc">
                <normaloff>:/acquisition/2d</normaloff>:/acquisition/2d</iconset>
              </property>
              <property name="iconSize">
@@ -138,7 +141,7 @@
               <string/>
              </property>
              <property name="icon">
-              <iconset resource="resources/resources.qrc">
+              <iconset resource="../resources/resources.qrc">
                <normaloff>:/acquisition/2d</normaloff>:/acquisition/2d</iconset>
              </property>
              <property name="iconSize">
@@ -183,8 +186,26 @@
            <enum>QFrame::Raised</enum>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout">
+           <property name="leftMargin">
+            <number>0</number>
+           </property>
+           <property name="topMargin">
+            <number>0</number>
+           </property>
+           <property name="rightMargin">
+            <number>0</number>
+           </property>
+           <property name="bottomMargin">
+            <number>0</number>
+           </property>
            <item>
             <widget class="QWidget" name="canvas" native="true">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+               <horstretch>1</horstretch>
+               <verstretch>1</verstretch>
+              </sizepolicy>
+             </property>
              <property name="minimumSize">
               <size>
                <width>512</width>
@@ -194,12 +215,22 @@
             </widget>
            </item>
            <item>
-            <widget class="QFrame" name="navigation">
+            <widget class="QFrame" name="image_zoom">
              <property name="frameShape">
               <enum>QFrame::StyledPanel</enum>
              </property>
              <property name="frameShadow">
               <enum>QFrame::Raised</enum>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QListWidget" name="navigation">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
              </property>
             </widget>
            </item>
@@ -214,7 +245,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="resources/resources.qrc"/>
+  <include location="../resources/resources.qrc"/>
  </resources>
  <connections/>
 </ui>

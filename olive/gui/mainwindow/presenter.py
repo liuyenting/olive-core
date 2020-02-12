@@ -1,8 +1,10 @@
 import logging
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from enum import IntEnum, auto
 
+from ..acquisition import AcquisitionView
 from ..base import PresenterBase
+from .view import MainWindowView
 
 __all__ = ["MainWindowPresenter", "Portal"]
 
@@ -16,6 +18,16 @@ class Portal(IntEnum):
 
 
 class MainWindowPresenter(PresenterBase):
+    def __init__(self, view: MainWindowView):
+        super().__init__(view)
+
+    ##
+
+    def wire_connections(self):
+        self.view.set_change_workspace(self.on_change_workspace)
+
+    ##
+
     @abstractmethod
     def on_change_workspace(self, portal: Portal):
         pass
@@ -23,3 +35,4 @@ class MainWindowPresenter(PresenterBase):
     @abstractmethod
     def on_exit(self):
         pass
+
