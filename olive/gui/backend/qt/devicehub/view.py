@@ -13,4 +13,3 @@ class DeviceHubView(_DeviceHubView, QWidgetViewBase):
     def __init__(self):
         path = os.path.join(os.path.dirname(__file__), "view.ui")
         super().__init__(path)
-

@@ -29,7 +29,6 @@ class MainWindowView(_MainWindowView, QMainWindowViewBase):
 
     def add_workspace(self, view):
         index = self.workspace.addWidget(view)
-        logger.debug(f"new view with index {index}")
         return index
 
     ##

@@ -1,23 +1,19 @@
 from qtpy.QtWidgets import QMainWindow, QWidget
+from qtpy.uic import loadUi
 
-from olive.gui.base import ViewBase
+# mandatory import for uic files, early cached
+from . import resources_rc  # noqa
 
-from .utils import load_ui_file
-
-__all__ = ["QtViewBase", "QMainWindowViewBase", "QWidgetViewBase"]
+__all__ = ["QMainWindowViewBase", "QWidgetViewBase"]
 
 
-class QtViewBase(ViewBase):
+class QMainWindowViewBase(QMainWindow):
     def __init__(self, path):
         super().__init__()
-        load_ui_file(path, self)
+        loadUi(path, self)
 
 
-class QMainWindowViewBase(QtViewBase, QMainWindow):
+class QWidgetViewBase(QWidget):
     def __init__(self, path):
-        super().__init__(path)
-
-
-class QWidgetViewBase(QtViewBase, QWidget):
-    def __init__(self, path):
-        super().__init__(path)
+        super().__init__()
+        loadUi(path, self)

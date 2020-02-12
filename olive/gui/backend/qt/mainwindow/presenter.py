@@ -24,7 +24,7 @@ class MainWindowPresenter(_MainWindowPresenter):
     ##
 
     def on_exit(self):
-        logger.debug(f"mainwindow on_exit()")
+        logger.debug(f'mainwindow on_exit()')
         # TODO check system states
         self.view.close()
 

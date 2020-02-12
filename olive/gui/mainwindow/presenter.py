@@ -30,7 +30,7 @@ class MainWindowPresenter(PresenterBase):
 
     def on_change_workspace(self, portal: Portal):
         index = self._workspaces[portal][0]
-        logger.debug(f'switch to workspace "{portal.name}" (index:{index})')
+        logger.debug(f'switch to workspace "{portal.name}"')
         self.view.change_workspace(index)
 
     @abstractmethod
@@ -50,6 +50,6 @@ class MainWindowPresenter(PresenterBase):
     def _register_workspace(self, portal: Portal, presenter: PresenterBase):
         # register with the view
         index = self.view.add_workspace(presenter.view)
-        logger.debug(f"workspace {portal.name} registered (index:{index})")
+        logger.debug(f"{portal.name} assigned index {index}")
         # save presenter
         self._workspaces[portal] = (index, presenter)
