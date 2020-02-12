@@ -18,6 +18,6 @@ class QMainWindowViewBase(QtViewBase, QMainWindow):
         super().__init__(path)
 
 
-class QWidgetViewBase(ViewBase, QWidget):
+class QWidgetViewBase(QtViewBase, QWidget):
     def __init__(self, path):
         super().__init__(path)

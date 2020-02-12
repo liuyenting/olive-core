@@ -17,22 +17,20 @@ class MainWindowPresenter(_MainWindowPresenter):
         view = MainWindowView()
         super().__init__(view)
 
-        self.register_workspaces()
-
-        # this is the primary window, show it
         view.show()
 
     ##
 
-    def register_workspaces(self):
-        # self.view.set_workspace(Portal.DeviceHub, DeviceHubView)
-        # self.view.set_workspace(Portal.ProtocolEditor, ProtocolEditorView)
-        self.view.set_workspace(Portal.Acquisition, AcquisitionView)
+    ##
+
+    def on_exit(self):
+        logger.debug(f"mainwindow on_exit()")
+        # TODO check system states
+        self.view.close()
 
     ##
 
-    def on_change_workspace(self, portal: Portal):
-        logger.debug(f'change workspace to "{portal.name}"')
-
-    def on_exit(self):
-        pass
+    def _register_workspaces(self):
+        self._register_workspace(Portal.DeviceHub, DeviceHubPresenter())
+        # self.view.set_workspace(Portal.ProtocolEditor, ProtocolEditorView)
+        self._register_workspace(Portal.Acquisition, AcquisitionPresenter())

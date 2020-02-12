@@ -2,7 +2,6 @@ import logging
 from abc import abstractmethod
 from enum import IntEnum, auto
 
-from ..acquisition import AcquisitionView
 from ..base import PresenterBase
 from .view import MainWindowView
 
@@ -21,18 +20,36 @@ class MainWindowPresenter(PresenterBase):
     def __init__(self, view: MainWindowView):
         super().__init__(view)
 
+        # populate workspaces
+        self._workspaces = dict()
+        self._register_workspaces()
+
     ##
 
-    def wire_connections(self):
-        self.view.set_change_workspace(self.on_change_workspace)
-
     ##
 
-    @abstractmethod
     def on_change_workspace(self, portal: Portal):
-        pass
+        index = self._workspaces[portal][0]
+        logger.debug(f'switch to workspace "{portal.name}" (index:{index})')
+        self.view.change_workspace(index)
 
     @abstractmethod
     def on_exit(self):
         pass
 
+    ##
+
+    def _wire_connections(self):
+        self.view.set_change_workspace_action(self.on_change_workspace)
+        self.view.set_exit_action(self.on_exit)
+
+    @abstractmethod
+    def _register_workspaces(self):
+        pass
+
+    def _register_workspace(self, portal: Portal, presenter: PresenterBase):
+        # register with the view
+        index = self.view.add_workspace(presenter.view)
+        logger.debug(f"workspace {portal.name} registered (index:{index})")
+        # save presenter
+        self._workspaces[portal] = (index, presenter)

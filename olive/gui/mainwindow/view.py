@@ -2,7 +2,6 @@ from abc import abstractmethod
 import logging
 
 from ..base import ViewBase
-from .presenter import Portal
 
 __all__ = ["MainWindowView"]
 
@@ -15,12 +14,15 @@ class MainWindowView(ViewBase):
         pass
 
     @abstractmethod
-    def set_workspace(self, portal: Portal, view):
-        """Set portal/workspace association."""
+    def set_exit_action(self, action):
+        pass
+
+    @abstractmethod
+    def add_workspace(self, view):
         pass
 
     ##
 
     @abstractmethod
-    def change_workspace(self, portal: Portal):
+    def change_workspace(self, index):
         pass

@@ -15,7 +15,6 @@ def launch():
     app = QApplication(sys.argv)
     app.setStyleSheet(qdarkstyle.load_stylesheet())
 
-    v = mainwindow.MainWindowView()
-    p = mainwindow.MainWindowPresenter(v)
+    p = mainwindow.MainWindowPresenter()
 
     sys.exit(app.exec_())
