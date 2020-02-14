@@ -41,6 +41,9 @@
     </property>
     <item>
      <widget class="QFrame" name="portal">
+      <property name="styleSheet">
+       <string notr="true">#portal { border: 0px }</string>
+      </property>
       <layout class="QVBoxLayout" name="portal_buttons_layout">
        <property name="leftMargin">
         <number>3</number>

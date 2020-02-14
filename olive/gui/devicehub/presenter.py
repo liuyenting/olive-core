@@ -13,8 +13,13 @@ class DeviceHubPresenter(PresenterBase):
     def __init__(self, view: DeviceHubView):
         super().__init__(view)
 
-    def wire_connections(self):
-        pass
+    ##
+
+    def update()
+
 
     ##
+
+    def _register_view_callbacks(self):
+        pass
 

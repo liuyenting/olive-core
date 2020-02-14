@@ -9,4 +9,11 @@ logger = logging.getLogger(__name__)
 
 
 class DeviceHubView(ViewBase):
-    pass
+    @abstractmethod
+    def add_category(self, category):
+        pass
+
+    @abstractmethod
+    def add_driver(self, driver):
+        pass
+

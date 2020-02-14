@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1047</width>
-    <height>824</height>
+    <height>871</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -356,44 +356,102 @@
            </property>
            <layout class="QGridLayout" name="gridLayout">
             <item row="0" column="1">
-             <widget class="QPushButton" name="up">
+             <widget class="QToolButton" name="up">
               <property name="text">
-               <string>PushButton</string>
+               <string notr="true"/>
               </property>
-             </widget>
-            </item>
-            <item row="1" column="0">
-             <widget class="QPushButton" name="left">
-              <property name="text">
-               <string>PushButton</string>
+              <property name="icon">
+               <iconset resource="../resources/resources.qrc">
+                <normaloff>:/acquisition/up</normaloff>:/acquisition/up</iconset>
               </property>
-             </widget>
-            </item>
-            <item row="1" column="1">
-             <widget class="QPushButton" name="home">
-              <property name="text">
-               <string>PushButton</string>
+              <property name="iconSize">
+               <size>
+                <width>36</width>
+                <height>36</height>
+               </size>
+              </property>
+              <property name="autoRaise">
+               <bool>true</bool>
               </property>
              </widget>
             </item>
             <item row="1" column="2">
-             <widget class="QPushButton" name="right">
+             <widget class="QToolButton" name="right">
               <property name="text">
                <string>PushButton</string>
               </property>
+              <property name="icon">
+               <iconset resource="../resources/resources.qrc">
+                <normaloff>:/acquisition/right</normaloff>:/acquisition/right</iconset>
+              </property>
+              <property name="iconSize">
+               <size>
+                <width>36</width>
+                <height>36</height>
+               </size>
+              </property>
+              <property name="autoRaise">
+               <bool>true</bool>
+              </property>
              </widget>
             </item>
-            <item row="2" column="0">
-             <widget class="QPushButton" name="coarse_fine">
+            <item row="1" column="0">
+             <widget class="QToolButton" name="left">
               <property name="text">
-               <string>PushButton</string>
+               <string notr="true"/>
+              </property>
+              <property name="icon">
+               <iconset resource="../resources/resources.qrc">
+                <normaloff>:/acquisition/left</normaloff>:/acquisition/left</iconset>
+              </property>
+              <property name="iconSize">
+               <size>
+                <width>36</width>
+                <height>36</height>
+               </size>
+              </property>
+              <property name="autoRaise">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QToolButton" name="home">
+              <property name="text">
+               <string notr="true"/>
+              </property>
+              <property name="icon">
+               <iconset resource="../resources/resources.qrc">
+                <normaloff>:/acquisition/home</normaloff>:/acquisition/home</iconset>
+              </property>
+              <property name="iconSize">
+               <size>
+                <width>36</width>
+                <height>36</height>
+               </size>
+              </property>
+              <property name="autoRaise">
+               <bool>true</bool>
               </property>
              </widget>
             </item>
             <item row="2" column="1">
-             <widget class="QPushButton" name="down">
+             <widget class="QToolButton" name="down">
               <property name="text">
-               <string>PushButton</string>
+               <string notr="true"/>
+              </property>
+              <property name="icon">
+               <iconset resource="../resources/resources.qrc">
+                <normaloff>:/acquisition/down</normaloff>:/acquisition/down</iconset>
+              </property>
+              <property name="iconSize">
+               <size>
+                <width>36</width>
+                <height>36</height>
+               </size>
+              </property>
+              <property name="autoRaise">
+               <bool>true</bool>
               </property>
              </widget>
             </item>
@@ -401,10 +459,26 @@
           </widget>
          </item>
          <item>
-          <widget class="QPushButton" name="pushButton">
-           <property name="text">
-            <string>PushButton</string>
+          <widget class="QTabWidget" name="tabWidget">
+           <property name="tabPosition">
+            <enum>QTabWidget::East</enum>
            </property>
+           <property name="tabShape">
+            <enum>QTabWidget::Rounded</enum>
+           </property>
+           <property name="currentIndex">
+            <number>1</number>
+           </property>
+           <widget class="QWidget" name="tab">
+            <attribute name="title">
+             <string>Tab 1</string>
+            </attribute>
+           </widget>
+           <widget class="QWidget" name="tab_2">
+            <attribute name="title">
+             <string>Tab 2</string>
+            </attribute>
+           </widget>
           </widget>
          </item>
         </layout>

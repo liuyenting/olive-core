@@ -10,7 +10,7 @@ class ViewBase(object):
 class PresenterBase(object):
     def __init__(self, view: ViewBase):
         self._view = view
-        self._wire_connections()
+        self._register_view_callbacks()
 
     ##
 
@@ -21,5 +21,5 @@ class PresenterBase(object):
     ##
 
     @abstractmethod
-    def _wire_connections(self):
+    def _register_view_callbacks(self):
         pass

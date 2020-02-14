@@ -7,11 +7,15 @@
     <file alias="device_hub">icons/device_hub.png</file>
   </qresource>
   <qresource prefix="protocol_editor">
+    <file alias="bessel_activate">icons/bessel_activate.png</file>
+    <file alias="bessel_deactivate">icons/bessel_deactivate.png</file>
+    <file alias="move_up">icons/expand_less.png</file>
+    <file alias="move_down">icons/expand_more.png</file>
     <file alias="refresh">icons/refresh.png</file>
     <file alias="edit">icons/create.png</file>
-    <file alias="tile_activate">icons/type_tile_activate.png</file>
-    <file alias="tile_deactivate">icons/type_tile_deactivate.png</file>
     <file alias="open">icons/folder_open.png</file>
+    <file alias="lattice_activate">icons/lattice_activate.png</file>
+    <file alias="lattice_deactivate">icons/lattice_deactivate.png</file>
     <file alias="remove">icons/chevron_left.png</file>
     <file alias="add">icons/chevron_right.png</file>
     <file alias="save">icons/save.png</file>
@@ -19,6 +23,11 @@
     <file alias="create">icons/add_box.png</file>
   </qresource>
   <qresource prefix="acquisition">
+    <file alias="home">icons/trip_origin.png</file>
+    <file alias="up">icons/expand_less.png</file>
+    <file alias="down">icons/expand_more.png</file>
+    <file alias="left">icons/chevron_left.png</file>
+    <file alias="right">icons/chevron_right.png</file>
     <file alias="add">icons/add_circle_outline.png</file>
     <file alias="stop">icons/stop.png</file>
     <file alias="pause">icons/pause.png</file>

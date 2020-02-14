@@ -39,7 +39,7 @@ class MainWindowPresenter(PresenterBase):
 
     ##
 
-    def _wire_connections(self):
+    def _register_view_callbacks(self):
         self.view.set_change_workspace_action(self.on_change_workspace)
         self.view.set_exit_action(self.on_exit)
 
