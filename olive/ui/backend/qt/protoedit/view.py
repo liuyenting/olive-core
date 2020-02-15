@@ -1,7 +1,7 @@
 import logging
 import os
 
-from olive.gui.protoedit import ProtocolEditorView as _ProtocolEditorView
+from olive.ui.protoedit import ProtocolEditorView as _ProtocolEditorView
 from ..base import QWidgetViewBase
 
 __all__ = ["ProtocolEditorView"]

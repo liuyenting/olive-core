@@ -17,3 +17,5 @@ class DeviceHubView(ViewBase):
     def add_driver(self, driver):
         pass
 
+    # @abstractmethod
+    # def add_device(self, )

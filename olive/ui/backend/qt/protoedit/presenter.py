@@ -1,6 +1,6 @@
 import logging
 
-from olive.gui.protoedit import ProtocolEditorPresenter as _ProtocolEditorPresenter
+from olive.ui.protoedit import ProtocolEditorPresenter as _ProtocolEditorPresenter
 
 from .view import ProtocolEditorView
 

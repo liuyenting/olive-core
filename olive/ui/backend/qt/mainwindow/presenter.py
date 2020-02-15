@@ -1,7 +1,7 @@
 import logging
 
-from olive.gui.mainwindow import MainWindowPresenter as _MainWindowPresenter
-from olive.gui.mainwindow import Portal
+from olive.ui.mainwindow import MainWindowPresenter as _MainWindowPresenter
+from olive.ui.mainwindow import Portal
 
 from ..acquisition import AcquisitionPresenter
 from ..devicehub import DeviceHubPresenter

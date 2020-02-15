@@ -1,6 +1,6 @@
 import logging
 
-from olive.gui.acquisition import AcquisitionPresenter as _AcquisitionPresenter
+from olive.ui.acquisition import AcquisitionPresenter as _AcquisitionPresenter
 
 from .view import AcquisitionView
 

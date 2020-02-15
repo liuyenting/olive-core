@@ -6,6 +6,15 @@
     <file alias="problems">icons/report_problem.png</file>
     <file alias="device_hub">icons/device_hub.png</file>
   </qresource>
+  <qresource prefix="device_hub">
+    <file alias="computer">icons/computer.png</file>
+    <file alias="sequencer">icons/android.png</file>
+    <file alias="sensor">icons/settings_input_antenna.png</file>
+    <file alias="motion">icons/videogame_asset.png</file>
+    <file alias="modulator">icons/lead_add.png</file>
+    <file alias="lightsource">icons/flare.png</file>
+    <file alias="camera">icons/camera_alt.png</file>
+  </qresource>
   <qresource prefix="protocol_editor">
     <file alias="bessel_activate">icons/bessel_activate.png</file>
     <file alias="bessel_deactivate">icons/bessel_deactivate.png</file>

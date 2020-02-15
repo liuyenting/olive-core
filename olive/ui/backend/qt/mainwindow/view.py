@@ -2,8 +2,8 @@ from functools import partial
 import logging
 import os
 
-from olive.gui.mainwindow import MainWindowView as _MainWindowView
-from olive.gui.mainwindow import Portal
+from olive.ui.mainwindow import MainWindowView as _MainWindowView
+from olive.ui.mainwindow import Portal
 
 from ..base import QMainWindowViewBase
 

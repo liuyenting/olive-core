@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>device_hub</class>
+ <widget class="QWidget" name="device_hub">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>379</width>
+    <height>285</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Device Hub</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">#device_hub { border: 0px }</string>
+  </property>
+  <layout class="QGridLayout" name="device_hub_main">
+   <property name="leftMargin">
+    <number>0</number>
+   </property>
+   <property name="topMargin">
+    <number>0</number>
+   </property>
+   <property name="rightMargin">
+    <number>0</number>
+   </property>
+   <property name="bottomMargin">
+    <number>0</number>
+   </property>
+   <property name="spacing">
+    <number>0</number>
+   </property>
+   <item row="0" column="0">
+    <widget class="QSplitter" name="splitter">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="handleWidth">
+      <number>2</number>
+     </property>
+     <property name="childrenCollapsible">
+      <bool>false</bool>
+     </property>
+     <widget class="QTreeWidget" name="device_list">
+      <property name="font">
+       <font>
+        <family>MS Shell Dlg 2</family>
+        <pointsize>10</pointsize>
+       </font>
+      </property>
+      <property name="frameShape">
+       <enum>QFrame::NoFrame</enum>
+      </property>
+      <property name="frameShadow">
+       <enum>QFrame::Plain</enum>
+      </property>
+      <property name="lineWidth">
+       <number>0</number>
+      </property>
+      <property name="uniformRowHeights">
+       <bool>true</bool>
+      </property>
+      <attribute name="headerVisible">
+       <bool>false</bool>
+      </attribute>
+      <column>
+       <property name="text">
+        <string>Device</string>
+       </property>
+      </column>
+      <item>
+       <property name="text">
+        <string>Jennie</string>
+       </property>
+       <property name="icon">
+        <iconset resource="../resources/resources.qrc">
+         <normaloff>:/device_hub/computer</normaloff>:/device_hub/computer</iconset>
+       </property>
+       <item>
+        <property name="text">
+         <string>Camera</string>
+        </property>
+        <property name="icon">
+         <iconset resource="../resources/resources.qrc">
+          <normaloff>:/device_hub/camera</normaloff>:/device_hub/camera</iconset>
+        </property>
+        <item>
+         <property name="text">
+          <string>Hamamatsu C114400-22CU (8x0521)</string>
+         </property>
+         <property name="icon">
+          <iconset resource="../resources/resources.qrc">
+           <normaloff>:/device_hub/camera</normaloff>:/device_hub/camera</iconset>
+         </property>
+        </item>
+       </item>
+       <item>
+        <property name="text">
+         <string>Light Source</string>
+        </property>
+        <property name="icon">
+         <iconset resource="../resources/resources.qrc">
+          <normaloff>:/device_hub/lightsource</normaloff>:/device_hub/lightsource</iconset>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Modulator</string>
+        </property>
+        <property name="icon">
+         <iconset resource="../resources/resources.qrc">
+          <normaloff>:/device_hub/modulator</normaloff>:/device_hub/modulator</iconset>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Motion</string>
+        </property>
+        <property name="icon">
+         <iconset resource="../resources/resources.qrc">
+          <normaloff>:/device_hub/motion</normaloff>:/device_hub/motion</iconset>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Sensor</string>
+        </property>
+        <property name="icon">
+         <iconset resource="../resources/resources.qrc">
+          <normaloff>:/device_hub/sensor</normaloff>:/device_hub/sensor</iconset>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Sequencer</string>
+        </property>
+        <property name="icon">
+         <iconset resource="../resources/resources.qrc">
+          <normaloff>:/device_hub/sequencer</normaloff>:/device_hub/sequencer</iconset>
+        </property>
+       </item>
+      </item>
+     </widget>
+     <widget class="ParameterTree" name="parameters" native="true">
+      <property name="font">
+       <font>
+        <pointsize>10</pointsize>
+       </font>
+      </property>
+     </widget>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>ParameterTree</class>
+   <extends>QWidget</extends>
+   <header>pyqtgraph.parametertree</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
+ <resources>
+  <include location="../resources/resources.qrc"/>
+ </resources>
+ <connections/>
+</ui>

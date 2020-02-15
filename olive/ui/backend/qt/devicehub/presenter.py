@@ -1,6 +1,6 @@
 import logging
 
-from olive.gui.devicehub import DeviceHubPresenter as _DeviceHubPresenter
+from olive.ui.devicehub import DeviceHubPresenter as _DeviceHubPresenter
 
 from .view import DeviceHubView
 

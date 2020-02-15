@@ -15,7 +15,7 @@ class DeviceHubPresenter(PresenterBase):
 
     ##
 
-    def update()
+    #def update()
 
 
     ##

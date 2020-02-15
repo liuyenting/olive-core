@@ -1,16 +1,15 @@
 import logging
 import os
 
-from olive.gui.acquisition import AcquisitionView as _AcquisitionView
+from olive.ui.devicehub import DeviceHubView as _DeviceHubView
 from ..base import QWidgetViewBase
 
-__all__ = ["AcquisitionView"]
+__all__ = ["DeviceHubView"]
 
 logger = logging.getLogger(__name__)
 
 
-class AcquisitionView(_AcquisitionView, QWidgetViewBase):
+class DeviceHubView(_DeviceHubView, QWidgetViewBase):
     def __init__(self):
         path = os.path.join(os.path.dirname(__file__), "view.ui")
         super().__init__(path)
-

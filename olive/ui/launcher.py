@@ -4,7 +4,7 @@ import sys
 import qdarkstyle
 from qtpy.QtWidgets import QApplication
 
-from olive.gui.backend.qt import mainwindow
+from olive.ui.backend.qt import mainwindow
 
 __all__ = []
 
