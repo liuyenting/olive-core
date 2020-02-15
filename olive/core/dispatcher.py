@@ -1,6 +1,6 @@
 import logging
 
-from olive.core import DeviceManager
+from olive.devices import DeviceManager
 
 __all__ = ["Dispatcher"]
 

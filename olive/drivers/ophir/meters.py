@@ -1,4 +1,3 @@
-from abc import abstractmethod
 import asyncio
 from itertools import product
 import logging
@@ -7,8 +6,9 @@ from typing import Union
 from serial import Serial
 from serial.tools import list_ports
 
-from olive.core import Driver, DeviceInfo
-from olive.core.utils import retry
+from olive.drivers.base import Driver
+from olive.devices.base import DeviceInfo
+from olive.utils import retry
 from olive.devices import SensorAdapter
 from olive.devices.errors import UnsupportedDeviceError
 

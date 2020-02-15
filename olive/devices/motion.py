@@ -3,7 +3,7 @@ from enum import auto, Enum
 import logging
 from typing import Union
 
-from olive.core import Device
+from .base import Device
 
 __all__ = ["Galvo", "LimitStatus", "LinearAxis", "RotaryAxis", "MotionController"]
 

@@ -9,7 +9,7 @@ import numpy as np
 from psutil import virtual_memory
 import trio
 
-from olive.core import Device
+from .base import Device
 
 __all__ = ["BufferRetrieveMode", "Camera"]
 

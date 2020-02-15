@@ -15,10 +15,10 @@ from enum import Enum
 from functools import lru_cache
 import logging
 
-from olive.core import DeviceInfo
-from olive.core.utils import retry
 from olive.devices import PowerSensor
+from olive.devices.base import DeviceInfo
 from olive.devices.errors import UnsupportedDeviceError
+from olive.utils import retry
 
 __all__ = ["Photodiode", "DiffuserSetting"]
 

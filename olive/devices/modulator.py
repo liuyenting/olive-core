@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from typing import NamedTuple
 
-from olive.core import Device
+from .base import Device
 
 __all__ = ["AcustoOpticalModulator", "ElectroOpticalModulator"]
 

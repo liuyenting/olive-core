@@ -1,16 +1,9 @@
 from __future__ import annotations
 from abc import abstractmethod
-from concurrent.futures import ThreadPoolExecutor
-import itertools
 import logging
-import multiprocessing as mp
-import tempfile
-import trio
-from typing import Tuple, NamedTuple
+from typing import NamedTuple
 
-from olive.core.utils import Graph, Singleton
-
-__all__ = ["Device", "DeviceInfo", "DeviceManager", "DeviceType"]
+__all__ = ["Device", "DeviceInfo", "DeviceType"]
 
 logger = logging.getLogger(__name__)
 
@@ -43,11 +36,6 @@ class Device(metaclass=DeviceType):
     Attributes:
         driver : driver that instantiate this device
         parent (Device): parent device
-        timeout (int): timeout in milliseconds, None if never
-
-    Note:
-        Each device has its own thread executor to prevent external blocking calls
-        block the event loop.
     """
 
     @abstractmethod
@@ -69,7 +57,7 @@ class Device(metaclass=DeviceType):
     async def open(self):
         """Open the device and register with parent."""
         if not self.is_opened:
-            # 1) open parent
+            # 1) open parent if it has one
             try:
                 await self.parent.open()
             except AttributeError:
@@ -184,7 +172,7 @@ class Device(metaclass=DeviceType):
         return self._driver
 
     @property
-    def info(self)-> DeviceInfo:
+    def info(self) -> DeviceInfo:
         """Return device info."""
         raise NotImplementedError
 
@@ -202,78 +190,3 @@ class Device(metaclass=DeviceType):
     def parent(self) -> Device:
         return self._parent
 
-
-class DeviceManager(metaclass=Singleton):
-    """
-    Device bookkeeping.
-    """
-
-    class RegisteredDevice(object):
-        def __init__(self, alias, klass):
-            self.alias = alias
-            self.klass = klass
-            self.device = None
-
-    def __init__(self):
-        # populate categories
-        self._devices = {klass: [] for klass in Device.__subclasses__()}
-
-    def set_requirements(self, requirements):
-        """Device shopping list."""
-        for alias, klass in requirements:
-            new_device = self.RegisteredDevice(alias, klass)
-            self._devices[alias] = new_device
-
-            # map to unique identifier
-            identifier = next(tempfile._get_candidate_names())
-            self._devices[identifier] = new_device
-
-    def assign(self, alias, device):
-        """Link registered device to shopping list item."""
-        logger.debug(f"{device} is assigned to {alias}")
-        self._devices[alias].device = device
-
-    # TODO how to cleanup register/unregister calls
-    def register(self, device):
-        category = device._determine_category()
-        self._devices[category].append(device)
-        logger.debug(f"new device {device} registered")
-
-    def unregister(self, device):
-        category = device._determine_category()
-        self._devices[category].remove(device)
-        logger.debug(f"{device} unregistered")
-
-    def get_devices(self):
-        return self._devices
-
-    ##
-
-    @property
-    def devices(self) -> Tuple[Device]:
-        return tuple(set(itertools.chain.from_iterable(self._devices.values())))
-
-    @property
-    def is_satisfied(self) -> bool:
-        """Is the shopping list satisfied?"""
-        return not any(device for device in self._devices if device.device is None)
-
-
-def query_device_hierarchy():
-    """
-    Request function to query hierarchy for specific device.
-
-    Returns:
-        (func): a function that can find the shortest inheritance path
-    """
-    # build graph
-    g = Graph((Device,) + Device.__subclasses__())
-    for device_klass in g.nodes:
-        g.add_edges(device_klass, device_klass.__subclasses__())
-
-    def query_func(device):
-        """Find the shortest path but drop the root."""
-        path = g.find_path(Device, device)
-        return tuple(path[1:])
-
-    return query_func

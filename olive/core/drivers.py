@@ -1,59 +1,16 @@
-from abc import abstractmethod
 import itertools
 import logging
-from typing import get_type_hints, Union
+from typing import get_type_hints
 
-from olive.core import Device
-from olive.core.devices import query_device_hierarchy
-from olive.core.utils import enumerate_namespace_classes, Singleton
-import olive.devices
+from olive.devices.base import Device
+from olive.drivers.base import Driver
+from olive.utils import enumerate_namespace_classes, Singleton
 
-import olive.drivers
+import olive.drivers  # preload
 
-__all__ = ["Driver", "DriverManager", "DriverType"]
+__all__ = ["DriverManager"]
 
 logger = logging.getLogger(__name__)
-
-
-class DriverType(type):
-    """All drivers belong to this type."""
-
-
-class Driver(metaclass=DriverType):
-    @abstractmethod
-    def __init__(self):
-        """Abstract __init__ to prevent instantiation."""
-
-    """
-    Driver initialization.
-    """
-
-    @abstractmethod
-    def initialize(self):
-        """Initialize the library. Most notably for singleton instance."""
-
-    @abstractmethod
-    def shutdown(self):
-        """Cleanup resources allocated by the library."""
-
-    @abstractmethod
-    def enumerate_devices(self) -> None:
-        """List supported devices."""
-
-    @classmethod
-    def enumerate_supported_devices(cls):
-        hints = get_type_hints(cls.enumerate_devices)["return"]
-        try:
-            klasses = hints.__args__
-        except AttributeError:
-            # not a union
-            klasses = [hints]
-
-        # remap to device primitives
-        devices = []
-        for klass in klasses:
-            devices.extend(klass.__bases__)
-        return tuple(set(devices) & set(Device.__subclasses__()))
 
 
 class DriverManager(metaclass=Singleton):

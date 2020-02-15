@@ -4,7 +4,8 @@ import os
 import imageio
 import numpy as np
 
-from olive.core import Driver, DeviceInfo
+from olive.core import Driver
+from olive.devices.base import DeviceInfo
 from olive.devices import Camera
 
 __all__ = ["PseudoCamera"]

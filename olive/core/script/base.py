@@ -2,7 +2,7 @@ from abc import ABCMeta, abstractmethod, ABC
 import logging
 
 
-from olive.core import DeviceType
+from olive.devices.base import DeviceType
 
 __all__ = [
     "Script",
