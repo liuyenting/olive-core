@@ -32,7 +32,13 @@ class Driver(metaclass=DriverType):
 
     @abstractmethod
     def enumerate_devices(self) -> None:
-        """List devices that this driver can interact with."""
+        """
+        List devices that this driver can interact with.
+
+        This class is explicitly _not_ async, since multiple drivers might test upon
+        similar hardware resources (e.g. serials). Therefore, to avoid complications,
+        drivers are required to enumerate sequentially.
+        """
 
     @classmethod
     def enumerate_supported_device_types(cls):

@@ -3,14 +3,13 @@ from collections import namedtuple
 from enum import Enum
 import logging
 import re
-from typing import Union
 
-from serial import Serial
+from serial import Serial, SerialException
 from serial.tools import list_ports
 
-from olive.core import Driver, DeviceInfo
-from olive.core.utils import retry
+from olive.drivers.base import Driver
 from olive.devices import AcustoOpticalModulator
+from olive.devices.base import DeviceInfo
 from olive.devices.errors import UnsupportedDeviceError
 
 __all__ = ["MultiDigitalSynthesizer"]
@@ -55,17 +54,19 @@ class MDSnC(AcustoOpticalModulator):
 
     ##
 
-    @retry(UnsupportedDeviceError, logger=logger)
-    def test_open(self):
-        self.handle.open()
+    async def test_open(self):
+        logger.debug(f"testing {self.handle.port}")
         try:
+            self.handle.open()
+            print('opened')
             logger.info(f".. {self.info}")
-        except SyntaxError:
+        except (SyntaxError, SerialException):
             raise UnsupportedDeviceError
         finally:
             self.handle.close()
+            print('closed')
 
-    def open(self):
+    async def _open(self):
         """Open connection to the synthesizer and seize its internal control."""
         self.handle.open()
 
@@ -74,7 +75,7 @@ class MDSnC(AcustoOpticalModulator):
         self._set_control_voltage(ControlVoltage.FIVE_VOLT)
         self._set_control_mode(ControlMode.EXTERNAL)
 
-    def close(self):
+    async def _close(self):
         self._save_parameters()
         self._set_control_mode(ControlMode.INTERNAL)
 
@@ -203,13 +204,16 @@ class MDSnC(AcustoOpticalModulator):
         # firmware version
         try:
             response = self.handle.read_until("?").decode("utf-8")
+            print(response)
             version = self._parse_version(response)
+            print(version)
         except (ValueError, UnicodeDecodeError):
             raise SyntaxError("unable to parse version")
 
         # serial number
         self.handle.write(b"q\r")
         response = self.handle.read_until("?").decode("utf-8")
+        print(response)
         matches = re.search(r"([\w]+)\s+", response)
         if matches:
             sn = matches.group(1)
@@ -316,29 +320,19 @@ class MultiDigitalSynthesizer(Driver):
     def enumerate_devices(self) -> MDSnC:
         loop = asyncio.get_event_loop()
 
-        async def test_device(device):
-            """Test each port using their own thread."""
-
-            def _test_device(device):
-                logger.debug(f"testing {device.handle.name}...")
-                device.test_open()
-
-            return await loop.run_in_executor(device.executor, _test_device, device)
-
         devices = [MDSnC(self, info.device) for info in list_ports.comports()]
-        testers = asyncio.gather(
-            *[test_device(device) for device in devices], return_exceptions=True
+        results = loop.run_until_complete(
+            asyncio.gather(*[d.test_open() for d in devices], return_exceptions=True)
         )
-        results = loop.run_until_complete(testers)
 
         valid_devices = []
-        for port, result in zip(devices, results):
-            if isinstance(result, UnsupportedDeviceError):
-                continue
-            elif result is None:
-                valid_devices.append(port)
+        for device, result in zip(devices, results):
+            if result is None:
+                valid_devices.append(device)
             else:
-                # unknown exception occurred
-                raise result
+                try:
+                    raise result
+                except UnsupportedDeviceError:
+                    continue
         return tuple(valid_devices)
 

@@ -29,7 +29,7 @@ setup(
     #
     # use pyproject.toml for setup dependencies instead
     # setup_requires=[],
-    install_requires=["coloredlogs", "psutil", "pyserial", "pyside2", "qtpy"],
+    install_requires=["coloredlogs", "psutil", "pyserial-asyncio", "pyside2", "qtpy"],
     #
     # Package Structure
     #
