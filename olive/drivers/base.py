@@ -1,6 +1,6 @@
-from abc import abstractmethod
 import logging
-from typing import get_type_hints
+from abc import abstractmethod
+from typing import Iterable, Optional, get_type_hints
 
 from olive.devices.base import Device
 
@@ -54,7 +54,7 @@ class Driver(metaclass=DriverType):
     ##
 
     @abstractmethod
-    async def enumerate_devices(self) -> None:
+    async def enumerate_devices(self) -> Iterable[Device]:
         """List devices that this driver can interact with."""
 
     @classmethod
@@ -64,7 +64,7 @@ class Driver(metaclass=DriverType):
         try:
             klasses = hints.__args__
         except AttributeError:
-            # not a union
+            # not an iterable
             klasses = [hints]
 
         # remap to device primitives

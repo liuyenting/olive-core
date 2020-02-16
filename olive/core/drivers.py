@@ -1,7 +1,7 @@
 import importlib
 import itertools
 import logging
-from typing import List, Tuple, Type, get_type_hints
+from typing import List, Optional, Tuple, Type
 
 import olive.drivers  # preload
 from olive.devices.base import Device
@@ -72,8 +72,19 @@ class DriverManager(metaclass=Singleton):
 
             self._add_driver(driver)
 
-    def query_drivers(self, device_klass: Type[Device]) -> Tuple[Driver]:
-        return tuple(self._drivers[device_klass])
+    def query_drivers(
+        self, device_klass: Optional[Type[Device]] = None
+    ) -> Tuple[Driver]:
+        """
+        Return drivers of a device category.
+
+        Args:
+            device_klass (Device, optional): category of interest, if None, return all
+        """
+        if device_klass is None:
+            return tuple(set(itertools.chain.from_iterable(self._drivers.values())))
+        else:
+            return tuple(self._drivers[device_klass])
 
     ##
 
@@ -100,7 +111,7 @@ class DriverManager(metaclass=Singleton):
         Returns:
             (list of Driver) drivers that are still active
         """
-        drivers = set(itertools.chain.from_iterable(self._drivers.values()))
+        drivers = self.query_drivers()
 
         # shutdown all drivers
         active_drivers = []

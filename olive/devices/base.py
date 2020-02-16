@@ -1,6 +1,7 @@
 from __future__ import annotations
-from abc import abstractmethod
+
 import logging
+from abc import ABCMeta, abstractmethod
 from typing import NamedTuple
 
 __all__ = ["Device", "DeviceInfo", "DeviceType"]
@@ -25,7 +26,7 @@ class DeviceInfo(NamedTuple):
         return f"<{', '.join(tokens)}>"
 
 
-class DeviceType(type):
+class DeviceType(ABCMeta):
     """All devices belong to this type."""
 
 
@@ -191,4 +192,3 @@ class Device(metaclass=DeviceType):
     @property
     def parent(self) -> Device:
         return self._parent
-
