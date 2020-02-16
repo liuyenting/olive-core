@@ -10,7 +10,7 @@ from olive.drivers.base import Driver
 from olive.devices.base import DeviceInfo
 from olive.utils import retry
 from olive.devices import SensorAdapter
-from olive.devices.errors import UnsupportedDeviceError
+from olive.devices.error import UnsupportedDeviceError
 
 from olive.drivers.ophir.sensors import Photodiode
 

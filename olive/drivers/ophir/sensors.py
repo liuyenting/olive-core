@@ -17,7 +17,7 @@ import logging
 
 from olive.devices import PowerSensor
 from olive.devices.base import DeviceInfo
-from olive.devices.errors import UnsupportedDeviceError
+from olive.devices.error import UnsupportedDeviceError
 from olive.utils import retry
 
 __all__ = ["Photodiode", "DiffuserSetting"]

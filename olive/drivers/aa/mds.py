@@ -10,7 +10,7 @@ from serial.tools import list_ports
 from olive.drivers.base import Driver
 from olive.devices import AcustoOpticalModulator
 from olive.devices.base import DeviceInfo
-from olive.devices.errors import UnsupportedDeviceError
+from olive.devices.error import UnsupportedDeviceError
 
 __all__ = ["MultiDigitalSynthesizer"]
 
@@ -58,13 +58,13 @@ class MDSnC(AcustoOpticalModulator):
         logger.debug(f"testing {self.handle.port}")
         try:
             self.handle.open()
-            print('opened')
+            print("opened")
             logger.info(f".. {self.info}")
         except (SyntaxError, SerialException):
             raise UnsupportedDeviceError
         finally:
             self.handle.close()
-            print('closed')
+            print("closed")
 
     async def _open(self):
         """Open connection to the synthesizer and seize its internal control."""

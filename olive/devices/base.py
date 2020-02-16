@@ -69,11 +69,13 @@ class Device(metaclass=DeviceType):
                 pass
             # 3) cleanup children list
             self._children = []
-        # 4) register ourself
+        # 4) register ourself with parent
         try:
             self.parent.register(self)
         except AttributeError:
             pass
+        # 5) register ourself with driver
+        self.driver.register(self)
 
     async def _open(self):
         """Concrete open operation."""

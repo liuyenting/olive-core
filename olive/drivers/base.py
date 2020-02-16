@@ -14,21 +14,44 @@ class DriverType(type):
 
 
 class Driver(metaclass=DriverType):
-    @abstractmethod
     def __init__(self):
-        """Abstract __init__ to prevent instantiation."""
+        self._active_devices = []
 
-    """
-    Driver initialization.
-    """
+    ##
+
+    @property
+    def active_devices(self):
+        return tuple(self._active_devices)
+
+    @property
+    def is_active(self):
+        return len(self._active_devices) > 0
+
+    ##
 
     @abstractmethod
     def initialize(self):
-        """Initialize the library. Most notably for singleton instance."""
+        """Initialize the library."""
 
     @abstractmethod
     def shutdown(self):
         """Cleanup resources allocated by the library."""
+
+    ##
+
+    def register(self, device: Device):
+        assert (
+            device not in self._active_devices
+        ), "device is already registered, something wrong with the initialize process"
+        self._active_devices.append(device)
+
+    def unregister(self, device: Device):
+        assert (
+            device in self._active_devices
+        ), "device is already unregistered, something wrong with the shutdown process"
+        self._active_devices.remove(device)
+
+    ##
 
     @abstractmethod
     async def enumerate_devices(self) -> None:

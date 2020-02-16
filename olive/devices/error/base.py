@@ -1,3 +1,6 @@
+__all__ = ["UnsupportedDeviceError"]
+
+
 class DeviceError(Exception):
     """Generic device error."""
 
