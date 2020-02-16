@@ -31,14 +31,8 @@ class Driver(metaclass=DriverType):
         """Cleanup resources allocated by the library."""
 
     @abstractmethod
-    def enumerate_devices(self) -> None:
-        """
-        List devices that this driver can interact with.
-
-        This class is explicitly _not_ async, since multiple drivers might test upon
-        similar hardware resources (e.g. serials). Therefore, to avoid complications,
-        drivers are required to enumerate sequentially.
-        """
+    async def enumerate_devices(self) -> None:
+        """List devices that this driver can interact with."""
 
     @classmethod
     def enumerate_supported_device_types(cls):

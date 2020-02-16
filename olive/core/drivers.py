@@ -29,10 +29,13 @@ class DriverManager(metaclass=Singleton):
     def __init__(self):
         # populate device categories
         self._drivers = {klass: [] for klass in Device.__subclasses__()}
+        print(self._drivers.keys())
 
         self.refresh()
 
         # TODO isolate list_drivers, use result from _active/_inactive, with category filter
+
+    ##
 
     def refresh(self):
         """Refresh known driver list."""
