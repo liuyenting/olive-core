@@ -24,7 +24,7 @@ class Requirements(MutableMapping):
     def __init__(self, requirements: Dict[str, Device]):
         self._requirements = {
             alias: RequirementEntry(device_klass)
-            for alias, device_klass in requirements
+            for alias, device_klass in requirements.items()
         }
 
     def __getitem__(self, alias) -> Device:
@@ -39,11 +39,21 @@ class Requirements(MutableMapping):
         self._requirements[alias].instance = None
 
     def __iter__(self):
-        for alias, entry in self._requirements.items():
-            yield alias, entry.instance
+        for alias in self._requirements.keys():
+            yield alias
 
     def __len__(self):
         return len(self._requirements)
+
+    ##
+
+    @property
+    def is_satisfied(self):
+        return all(device is not None for device in self.values())
+
+    ##
+
+    # TODO implement update reuqirement
 
 
 class DeviceManager(metaclass=Singleton):
@@ -70,6 +80,9 @@ class DeviceManager(metaclass=Singleton):
         return self._requirements
 
     ##
+
+    def update_requirements(self, requirements):
+        self._requirements
 
     def set_requirements(self, requirements):
         """Device shopping list."""
