@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from abc import ABCMeta, abstractmethod
-from typing import NamedTuple
+from typing import NamedTuple, Tuple
 
 __all__ = ["Device", "DeviceInfo", "DeviceType"]
 
@@ -39,11 +39,39 @@ class Device(metaclass=DeviceType):
         parent (Device): parent device
     """
 
-    @abstractmethod
     def __init__(self, driver, parent: Device = None):
         """Abstract __init__ to prevent instantiation."""
         self._driver = driver
         self._parent, self._children = parent, []
+
+    ##
+
+    @property
+    def children(self) -> Tuple[Device]:
+        return tuple(self._children)
+
+    @property
+    def driver(self):
+        return self._driver
+
+    @property
+    @abstractmethod
+    def info(self) -> DeviceInfo:
+        """Return device info."""
+
+    @property
+    @abstractmethod
+    def is_busy(self):
+        """Is device busy?"""
+
+    @property
+    @abstractmethod
+    def is_opened(self):
+        """Is the device opened?"""
+
+    @property
+    def parent(self) -> Device:
+        return self._parent
 
     ##
 
@@ -113,17 +141,14 @@ class Device(metaclass=DeviceType):
         raise NotImplementedError
 
     def register(self, child):
+        assert child not in self._children, "child is already registered"
         self._children.append(child)
-        logger.debug(f'"{child.info}" registered')
+        logger.debug(f'[REG] DEV "{child}" -> DEV "{self}"')
 
     def unregister(self, child):
-        try:
-            self._children.remove(child)
-            logger.debug(f'"{child.info}" unregistered')
-        except ValueError:
-            raise ValueError(
-                "children was prematurely removed from watch list, please file an issue"
-            )
+        assert child in self._children, "child is already unregistered"
+        self._children.remove(child)
+        logger.debug(f'[UNREG] DEV "{child}" -> DEV "{self}"')
 
     ##
 
@@ -165,30 +190,3 @@ class Device(metaclass=DeviceType):
             raise AttributeError(f'unknown property "{name}"')
 
     ##
-
-    @property
-    def children(self):
-        return tuple(self._children)
-
-    @property
-    def driver(self):
-        return self._driver
-
-    @property
-    def info(self) -> DeviceInfo:
-        """Return device info."""
-        raise NotImplementedError
-
-    @property
-    def is_busy(self) -> bool:
-        """Is device busy?"""
-        raise NotImplementedError
-
-    @property
-    def is_opened(self):
-        """Is the device opened?"""
-        raise NotImplementedError
-
-    @property
-    def parent(self) -> Device:
-        return self._parent

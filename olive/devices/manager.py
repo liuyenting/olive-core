@@ -1,14 +1,49 @@
-import logging
 import itertools
+import logging
 import tempfile
-from typing import Tuple
+from collections.abc import MutableMapping
+from dataclasses import dataclass
+from typing import Dict, Optional, Tuple, Type
 
-from olive.utils import Singleton, Graph
+from olive.utils import Graph, Singleton
+
 from .base import Device
 
-__all__ = ["DeviceManager", 'query_device_hierarchy']
+__all__ = ["DeviceManager", "query_device_hierarchy"]
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class RequirementEntry:
+    dtype: Type[Device]
+    instance: Optional[Device] = None
+
+
+class Requirements(MutableMapping):
+    def __init__(self, requirements: Dict[str, Device]):
+        self._requirements = {
+            alias: RequirementEntry(device_klass)
+            for alias, device_klass in requirements
+        }
+
+    def __getitem__(self, alias) -> Device:
+        return self._requirements[alias].instance
+
+    def __setitem__(self, alias, device: Device):
+        dtype = self._requirements[alias].dtype
+        assert isinstance(device, dtype), f'"{device}" does not belong to "{dtype}"'
+        self._requirements[alias].instance = device
+
+    def __delitem__(self, alias):
+        self._requirements[alias].instance = None
+
+    def __iter__(self):
+        for alias, entry in self._requirements.items():
+            yield alias, entry.instance
+
+    def __len__(self):
+        return len(self._requirements)
 
 
 class DeviceManager(metaclass=Singleton):
@@ -16,15 +51,25 @@ class DeviceManager(metaclass=Singleton):
     Device bookkeeping.
     """
 
-    class RegisteredDevice(object):
-        def __init__(self, alias, klass):
-            self.alias = alias
-            self.klass = klass
-            self.device = None
-
     def __init__(self):
-        # populate categories
-        self._devices = {klass: [] for klass in Device.__subclasses__()}
+        self._requirements = None  # TODO WIP
+
+    ##
+
+    @property
+    def devices(self) -> Tuple[Device]:
+        return tuple(set(itertools.chain.from_iterable(self._devices.values())))
+
+    @property
+    def is_satisfied(self) -> bool:
+        """Is the shopping list satisfied?"""
+        return not any(device for device in self._devices if device.device is None)
+
+    @property
+    def requirements(self) -> Requirements:
+        return self._requirements
+
+    ##
 
     def set_requirements(self, requirements):
         """Device shopping list."""
@@ -56,15 +101,6 @@ class DeviceManager(metaclass=Singleton):
         return self._devices
 
     ##
-
-    @property
-    def devices(self) -> Tuple[Device]:
-        return tuple(set(itertools.chain.from_iterable(self._devices.values())))
-
-    @property
-    def is_satisfied(self) -> bool:
-        """Is the shopping list satisfied?"""
-        return not any(device for device in self._devices if device.device is None)
 
 
 def query_device_hierarchy():

@@ -1,10 +1,10 @@
 import importlib
 import itertools
 import logging
-from typing import List, Optional, Tuple, Type
+from typing import List, Optional, Tuple
 
 import olive.drivers  # preload
-from olive.devices.base import Device
+from olive.devices.base import Device, DeviceType
 from olive.drivers.base import Driver
 from olive.drivers.error import InitializeError, ShutdownError
 from olive.utils import Singleton, enumerate_namespace_classes
@@ -72,9 +72,7 @@ class DriverManager(metaclass=Singleton):
 
             self._add_driver(driver)
 
-    def query_drivers(
-        self, device_klass: Optional[Type[Device]] = None
-    ) -> Tuple[Driver]:
+    def query_drivers(self, device_klass: Optional[DeviceType] = None) -> Tuple[Driver]:
         """
         Return drivers of a device category.
 

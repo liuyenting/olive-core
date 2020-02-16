@@ -1,15 +1,15 @@
 import logging
-from abc import abstractmethod
-from typing import Iterable, Optional, get_type_hints
+from abc import ABCMeta, abstractmethod
+from typing import Iterable, get_type_hints
 
-from olive.devices.base import Device
+from olive.devices.base import Device, DeviceType
 
-__all__ = ["DriverType", "Driver"]
+__all__ = ["Driver", "DriverType"]
 
 logger = logging.getLogger(__name__)
 
 
-class DriverType(type):
+class DriverType(ABCMeta):
     """All drivers belong to this type."""
 
 
@@ -20,7 +20,7 @@ class Driver(metaclass=DriverType):
     ##
 
     @property
-    def active_devices(self):
+    def active_devices(self) -> Iterable[Device]:
         return tuple(self._active_devices)
 
     @property
@@ -44,21 +44,28 @@ class Driver(metaclass=DriverType):
             device not in self._active_devices
         ), "device is already registered, something wrong with the initialize process"
         self._active_devices.append(device)
+        logger.debug(f'[REG] DEV "{device}" -> DRV "{self}"')
 
     def unregister(self, device: Device):
         assert (
             device in self._active_devices
         ), "device is already unregistered, something wrong with the shutdown process"
         self._active_devices.remove(device)
+        logger.debug(f'[UNREG] DEV "{device}" -> DRV "{self}"')
 
     ##
 
     @abstractmethod
     async def enumerate_devices(self) -> Iterable[Device]:
-        """List devices that this driver can interact with."""
+        """
+        List devices that this driver can interact with.
+
+        Note:
+            Returned devices are NOT active yet.
+        """
 
     @classmethod
-    def enumerate_supported_device_types(cls):
+    def enumerate_supported_device_types(cls) -> Iterable[DeviceType]:
         """List device types that this driver may support."""
         hints = get_type_hints(cls.enumerate_devices)["return"]
         try:
@@ -68,7 +75,7 @@ class Driver(metaclass=DriverType):
             klasses = [hints]
 
         # remap to device primitives
-        devices = []
+        device_klasses = []
         for klass in klasses:
-            devices.extend(klass.__bases__)
-        return tuple(set(devices) & set(Device.__subclasses__()))
+            device_klasses.extend(klass.__bases__)
+        return tuple(set(device_klasses) & set(Device.__subclasses__()))
