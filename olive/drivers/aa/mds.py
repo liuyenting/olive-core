@@ -6,6 +6,7 @@ import re
 
 from serial import Serial, SerialException
 from serial.tools import list_ports
+from serial_asyncio import open_serial_connection
 
 from olive.drivers.base import Driver
 from olive.devices import AcustoOpticalModulator
@@ -37,25 +38,20 @@ class MDSnC(AcustoOpticalModulator):
         timeout (int): timeout in ms
     """
 
-    def __init__(self, driver, port, timeout=1000):
+    BAUDRATE = 19200
+
+    def __init__(self, driver, url):
         super().__init__(driver)
 
-        if timeout:
-            timeout /= 1000
-
-        ser = Serial()
-        ser.port = port
-        ser.baudrate = 19200
-        ser.timeout = timeout
-        ser.write_timeout = timeout
-        self._handle = ser
+        self._url = url
+        # stream r/w pair
+        self._reader, self._writer = None, None
 
         self._discrete_power_range = None
 
     ##
 
     async def test_open(self):
-        logger.debug(f"testing {self.handle.port}")
         try:
             self.handle.open()
             print("opened")
@@ -68,7 +64,12 @@ class MDSnC(AcustoOpticalModulator):
 
     async def _open(self):
         """Open connection to the synthesizer and seize its internal control."""
-        self.handle.open()
+        loop = asyncio.get_running_loop()
+        self._reader, self._writer = await open_serial_connection(
+            loop=loop, url=self._url, baudrate=type(self).BAUDRATE
+        )
+
+        # TODO refactor to use internal serial class
 
         self._discrete_power_range = self._get_discrete_power_range()
 
