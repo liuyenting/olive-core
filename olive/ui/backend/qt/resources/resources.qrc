@@ -16,6 +16,8 @@
     <file alias="camera">icons/camera_alt.png</file>
   </qresource>
   <qresource prefix="protocol_editor">
+    <file alias="link">icons/link.png</file>
+    <file alias="unlink">icons/link_off.png</file>
     <file alias="bessel_activate">icons/bessel_activate.png</file>
     <file alias="bessel_deactivate">icons/bessel_deactivate.png</file>
     <file alias="move_up">icons/expand_less.png</file>

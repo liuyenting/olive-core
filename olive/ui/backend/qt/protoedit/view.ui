@@ -34,6 +34,9 @@
    </property>
    <item row="0" column="0">
     <widget class="QSplitter" name="splitter">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
      <property name="handleWidth">
       <number>2</number>
      </property>
@@ -968,7 +971,7 @@ Lightsheet</string>
                   </property>
                   <property name="icon">
                    <iconset resource="../resources/resources.qrc">
-                    <normaloff>:/protocol_editor/add</normaloff>:/protocol_editor/add</iconset>
+                    <normaloff>:/protocol_editor/link</normaloff>:/protocol_editor/link</iconset>
                   </property>
                   <property name="iconSize">
                    <size>
@@ -988,7 +991,7 @@ Lightsheet</string>
                   </property>
                   <property name="icon">
                    <iconset resource="../resources/resources.qrc">
-                    <normaloff>:/protocol_editor/remove</normaloff>:/protocol_editor/remove</iconset>
+                    <normaloff>:/protocol_editor/unlink</normaloff>:/protocol_editor/unlink</iconset>
                   </property>
                   <property name="iconSize">
                    <size>
@@ -1069,7 +1072,7 @@ Lightsheet</string>
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>179</width>
+         <width>69</width>
          <height>914</height>
         </rect>
        </property>

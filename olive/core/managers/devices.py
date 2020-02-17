@@ -1,6 +1,6 @@
 import itertools
 import logging
-import tempfile
+import uuid
 from collections.abc import MutableMapping
 from dataclasses import dataclass
 from typing import Dict, Optional, Tuple, Type, Iterable
@@ -46,8 +46,16 @@ class Requirements(MutableMapping):
         return self._requirements[alias].instance
 
     def __setitem__(self, alias, device: Device):
+        # ensure the slot is empty
+        assert (
+            self._requirements[alias].instance is None
+        ), f'please unlink "{alias}" first'
+
+        # ensure device is correct
         dtype = self._requirements[alias].dtype
         assert isinstance(device, dtype), f'"{device}" does not belong to "{dtype}"'
+
+        # save it
         self._requirements[alias].instance = device
 
     def __delitem__(self, alias):
@@ -122,14 +130,11 @@ class DeviceManager(metaclass=Singleton):
     --
     2.1) open device
     2.2) save device to internal list
-    2.3) assign uuid
     --
-    3) save uuid
-    4) update requirements
-    5) link uuid with requirement alias
+    5) update requirements
     --
-    5.1) lookup uuid for device
-    5.2) try to assign device
+    5.1) try to assign device
+    5.2) cleanup unused devices
 
     """
 
@@ -141,7 +146,8 @@ class DeviceManager(metaclass=Singleton):
 
     @property
     def devices(self) -> Tuple[Device]:
-        return tuple(set(itertools.chain.from_iterable(self._devices.values())))
+        """Monitored devices."""
+        return tuple(self._devices)
 
     @property
     def is_satisfied(self) -> bool:
@@ -150,16 +156,28 @@ class DeviceManager(metaclass=Singleton):
 
     ##
 
-    # TODO how to cleanup register/unregister calls
     def register(self, device: Device):
-        category = device._determine_category()
-        self._devices[category].append(device)
-        logger.debug(f"new device {device} registered")
+        """
+        Register and open a device.
 
-    def unregister(self, device: Device):
-        category = device._determine_category()
-        self._devices[category].remove(device)
-        logger.debug(f"{device} unregistered")
+        Args:
+            device (Device): new device
+        """
+        logger.debug(f'[REG] "{device}"')
+        # TODO device.open
+        self._devices.append(device)
+
+    def unregister(self, device: str):
+        """
+        Unregister and close a device.
+
+        Args:
+            device (Device): device to unregister
+        """
+        logger.debug(f'[UNREG] "{device}"')
+        assert device in self._devices, f'"{device}" is not registered'
+        # TODO device.close
+        self._devices.remove(device)
 
     ##
 
@@ -171,9 +189,11 @@ class DeviceManager(metaclass=Singleton):
             new_req (dict of str: Device): new requirements
         """
         unused_devices = self._requirements.update(requirements)
-        # TODO close unused_devices
-
-        # TODO update internal device list
+        logger.debug(
+            f"{len(unused_devices)} device(s) are not required after the update"
+        )
+        for device in unused_devices:
+            self.unregister(device)
 
     def link(self, alias: str, device: Device):
         """
@@ -184,25 +204,19 @@ class DeviceManager(metaclass=Singleton):
             device (Device): the concrete device instance
         """
         logger.debug(f'[LINK] "{device}" -> "{alias}')
-
         self._requirements[alias] = device
-        # TODO update internal device list
+        self.register(device)
 
     def unlink(self, alias: str):
         """
         Unlink alias-device association.
 
         Args:
-            alias (str):
+            alias (str): alias of the device to unlink
         """
-        pass
-
-        # TODO update internal device list
-
-    def flush(self):
-        """
-        Close unused devices.
-        """
+        logger.debug(f'[UNLINK] "{alias}"')
+        device = self._requirements.pop(alias)
+        self.unregister(device)
 
     def get_devices(self):
         return self._devices
