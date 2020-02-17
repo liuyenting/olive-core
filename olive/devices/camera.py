@@ -1,26 +1,27 @@
 from abc import abstractmethod
-from collections import deque
 from ctypes import c_uint8
 from enum import auto, Enum
 import logging
+from math import floor
 from multiprocessing.sharedctypes import RawArray
 
 import numpy as np
+from psutil import virtual_memory
+import trio
 
-from olive.core import Device
+from .base import Device
 
-__all__ = ['BufferRetrieveMode', "Camera"]
+__all__ = ["BufferRetrieveMode", "Camera"]
 
 logger = logging.getLogger(__name__)
 
 
 class BufferRetrieveMode(Enum):
-    Index = auto()  # return frame according to index
-    Last = auto()  # return the latest acquired frame
+    Latest = auto()  # return the latest acquired frame
     Next = auto()  # return next valid frame
 
 
-class RingBuffer(object):
+class FrameBuffer(object):
     """
     Buffer that mimics SimpleQueue object.
 
@@ -30,39 +31,63 @@ class RingBuffer(object):
         dtype (dtype, optional): data type
     """
 
-    def __init__(self, shape, nframes, dtype, allocator=lambda x: RawArray(c_uint8, x)):
+    def __init__(self, shape, dtype, nframes=1):
+        assert nframes >= 1, "frames in a ring buffer should be >= 1"
+
         self._shape, self._dtype = shape, dtype
 
-        # create raw arrays
-        self._frames = [allocator(self.frame_size) for _ in range(nframes)]
-        logger.info(f"buffer ALLOCATED, {nframes} frame(s), {shape}, {dtype}")
+        (ny, nx), dtype = self.shape, self.dtype
+        nbytes = (nx * ny) * np.dtype(dtype).itemsize
+        self._frames = [RawArray(c_uint8, nbytes) for _ in range(nframes)]
 
-        # bookkeeping
+        self._read_index, self._write_index = 0, 0
+        self._is_full = False
 
-    def qsize(self):
-        """Number of frames await for retrieval."""
-        return len(self._dirty)
+        self.reset()
+
+    ##
+
+    def reset(self):
+        self._read_index, self._write_index = 0, 0
+        self._is_full = False
+
+    def full(self):
+        return self._is_full
 
     def empty(self):
-        return len(self._dirty) == 0
+        return (not self.full()) and (self._read_index == self._write_index)
 
-    def flush(self):
-        while not self.empty():
-            self.push_clean(self.pop_dirty())
+    def write(self, frame):
+        if self.full():
+            raise IndexError("not enough internal buffer")
+        self.frames[self._write_index][:] = frame
 
-    def pop_dirty(self, block=True, timeout=None):
-        """Return a frame to read."""
-        return self._dirty.pop()
+        self._write_index = (self._write_index + 1) % self.capacity()
+        self._is_full = self._read_index == self._write_index
 
-    def push_dirty(self, item):
-        self._dirty.appendleft(item)
+    def read(self):
+        if self.empty():
+            return None
+        frame = self.frames[self._read_index]
 
-    def pop_clean(self, block=True, timeout=None):
-        """Return a frame to write."""
-        return self._clean.pop()
+        self._read_index = (self._read_index + 1) % self.capacity()
+        self._is_full = False
 
-    def push_clean(self, item):
-        self._clean.appendleft(item)
+        return frame
+
+    def capacity(self):
+        """Returns the maximum capacity of the buffer."""
+        return len(self.frames)
+
+    def size(self):
+        if self.full():
+            return self.capacity()
+        else:
+            size = self._read_index - self._write_index
+            if size < 0:
+                return self.capacity() + size
+            else:
+                return size
 
     ##
 
@@ -75,86 +100,118 @@ class RingBuffer(object):
         return self._frames
 
     @property
-    def frame_size(self):
-        (ny, nx), dtype = self.shape, self.dtype
-        return (nx * ny) * np.dtype(dtype).itemsize
-
-    @property
     def shape(self):
         return self._shape
 
 
 class Camera(Device):
-    def __init__(self, *args, **kwargs):
-        self._buffer = None
+    """
+    Args:
+        max_memory_size (optional): maximum buffer memory size in bytes or percentage
+
+    Attributes:
+        continuous (bool): camera will continuously acquiring
+    """
+
+    def __init__(self, *args, max_memory_size=0.1, **kwargs):
         super().__init__(*args, **kwargs)
+
+        self._buffer, self._max_memory_size = None, None
+        self.set_max_memory_size(max_memory_size)
+
+        self._continous = False
 
     """
     High level
     """
 
-    def snap(self):
+    async def snap(self, out=None):
         """Capture a single image."""
-        self.configure_acquisition(1)
+        # NOTE ring buffer requires minimally of 2 frames
+        await self.configure_acquisition(2)
+
         self.start_acquisition()
-
-        self.get_image()
-        frame = self._extract_frame()
-        image = (
-            np.frombuffer(frame, dtype=self.buffer.dtype)
-            .reshape(self.buffer.shape)
-            .copy()
-        )
-        self._release_frame(frame)
-
+        out = await self.get_image(out=out)
         self.stop_acquisition()
-        self.unconfigure_acquisition()
 
-        return image
+        await self.unconfigure_acquisition()
 
-    @abstractmethod
-    def configure_grab(self):
-        pass
+        return out
 
-    @abstractmethod
-    def grab(self):
+    async def grab(self):
         """Perform an acquisition that loops continuously."""
+        # TODO probe the system for optimal size
+        await self.configure_acquisition(100, continuous=True)
 
-    @abstractmethod
-    def sequence(self, n_frames, out=None):
+        self.start_acquisition()
+        with trio.CancelScope():
+            while True:
+                yield await self.get_image(mode=BufferRetrieveMode.Latest, copy=False)
+        self.stop_acquisition()
+
+        await self.unconfigure_acquisition()
+
+    async def sequence(self, frames):
         """Acquire a specified number of images and then stops."""
+        await self.configure_acquisition(frames)
+
+        # prepare the buffer
+        if isinstance(frames, np.ndarray):
+            n_frames = frames.shape[0]
+            logger.info(f"acquire {n_frames} frames to user buffer")
+        else:
+            n_frames = int(frames)
+            frames = np.empty((n_frames,) + self.buffer.shape, dtype=self.buffer.dtype)
+            logger.info(f"requested {n_frames} frames")
+
+        self.start_acquisition()
+        for i in range(n_frames):
+            yield await self.get_image(mode=BufferRetrieveMode.Next, out=frames[i, ...])
+        self.stop_acquisition()
+
+        await self.unconfigure_acquisition()
 
     """
     Low level
     """
 
-    def configure_acquisition(self, nframes, continuous=False):
-        if continuous:
-            self.configure_ring(nframes)
+    async def configure_acquisition(self, n_frames, continuous=False):
+        await self.configure_ring(n_frames)
 
-    def configure_ring(self, nframes):
-        _, shape = self.get_roi()
-        dtype = self.get_dtype()
-        self._buffer = RingBuffer(shape, nframes, dtype)
+        # continuous when
+        #   - specified explicitly
+        #   - limited buffer
+        self._continous = continuous or (n_frames != len(self.buffer.frames))
+
+    async def configure_ring(self, n_frames):
+        (_, shape), dtype = self.get_roi(), self.get_dtype()
+
+        ny, nx = shape
+        nbytes = (nx * ny) * np.dtype(dtype).itemsize
+
+        available_size = self.get_max_memory_size()
+        if available_size < nbytes * n_frames:
+            n_frames = available_size // nbytes
+            logger.warning(
+                f"exceeds memory limit ({available_size} bytes), coerce to {n_frames} frames"
+            )
+        self._buffer = FrameBuffer(shape, dtype, n_frames)
 
     @abstractmethod
     def start_acquisition(self):
         """Starts an acquisition."""
 
-    @abstractmethod
-    def get_image(self, mode: BufferRetrieveMode, index=-1, copy=True, out=None):
+    async def get_image(
+        self, mode: BufferRetrieveMode = BufferRetrieveMode.Next, copy=True, out=None
+    ):
         """
         Acquire specified frame.
 
         Args:
-            mode (BufferRetrieveMode): TBD
-            index (int): TBD
-            copy (bool, optional): a copy will only be made if `out` is not specified
-            out (array_like, optional): an array that can store the result
+            TBA
         """
         # reinterpret as a numpy array
-        frame = self._extract_frame(mode, index)
-        frame = np.frombuffer(frame, shape=self.buffer.shape, dtype=self.buffer.dtype)
+        frame = await self._get_image_data(mode)
 
         # store the value
         if out is None:
@@ -163,21 +220,20 @@ class Camera(Device):
             out[:] = frame[:]
         return out
 
-    @abstractmethod
-    def _extract_frame(
-        self, mode: BufferRetrieveMode = BufferRetrieveMode.Next, index=-1
-    ):
-        """Retrieve an acquired frame from the buffer WITHOUT making a copy."""
+    async def _get_image_data(self, mode: BufferRetrieveMode = BufferRetrieveMode.Next):
+        """Retrieve a frame from the host-side ring buffer WITHOUT making a copy."""
+        frame = await self._extract_frame(mode)
+        return np.frombuffer(frame, dtype=self.buffer.dtype).reshape(self.buffer.shape)
 
-    def _release_frame(self, frame):
-        """Release extracted frame, allowing it to be reused."""
-        self.buffer.push_clean(frame)
+    @abstractmethod
+    async def _extract_frame(self, mode: BufferRetrieveMode):
+        """Retrieve raw frame data from the camera."""
 
     @abstractmethod
     def stop_acquisition(self):
         """Stops an acquistion."""
 
-    def unconfigure_acquisition(self):
+    async def unconfigure_acquisition(self):
         """Release resources used in the acquisition."""
         self._buffer = None
         logger.debug("buffer UNREFERENCED")
@@ -197,6 +253,15 @@ class Camera(Device):
     @abstractmethod
     def set_exposure_time(self, value):
         pass
+
+    def get_max_memory_size(self):
+        return self._max_memory_size
+
+    def set_max_memory_size(self, max_memory_size):
+        if isinstance(max_memory_size, float):
+            total_memory_size = virtual_memory().total
+            max_memory_size = floor(max_memory_size * total_memory_size)
+        self._max_memory_size = max_memory_size
 
     @abstractmethod
     def get_max_roi_shape(self):
@@ -225,3 +290,7 @@ class Camera(Device):
     @property
     def buffer(self):
         return self._buffer
+
+    @property
+    def continuous(self):
+        return self._continous

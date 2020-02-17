@@ -1,10 +1,10 @@
+import asyncio
 import logging
 from pprint import pprint
 
 import coloredlogs
-
-from olive.drivers.aa.mds import MultiDigitalSynthesizer as MDS
-
+from serial.tools import list_ports
+import serial_asyncio
 
 coloredlogs.install(
     level="DEBUG", fmt="%(asctime)s %(levelname)s %(message)s", datefmt="%H:%M:%S"
@@ -13,28 +13,23 @@ coloredlogs.install(
 logger = logging.getLogger(__name__)
 
 
-def select_device():
-    mds = MDS()
-    mds.initialize()
-    valid_devices = mds.enumerate_devices()
-    logger.info(f"found {len(valid_devices)} device(s)")
-    return valid_devices[0]
+async def main():
+    ports = [port.device for port in list_ports.comports()]
+    print(ports)
 
+    loop = asyncio.get_running_loop()
+    reader, writer = await serial_asyncio.open_serial_connection(
+        loop=loop, url="COM12", baudrate=57600
+    )
 
-def main():
-    device = select_device()
+    writer.write("\r".encode())
+    await writer.drain()
 
-    device.open()
+    data = await reader.readuntil("?".encode())
+    data = data.decode()
 
-    fmin, fmax = device.get_property("freq_range")
-    logger.info(f"frequency range [{fmin}, {fmax}]")
-
-    device.set_frequency(4, (fmax + fmin) / 2)
-    print(device.get_frequency(4))
-    print(device._get_power_range(4))
-
-    device.close()
+    print(data)
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

@@ -1,7 +1,7 @@
 from abc import abstractmethod
 import logging
 
-from olive.core import Device
+from .base import Device
 
 __all__ = []
 

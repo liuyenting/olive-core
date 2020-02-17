@@ -15,10 +15,10 @@ from enum import Enum
 from functools import lru_cache
 import logging
 
-from olive.core import DeviceInfo
-from olive.core.utils import retry
 from olive.devices import PowerSensor
-from olive.devices.errors import UnsupportedDeviceError
+from olive.devices.base import DeviceInfo
+from olive.devices.error import UnsupportedDeviceError
+from olive.utils import retry
 
 __all__ = ["Photodiode", "DiffuserSetting"]
 
@@ -41,8 +41,8 @@ class Photodiode(PowerSensor):  # TODO extract common scheme to OphirSensor
     power levels.
     """
 
-    def __init__(self, driver, parent):
-        super().__init__(driver, parent=parent)
+    def __init__(self, parent):
+        super().__init__(parent.driver, parent=parent)
         self._handle = self.parent.handle
 
     ##
@@ -58,11 +58,14 @@ class Photodiode(PowerSensor):  # TODO extract common scheme to OphirSensor
             self.handle.close()
 
     def open(self):
-        super().open()
-
         # using a power sensor, auto switch to 'Power screen'
         self.handle.write(b"$FP\r")
         self.handle.read_until("\r")
+
+        super().open()
+
+    def close(self):
+        super().close()
 
     ##
 
@@ -153,6 +156,10 @@ class Photodiode(PowerSensor):  # TODO extract common scheme to OphirSensor
         except (ValueError, UnicodeDecodeError):
             raise SyntaxError("unable to parse device info")
         return DeviceInfo(version=None, vendor="Ophir", model=name, serial_number=sn)
+
+    @property
+    def is_opened(self):
+        return self.parent.is_opened
 
     """
     Property accessors.

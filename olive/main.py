@@ -18,7 +18,7 @@ coloredlogs.install(
 def main_gui():
     from PySide2.QtWidgets import QApplication
 
-    from olive.gui import MainWindow
+    from olive.ui import MainWindow
 
     app = QApplication()
     mw = MainWindow()

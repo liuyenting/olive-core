@@ -1,4 +1,3 @@
-from abc import abstractmethod
 import asyncio
 from itertools import product
 import logging
@@ -7,10 +6,11 @@ from typing import Union
 from serial import Serial
 from serial.tools import list_ports
 
-from olive.core import Driver, DeviceInfo
-from olive.core.utils import retry
+from olive.drivers.base import Driver
+from olive.devices.base import DeviceInfo
+from olive.utils import retry
 from olive.devices import SensorAdapter
-from olive.devices.errors import UnsupportedDeviceError
+from olive.devices.error import UnsupportedDeviceError
 
 from olive.drivers.ophir.sensors import Photodiode
 
@@ -86,6 +86,10 @@ class OphirMeter(SensorAdapter):
 
         return DeviceInfo(version=version, vendor="Ophir", model=name, serial_number=sn)
 
+    @property
+    def is_opened(self):
+        return self.handle.is_open
+
     """
     Property accessors.
     """
@@ -132,12 +136,11 @@ class Nova2(OphirMeter):
     def open(self):
         self.handle.open()
         self._set_full_duplex()
-        super().open()
 
     def close(self):
+        # no more children
         self._save_configuration()
         self.handle.close()
-        super().close()
 
     ##
 
@@ -149,14 +152,6 @@ class Nova2(OphirMeter):
     # TODO power meter related operations
 
     ##
-
-    """
-    Property accessors.
-    """
-
-    """
-    Private helper functions and constants.
-    """
 
     def _get_lcd_scanlines(self):
         """Returns an 80-character, 40-byte hex string."""
@@ -229,9 +224,7 @@ class Ophir(Driver):
             # temporary open the controller
             controller.open()
             # retrieve sensor devices
-            _sensors = [
-                klass(self, controller) for klass in controller.enumerate_sensors()
-            ]
+            _sensors = [klass(controller) for klass in controller.enumerate_sensors()]
             # close the controller
             controller.close()
 

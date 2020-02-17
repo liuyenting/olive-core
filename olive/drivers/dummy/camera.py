@@ -1,39 +1,38 @@
+import glob
 import logging
 import os
+from typing import Iterable
 
-import imageio
 import numpy as np
 
-from olive.core import Driver, DeviceInfo
+from olive.drivers.base import Driver
+from olive.devices.base import DeviceInfo
 from olive.devices import Camera
 
-__all__ = ["PseudoCamera"]
+__all__ = ["PseudoCamera", "PseudoCameraDriver"]
 
 logger = logging.getLogger(__name__)
 
 
 class PseudoCamera(Camera):
-    def __init__(self, sample="t1-head"):
-        super().__init__()
-
-        self._sample = sample
-        self._buffer = None
-        self._load_sample_to_buffer(sample)
+    def __init__(self, driver, path):
+        super().__init__(driver)
+        self._path = path
 
     ##
 
-    def test_open(self):
+    async def test_open(self):
         pass
 
-    def open(self):
+    async def _open(self):
         pass
 
-    def close(self):
+    async def close(self):
         pass
 
     ##
 
-    def enumerate_properties(self):
+    async def enumerate_properties(self):
         pass
 
     ##
@@ -96,17 +95,16 @@ class PseudoCamera(Camera):
 class PseudoCameraDriver(Driver):
     def __init__(self):
         super().__init__()
+        self._resources = []
 
     ##
 
     def initialize(self):
-        # TODO list contents in the resouce pack
-        pass
+        root = os.path.join(os.path.dirname(__file__), "resources")
+        self._resources.extend(glob.glob(os.path.join(root, "*.tif")))
 
     def shutdown(self):
-        super().shutdown()
+        self._resources = []
 
-    def enumerate_devices(self) -> PseudoCamera:
-        # TODO one camera only
-        pass
-
+    async def enumerate_devices(self) -> Iterable[PseudoCamera]:
+        return [PseudoCamera(self, path) for path in self._resources]

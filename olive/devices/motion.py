@@ -1,9 +1,11 @@
 from abc import abstractmethod
+from enum import auto, Enum
 import logging
+from typing import Union
 
-from olive.core import Device
+from .base import Device
 
-__all__ = ["Galvo", "Stage", "LinearStage", "RotaryStage", "MotionController"]
+__all__ = ["Galvo", "LimitStatus", "LinearAxis", "RotaryAxis", "MotionController"]
 
 logger = logging.getLogger(__name__)
 
@@ -59,32 +61,97 @@ class Galvo(Device):
         pass
 
 
-class Stage(Device):
+class LimitStatus(Enum):
+    WithinRange = auto()
+    UpperLimit = auto()
+    LowerLimit = auto()
+
+
+class Axis(Device):
+    ## position ##
     @abstractmethod
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    async def go_home(self, blocking=True):
+        pass
+
+    @abstractmethod
+    def get_position(self):
+        pass
+
+    @abstractmethod
+    async def move_absolute(self, pos, blocking=True):
+        pass
+
+    @abstractmethod
+    async def move_relative(self, pos, blocking=True):
+        pass
+
+    @abstractmethod
+    def move_continuous(self, vel):
+        pass
+
+    ## velocity ##
+    @abstractmethod
+    def get_velocity(self):
+        pass
+
+    @abstractmethod
+    def set_velocity(self, vel):
+        pass
+
+    ## acceleration ##
+    @abstractmethod
+    def get_acceleration(self):
+        pass
+
+    @abstractmethod
+    def set_acceleration(self, acc):
+        pass
+
+    ## constraints ##
+    @abstractmethod
+    def set_origin(self):
+        """Define current position as the origin."""
+
+    @abstractmethod
+    def get_limits(self):
+        pass
+
+    @abstractmethod
+    def get_limit_status(self) -> LimitStatus:
+        pass
+
+    @abstractmethod
+    def set_limits(self):
+        pass
+
+    ## utils ##
+    @abstractmethod
+    async def calibrate(self):
+        pass
+
+    @abstractmethod
+    def stop(self, emergency=False):
+        pass
+
+    @abstractmethod
+    async def wait(self):
+        pass
 
 
-class LinearStage(Stage, Device):
+class LinearAxis(Axis, Device):
     """
-    Linear stage is a component of a precise motion system used to restrict an object
+    Linear axis is a component of a precise motion system used to restrict an object
     to a single axis of _translation_.
     """
 
-    @abstractmethod
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
 
-
-class RotaryStage(Stage, Device):
+class RotaryAxis(Axis, Device):
     """
-    A rotary stage is a component of a motion system used to restrict an object to a single axis of _rotation_.
+    A rotary axis is a component of a motion system used to restrict an object to a single axis of _rotation_.
     """
-
-    @abstractmethod
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
 
 
 class MotionController(Device):
-    pass
+    @abstractmethod
+    async def enumerate_axes(self) -> Union[Axis]:
+        """Enumerate connected axes."""

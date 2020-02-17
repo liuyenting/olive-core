@@ -29,7 +29,15 @@ setup(
     #
     # use pyproject.toml for setup dependencies instead
     # setup_requires=[],
-    install_requires=["coloredlogs", "pyserial", "pyside2"],
+    install_requires=[
+        "coloredlogs",
+        "psutil",
+        "pyqtgraph>=0.11.0rc0",
+        "pyserial-asyncio",
+        "pyside2",
+        "pyzmq",
+        "qtpy",
+    ],
     #
     # Package Structure
     #

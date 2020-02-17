@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from typing import NamedTuple
 
-from olive.core import Device
+from .base import Device
 
 __all__ = ["AcustoOpticalModulator", "ElectroOpticalModulator"]
 
@@ -91,7 +91,3 @@ class ElectroOpticalModulator(Modulator, Device):
             - min
             - max
     """
-
-    @abstractmethod
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)

@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from typing import Union
 
-from olive.core import Device
+from .base import Device
 
 __all__ = ["Sensor", "SensorAdapter", "PowerSensor"]
 
@@ -15,24 +15,6 @@ class Sensor(Device):
         If parent exists, they should be the one handling open and closing, since they
         are already aware of this sensor during enumeration.
     """
-
-    @abstractmethod
-    def __init__(self, driver, parent: "SensorAdapter" = None):
-        super().__init__(driver, parent=parent)
-
-    ##
-
-    def open(self):
-        if self.parent:
-            self.parent.open()
-        super().open()
-
-    def close(self):
-        if self.parent:
-            self.parent.close()
-        super().close()
-
-    ##
 
     @abstractmethod
     def readout(self):
@@ -67,7 +49,7 @@ class SensorAdapter(Device):
 
     @abstractmethod
     def enumerate_sensors(self) -> Union[Sensor]:
-        """ENumerate connected sensors."""
+        """Enumerate connected sensors."""
 
 
 ##
