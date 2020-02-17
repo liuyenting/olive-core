@@ -5,9 +5,8 @@ from collections.abc import MutableMapping
 from dataclasses import dataclass
 from typing import Dict, Optional, Tuple, Type
 
+from olive.devices.base import Device
 from olive.utils import Graph, Singleton
-
-from .base import Device
 
 __all__ = ["DeviceManager", "query_device_hierarchy"]
 

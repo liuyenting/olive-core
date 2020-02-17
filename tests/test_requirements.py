@@ -2,7 +2,7 @@ from pprint import pprint
 
 import coloredlogs
 
-from olive.devices.manager import Requirements
+from olive.core.managers.devices import Requirements
 from olive.devices import Camera, LinearAxis
 
 coloredlogs.install(
