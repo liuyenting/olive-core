@@ -1,2 +1,2 @@
 class ManagerException(Exception):
-    """Generic manager error."""
+    """Generic manager exception."""

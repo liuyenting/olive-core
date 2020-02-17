@@ -1,12 +1,13 @@
-import itertools
+import asyncio
 import logging
-import uuid
 from collections.abc import MutableMapping
 from dataclasses import dataclass
 from typing import Dict, Optional, Tuple, Type, Iterable
 
 from olive.devices.base import Device
 from olive.utils import Graph, Singleton
+
+from .error import DeviceTimeoutException
 
 __all__ = ["DeviceManager", "Requirements", "query_device_hierarchy"]
 
@@ -121,7 +122,7 @@ class Requirements(MutableMapping):
 
 class DeviceManager(metaclass=Singleton):
     """
-    Device bookkeeping.
+    Device book-keeping.
 
     # FIXME
     >> registration flow
@@ -141,6 +142,7 @@ class DeviceManager(metaclass=Singleton):
     def __init__(self):
         self._requirements = Requirements()
         self._devices = []
+        self._tasks = []
 
     ##
 
@@ -164,8 +166,16 @@ class DeviceManager(metaclass=Singleton):
             device (Device): new device
         """
         logger.debug(f'[REG] "{device}"')
-        # TODO device.open
-        self._devices.append(device)
+
+        async def _register():
+            # 1) open
+            await device.open()
+            # 2) register
+            self._devices.append(device)
+
+        # kick start
+        task = asyncio.create_task(_register())
+        self._tasks.append(task)
 
     def unregister(self, device: str):
         """
@@ -176,8 +186,16 @@ class DeviceManager(metaclass=Singleton):
         """
         logger.debug(f'[UNREG] "{device}"')
         assert device in self._devices, f'"{device}" is not registered'
-        # TODO device.close
-        self._devices.remove(device)
+
+        async def _unregister():
+            # 1) close
+            await device.close()
+            # 2) unregister
+            self._devices.remove(Device)
+
+        # kick start
+        task = asyncio.create_task(_unregister())
+        self._tasks.append(task)
 
     ##
 
@@ -197,7 +215,7 @@ class DeviceManager(metaclass=Singleton):
 
     def link(self, alias: str, device: Device):
         """
-        Link registered device to shopping list item.
+        Link a device to an alias among the requirements.
 
         Args:
             alias (str): alias of the device to link with
@@ -218,10 +236,20 @@ class DeviceManager(metaclass=Singleton):
         device = self._requirements.pop(alias)
         self.unregister(device)
 
-    def get_devices(self):
-        return self._devices
-
     ##
+
+    async def wait_ready(self, timeout=5):
+        """
+        Wait until (un)registration requests are finished.
+
+        Args:
+            timeout (int, optional): timeout in seconds
+        """
+        loop = asyncio.get_event_loop()
+        future = asyncio.wait(*self._tasks, timeout=timeout)
+        done, pending = loop.run_until_complete(future)
+        if len(pending) > 0:
+            raise DeviceTimeoutException(f"timeout occurs for {pending}")
 
 
 def query_device_hierarchy():
