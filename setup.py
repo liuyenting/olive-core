@@ -35,6 +35,7 @@ setup(
         "pyqtgraph>=0.11.0rc0",
         "pyserial-asyncio",
         "pyside2",
+        "pyzmq",
         "qtpy",
     ],
     #

@@ -9,7 +9,8 @@ coloredlogs.install(
     level="DEBUG", fmt="%(asctime)s %(levelname)s %(message)s", datefmt="%H:%M:%S"
 )
 
-requirements = Requirements({"cam": Camera, "x": LinearAxis, "y": LinearAxis})
+requirements = Requirements()
+requirements.update({"cam": Camera, "x": LinearAxis, "y": LinearAxis})
 
 print("** before")
 for alias, device in requirements.items():
