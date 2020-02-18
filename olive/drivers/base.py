@@ -1,9 +1,10 @@
+import asyncio
 import logging
 from abc import ABCMeta, abstractmethod
-import asyncio
-from typing import Iterable, get_type_hints
+from typing import Iterable, Tuple, get_type_hints
 
 from olive.devices.base import Device, DeviceType
+from olive.devices.error import UnsupportedClassError
 
 __all__ = ["Driver", "DriverType"]
 
@@ -26,27 +27,24 @@ class Driver(metaclass=DriverType):
 
     ##
 
-    @abstractmethod
     def initialize(self):
         """Initialize the library."""
 
-    @abstractmethod
     def shutdown(self):
         """Cleanup resources allocated by the library."""
+        for device in self._devices:
+            device.close()
 
     ##
 
-    async def enumerate_devices(self, no_cache=False) -> Iterable[Device]:
+    async def enumerate_devices(self) -> Tuple[Device]:
         """
         List devices that this driver can interact with.
-
-        Args:
-            no_cache (bool, optional): always request new hardware list
 
         Note:
             Returned devices are NOT active yet.
         """
-        candidates = await self._enumerate_devices()
+        candidates = self._enumerate_device_candidates()
 
         # ignore devices that are already active
         active_devices = [device for device in self._devices if device.is_opened()]
@@ -64,14 +62,23 @@ class Driver(metaclass=DriverType):
             for device, result in zip(candidates, results):
                 if result is None:
                     inactive_devices.append(result)
+                else:
+                    try:
+                        raise result
+                    except UnsupportedClassError:
+                        # known unsupported case
+                        continue
+                    except Exception as e:
+                        # grace fully logged and ignored
+                        logger.error(str(e))
 
         # combine results and refresh internal book-keeping
         self._devices = active_devices + inactive_devices
 
-        return self._devices
+        return tuple(self._devices)
 
     @abstractmethod
-    async def _enumerate_devices(self) -> Iterable[Device]:
+    def _enumerate_device_candidates(self) -> Iterable[Device]:
         """
         Enumerate possible devices, but _not_ tested for compatibility.
 
@@ -82,7 +89,7 @@ class Driver(metaclass=DriverType):
     @classmethod
     def enumerate_supported_device_types(cls) -> Iterable[DeviceType]:
         """List device types that this driver may support."""
-        hints = get_type_hints(cls.enumerate_devices)["return"]
+        hints = get_type_hints(cls._enumerate_device_candidates)["return"]
         try:
             klasses = hints.__args__
         except AttributeError:

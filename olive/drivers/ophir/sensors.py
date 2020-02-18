@@ -17,7 +17,7 @@ import logging
 
 from olive.devices import PowerSensor
 from olive.devices.base import DeviceInfo
-from olive.devices.error import UnsupportedDeviceError
+from olive.devices.error import UnsupportedClassError
 from olive.utils import retry
 
 __all__ = ["Photodiode", "DiffuserSetting"]
@@ -47,13 +47,13 @@ class Photodiode(PowerSensor):  # TODO extract common scheme to OphirSensor
 
     ##
 
-    @retry(UnsupportedDeviceError, logger=logger)
+    @retry(UnsupportedClassError, logger=logger)
     def test_open(self):
         self.handle.open()
         try:
             logger.info(f".. {self.info}")
         except SyntaxError:
-            raise UnsupportedDeviceError
+            raise UnsupportedClassError
         finally:
             self.handle.close()
 

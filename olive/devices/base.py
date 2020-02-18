@@ -44,10 +44,6 @@ class Device(metaclass=DeviceType):
         self._driver = driver
         self._parent, self._children = parent, []
 
-    @abstractmethod
-    def __eq__(self, other):
-        """Compare between devices."""
-
     ##
 
     @property

@@ -1,30 +1,56 @@
+from __future__ import annotations
+
 from abc import abstractmethod
-from typing import NamedTuple
+from dataclasses import dataclass
+from typing import Iterable, Tuple
+
+import numpy as np
 
 from .base import Device
+from .error import ChannelExistsError
 
-__all__ = ["AcustoOpticalModulator", "ElectroOpticalModulator"]
-
-
-class ChannelInfo(NamedTuple):
-    alias: str
-    #: frequency in MHz
-    frequency: float
-    #: discrete power level
-    power: int
+__all__ = ["AcustoOpticalModulator", "ElectroOpticalModulator", "SpatialLightModulator"]
 
 
 class Modulator(Device):
-    @abstractmethod
-    def is_enabled(self):
-        """Is the chanel enabled?"""
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # dict value used for reverse lookup
+        self._channels = dict()
+
+    ##
 
     @abstractmethod
-    def enable(self, force=True):
+    def number_of_channels(self):
+        """Maximum supported channels."""
+
+    def defined_channels(self) -> Iterable[str]:
+        """Get currently configured channels."""
+        return tuple(self._channels.keys())
+
+    @abstractmethod
+    def new_channel(self, alias):
+        """Create new channel and book-keep it internally."""
+
+    def delete_channel(self, alias):
+        assert alias in self._channels, f'"{alias}" does not exist"'
+        self._channels.pop(alias)
+
+        # ensure the channel is disabled
+        self.disable(alias)
+
+    ##
+
+    @abstractmethod
+    def is_enabled(self, alias) -> bool:
+        """Is the channel enabled?"""
+
+    @abstractmethod
+    def enable(self, alias):
         """Enable a channel."""
 
     @abstractmethod
-    def disable(self, force=True):
+    def disable(self, alias):
         """Disable a channel."""
 
 
@@ -46,27 +72,27 @@ class AcustoOpticalModulator(Modulator, Device):
     """
 
     @abstractmethod
-    def get_frequency_range(self, channel):
+    def get_frequency_range(self, alias):
         pass
 
     @abstractmethod
-    def get_frequency(self, channel):
+    def get_frequency(self, alias) -> float:
         pass
 
     @abstractmethod
-    def set_frequency(self, channel, frequency, force=False):
+    def set_frequency(self, alias, frequency: float):
         pass
 
     @abstractmethod
-    def get_power_range(self, channel):
+    def get_power_range(self, alias):
         pass
 
     @abstractmethod
-    def get_power(self, channel):
+    def get_power(self, alias) -> float:
         pass
 
     @abstractmethod
-    def set_power(self, channel, power, force=False):
+    def set_power(self, alias, power: float):
         pass
 
 
@@ -91,3 +117,26 @@ class ElectroOpticalModulator(Modulator, Device):
             - min
             - max
     """
+
+    pass
+
+
+class SpatialLightModulator(Modulator, Device):
+    """
+    An object that imposes some form of spatially varying modulation on a beam of
+    light.
+    """
+
+    @abstractmethod
+    def get_image_shape(self) -> Tuple[int, int]:
+        """Get maximum supported image shape."""
+
+    ##
+
+    @abstractmethod
+    def get_image(self, alias) -> np.ndarray:
+        pass
+
+    @abstractmethod
+    def set_image(self, alias, image: np.ndarray):
+        pass

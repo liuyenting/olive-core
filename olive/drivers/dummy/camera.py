@@ -92,7 +92,7 @@ class PseudoCamera(Camera):
         self._buffer = np.memmap(path, dtype=np.uint16, mode="r", shape=shape)
 
 
-class PseudoCameraDriver(Driver):
+class PseudoCameraDriver(object):  # Driver):
     def __init__(self):
         super().__init__()
         self._resources = []

@@ -3,6 +3,7 @@ from collections import namedtuple
 from enum import Enum
 import logging
 import re
+from typing import Iterable
 
 from serial import Serial, SerialException
 from serial.tools import list_ports
@@ -11,7 +12,9 @@ from serial_asyncio import open_serial_connection
 from olive.drivers.base import Driver
 from olive.devices import AcustoOpticalModulator
 from olive.devices.base import DeviceInfo
-from olive.devices.error import UnsupportedDeviceError
+from olive.devices.error import UnsupportedClassError, DeviceTimeoutError
+from olive.drivers.utils import SerialPortManager
+from olive.devices.error import ExceedsChannelCapacityError
 
 __all__ = ["MultiDigitalSynthesizer"]
 
@@ -40,36 +43,75 @@ class MDSnC(AcustoOpticalModulator):
 
     BAUDRATE = 19200
 
-    def __init__(self, driver, url):
+    def __init__(self, driver, port):
         super().__init__(driver)
 
-        self._url = url
+        self._port = port
         # stream r/w pair
         self._reader, self._writer = None, None
 
+        # cached
+        self._command_list = None
+        self._device_info = None
         self._discrete_power_range = None
+
+    ##
+
+    @property
+    def info(self) -> DeviceInfo:
+        # trigger command list dump
+        self.handle.write(b"\r")
+        # firmware version
+        try:
+            response = self.handle.read_until("?").decode("utf-8")
+            print(response)
+            version = self._parse_version(response)
+            print(version)
+        except (ValueError, UnicodeDecodeError):
+            raise SyntaxError("unable to parse version")
+
+        # serial number
+        self.handle.write(b"q\r")
+        response = self.handle.read_until("?").decode("utf-8")
+        print(response)
+        matches = re.search(r"([\w]+)\s+", response)
+        if matches:
+            sn = matches.group(1)
+        else:
+            raise SyntaxError("unable to parse serial number")
+
+        return DeviceInfo(version=version, vendor="AA", model="MDSnC", serial_number=sn)
+
+    @property
+    def is_busy(self):
+        return False  # nothing to be busy about
+
+    @property
+    def is_opened(self):
+        """Is the device opened?"""
+        return self._reader is not None and self._writer is not None
 
     ##
 
     async def test_open(self):
         try:
-            self.handle.open()
-            print("opened")
+            await self.open()
             logger.info(f".. {self.info}")
         except (SyntaxError, SerialException):
-            raise UnsupportedDeviceError
+            raise UnsupportedClassError
         finally:
-            self.handle.close()
-            print("closed")
+            await self.close()
 
     async def _open(self):
         """Open connection to the synthesizer and seize its internal control."""
         loop = asyncio.get_running_loop()
+
+        port = await self.driver.manager.request_port(self._port)
         self._reader, self._writer = await open_serial_connection(
-            loop=loop, url=self._url, baudrate=type(self).BAUDRATE
+            loop=loop, url=port, baudrate=self.BAUDRATE
         )
 
-        # TODO refactor to use internal serial class
+        await self._get_command_list()
 
         self._discrete_power_range = self._get_discrete_power_range()
 
@@ -80,7 +122,12 @@ class MDSnC(AcustoOpticalModulator):
         self._save_parameters()
         self._set_control_mode(ControlMode.INTERNAL)
 
-        self.handle.close()
+        self._writer.close()
+        await self._writer.wait_closed()
+
+        self.driver.manager.release_port(self._port)
+
+        self._reader, self._writer = None, None
 
     ##
 
@@ -89,18 +136,40 @@ class MDSnC(AcustoOpticalModulator):
 
     ##
 
+    def number_of_channels(self):
+        return 8
+
+    def new_channel(self, alias):
+        if len(self.defined_channels()) == self.number_of_channels():
+            raise ExceedsChannelCapacityError()
+
+        # line 1-8
+        aliases = [None] * self.number_of_channels()
+        # re-fill
+        for alias, line in self._channels:
+            aliases[line] = alias
+        # find first empty slot
+        for line, alias in enumerate(aliases):
+            if alias is None:
+                self._channels[alias] = line
+                break
+
+    ##
+
     def is_enabled(self, channel):
         self.handle.write(f"L{channel}\r".encode())
         status = self._get_line_status(channel)
         return status.switch
 
-    def enable(self, channel, force=True):
-        self.set_switch(channel, True, force)
+    def enable(self, channel):
+        self.set_switch(channel, True)
 
-    def disable(self, channel, force=True):
-        self.set_switch(channel, False, force)
+    def disable(self, channel):
+        self.set_switch(channel, False)
 
-    def set_switch(self, channel, on: bool, force=True):
+    ##
+
+    def set_switch(self, channel, on: bool):
         on = 1 if on else 0
         self.handle.write(f"L{channel}O{on}\r".encode())
         # verify
@@ -109,10 +178,6 @@ class MDSnC(AcustoOpticalModulator):
         if status.switch ^ on:
             text = "enable" if on else "disable"
             msg = f"unable to {text} channel {channel}"
-            if force:
-                raise IOError(msg)
-            else:
-                logger.warning(msg)
 
     def get_frequency_range(self, channel):
         state_ori = self.is_enabled(channel)
@@ -188,41 +253,6 @@ class MDSnC(AcustoOpticalModulator):
             else:
                 logger.warning(msg)
 
-    ##
-
-    @property
-    def busy(self):
-        return False
-
-    @property
-    def handle(self):
-        return self._handle
-
-    @property
-    def info(self) -> DeviceInfo:
-        # trigger command list dump
-        self.handle.write(b"\r")
-        # firmware version
-        try:
-            response = self.handle.read_until("?").decode("utf-8")
-            print(response)
-            version = self._parse_version(response)
-            print(version)
-        except (ValueError, UnicodeDecodeError):
-            raise SyntaxError("unable to parse version")
-
-        # serial number
-        self.handle.write(b"q\r")
-        response = self.handle.read_until("?").decode("utf-8")
-        print(response)
-        matches = re.search(r"([\w]+)\s+", response)
-        if matches:
-            sn = matches.group(1)
-        else:
-            raise SyntaxError("unable to parse serial number")
-
-        return DeviceInfo(version=version, vendor="AA", model="MDSnC", serial_number=sn)
-
     """
     Property accessors.
     """
@@ -267,6 +297,36 @@ class MDSnC(AcustoOpticalModulator):
     Private helper functions and constants.
     """
 
+    async def _get_command_list(self):
+        """
+        Get command list using dummy <ENTER>.
+
+        Returns:
+            (str): decoded raw command list
+        """
+        if self._command_list is not None:
+            return
+
+        for i_trial in range(3):
+            self._writer.write("\r".encode())
+            await self._writer.drain()
+
+            try:
+                # wait 3 seconds to load, normally, this is enough
+                command_list = await asyncio.wait_for(
+                    self._reader.readuntil("?"), timeout=3
+                )
+                self._command_list = command_list.decode()
+                break
+            except asyncio.TimeoutError:
+                logger.debug(f"command list request timeout, trial {i_trial}")
+        else:
+            raise DeviceTimeoutError()
+
+        return command_list
+
+    ##
+
     def _parse_version(self, response, pattern=r"MDS [vV]([\w\.]+).*//"):
         # scan for version string
         matches = re.search(pattern, response, flags=re.MULTILINE)
@@ -309,31 +369,20 @@ class MDSnC(AcustoOpticalModulator):
 class MultiDigitalSynthesizer(Driver):
     def __init__(self):
         super().__init__()
+        self._manager = SerialPortManager()
+
+    ##
+
+    @property
+    def manager(self):
+        return self._manager
 
     ##
 
     def initialize(self):
-        super().initialize()
+        self.manager.refresh()
 
-    def shutdown(self):
-        super().shutdown()
-
-    def enumerate_devices(self) -> MDSnC:
-        loop = asyncio.get_event_loop()
-
-        devices = [MDSnC(self, info.device) for info in list_ports.comports()]
-        results = loop.run_until_complete(
-            asyncio.gather(*[d.test_open() for d in devices], return_exceptions=True)
-        )
-
-        valid_devices = []
-        for device, result in zip(devices, results):
-            if result is None:
-                valid_devices.append(device)
-            else:
-                try:
-                    raise result
-                except UnsupportedDeviceError:
-                    continue
-        return tuple(valid_devices)
+    def _enumerate_device_candidates(self) -> Iterable[MDSnC]:
+        candidates = [MDSnC(self, port) for port in self.manager.list_ports()]
+        return candidates
 

@@ -1,10 +1,10 @@
 import asyncio
 import logging
-from pprint import pprint
 
 import coloredlogs
-from serial.tools import list_ports
-import serial_asyncio
+
+from olive.core.managers import DriverManager
+from olive.devices import AcustoOpticalModulator
 
 coloredlogs.install(
     level="DEBUG", fmt="%(asctime)s %(levelname)s %(message)s", datefmt="%H:%M:%S"
@@ -13,23 +13,18 @@ coloredlogs.install(
 logger = logging.getLogger(__name__)
 
 
-async def main():
-    ports = [port.device for port in list_ports.comports()]
-    print(ports)
+def main():
+    loop = asyncio.get_event_loop()
 
-    loop = asyncio.get_running_loop()
-    reader, writer = await serial_asyncio.open_serial_connection(
-        loop=loop, url="COM12", baudrate=57600
-    )
+    driver_mgmt = DriverManager()
 
-    writer.write("\r".encode())
-    await writer.drain()
+    aom_drivers = driver_mgmt.query_drivers(AcustoOpticalModulator)
+    print(aom_drivers)
 
-    data = await reader.readuntil("?".encode())
-    data = data.decode()
-
-    print(data)
+    aom_driver = aom_drivers[0]
+    aom_devices = loop.run_until_complete(aom_driver.enumerate_devices())
+    print(aom_devices)
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
