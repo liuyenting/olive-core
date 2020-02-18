@@ -297,9 +297,12 @@ class MDSnC(AcustoOpticalModulator):
     Private helper functions and constants.
     """
 
-    async def _get_command_list(self):
+    async def _get_command_list(self, timeout=1, n_retry=3):
         """
         Get command list using dummy <ENTER>.
+
+        Args:
+            timeout (int, optional): timeout in seconds
 
         Returns:
             (str): decoded raw command list
@@ -307,19 +310,19 @@ class MDSnC(AcustoOpticalModulator):
         if self._command_list is not None:
             return
 
-        for i_trial in range(3):
+        for i_retry in range(n_retry):
             self._writer.write("\r".encode())
             await self._writer.drain()
 
             try:
                 # wait 3 seconds to load, normally, this is enough
                 command_list = await asyncio.wait_for(
-                    self._reader.readuntil("?"), timeout=3
+                    self._reader.readuntil("?"), timeout=timeout
                 )
                 self._command_list = command_list.decode()
                 break
             except asyncio.TimeoutError:
-                logger.debug(f"command list request timeout, trial {i_trial}")
+                logger.debug(f"command list request timeout, trial {i_retry}")
         else:
             raise DeviceTimeoutError()
 

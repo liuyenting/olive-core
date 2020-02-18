@@ -57,7 +57,7 @@ class Driver(metaclass=DriverType):
         if candidates:
             # test device support
             tasks = [device.test_open() for device in candidates]
-            results = await asyncio.gather(*tasks, return_exception=True)
+            results = await asyncio.gather(*tasks, return_exceptions=True)
 
             for device, result in zip(candidates, results):
                 if result is None:
