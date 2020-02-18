@@ -34,15 +34,19 @@ class Device(metaclass=DeviceType):
     """
     All primitive device types should inherit from this class.
 
-    Attributes:
+    Args:
         driver : driver that instantiate this device
         parent (Device): parent device
     """
 
-    def __init__(self, driver, parent: Device = None):
+    def __init__(self, driver, *, parent: Device = None):
         """Abstract __init__ to prevent instantiation."""
         self._driver = driver
         self._parent, self._children = parent, []
+
+    @abstractmethod
+    def __eq__(self, other):
+        """Compare between devices."""
 
     ##
 
@@ -103,8 +107,6 @@ class Device(metaclass=DeviceType):
             self.parent.register(self)
         except AttributeError:
             pass
-        # 5) register ourself with driver
-        self.driver.register(self)
 
     async def _open(self):
         """Concrete open operation."""

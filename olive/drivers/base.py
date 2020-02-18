@@ -1,5 +1,6 @@
 import logging
 from abc import ABCMeta, abstractmethod
+import asyncio
 from typing import Iterable, get_type_hints
 
 from olive.devices.base import Device, DeviceType
@@ -15,17 +16,13 @@ class DriverType(ABCMeta):
 
 class Driver(metaclass=DriverType):
     def __init__(self):
-        self._active_devices = []
+        self._devices = []
 
     ##
 
     @property
-    def active_devices(self) -> Iterable[Device]:
-        return tuple(self._active_devices)
-
-    @property
     def is_active(self):
-        return len(self._active_devices) > 0
+        return any(device.is_opened() for device in self._devices)
 
     ##
 
@@ -39,29 +36,47 @@ class Driver(metaclass=DriverType):
 
     ##
 
-    def register(self, device: Device):
-        assert (
-            device not in self._active_devices
-        ), "device is already registered, something wrong with the initialize process"
-        self._active_devices.append(device)
-        logger.debug(f'[REG] DEV "{device}" -> DRV "{self}"')
-
-    def unregister(self, device: Device):
-        assert (
-            device in self._active_devices
-        ), "device is already unregistered, something wrong with the shutdown process"
-        self._active_devices.remove(device)
-        logger.debug(f'[UNREG] DEV "{device}" -> DRV "{self}"')
-
-    ##
-
-    @abstractmethod
-    async def enumerate_devices(self) -> Iterable[Device]:
+    async def enumerate_devices(self, no_cache=False) -> Iterable[Device]:
         """
         List devices that this driver can interact with.
 
+        Args:
+            no_cache (bool, optional): always request new hardware list
+
         Note:
             Returned devices are NOT active yet.
+        """
+        candidates = await self._enumerate_devices()
+
+        # ignore devices that are already active
+        active_devices = [device for device in self._devices if device.is_opened()]
+        logger.debug(
+            f"there are {len(active_devices)} active device(s) during enumeration"
+        )
+        candidates = [device for device in candidates if device not in active_devices]
+
+        inactive_devices = []
+        if candidates:
+            # test device support
+            tasks = [device.test_open() for device in candidates]
+            results = await asyncio.gather(*tasks, return_exception=True)
+
+            for device, result in zip(candidates, results):
+                if result is None:
+                    inactive_devices.append(result)
+
+        # combine results and refresh internal book-keeping
+        self._devices = active_devices + inactive_devices
+
+        return self._devices
+
+    @abstractmethod
+    async def _enumerate_devices(self) -> Iterable[Device]:
+        """
+        Enumerate possible devices, but _not_ tested for compatibility.
+
+        Note:
+            Returned devices are _not_ tested nor active.
         """
 
     @classmethod
