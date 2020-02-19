@@ -62,7 +62,7 @@ class AcustoOpticalModulator(Modulator, Device):
     """
 
     @abstractmethod
-    async def get_frequency_range(self, alias):
+    async def get_frequency_range(self, alias) -> Tuple[float, float]:
         pass
 
     @abstractmethod
@@ -74,7 +74,7 @@ class AcustoOpticalModulator(Modulator, Device):
         pass
 
     @abstractmethod
-    async def get_power_range(self, alias):
+    async def get_power_range(self, alias) -> Tuple[float, float]:
         pass
 
     @abstractmethod

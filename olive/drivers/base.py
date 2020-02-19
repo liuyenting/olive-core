@@ -27,13 +27,17 @@ class Driver(metaclass=DriverType):
 
     ##
 
-    def initialize(self):
+    async def initialize(self):
         """Initialize the library."""
 
-    def shutdown(self):
+    async def shutdown(self):
         """Cleanup resources allocated by the library."""
-        for device in self._devices:
-            device.close()
+        tasks = [device.close() for device in self._devices]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        for result in results:
+            if result is not None:
+                # something wrong happened
+                logger.exception(result)
 
     ##
 
