@@ -44,6 +44,8 @@ class Device(metaclass=DeviceType):
         self._driver = driver
         self._parent, self._children = parent, []
 
+        self._info = None
+
     ##
 
     @property
@@ -55,9 +57,10 @@ class Device(metaclass=DeviceType):
         return self._driver
 
     @property
-    @abstractmethod
     def info(self) -> DeviceInfo:
         """Return device info."""
+        assert self._info is not None, "device is not properly initialized"
+        return self._info
 
     @property
     @abstractmethod
@@ -91,9 +94,11 @@ class Device(metaclass=DeviceType):
                 await self.parent.open()
             except AttributeError:
                 pass
-            # 2) open ourself
             try:
+                # 2.1) open this device
                 await self._open()
+                # 2.2) cache device info
+                self._info = await self._get_device_info()
             except NotImplementedError:
                 pass
             # 3) cleanup children list
@@ -103,6 +108,7 @@ class Device(metaclass=DeviceType):
             self.parent.register(self)
         except AttributeError:
             pass
+        # 5) get device info
 
     async def _open(self):
         """Concrete open operation."""
@@ -188,3 +194,7 @@ class Device(metaclass=DeviceType):
             raise AttributeError(f'unknown property "{name}"')
 
     ##
+
+    @abstractmethod
+    async def _get_device_info(self) -> DeviceInfo:
+        """Get device info after a successful init."""

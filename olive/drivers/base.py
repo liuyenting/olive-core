@@ -61,7 +61,7 @@ class Driver(metaclass=DriverType):
 
             for device, result in zip(candidates, results):
                 if result is None:
-                    inactive_devices.append(result)
+                    inactive_devices.append(device)
                 else:
                     try:
                         raise result

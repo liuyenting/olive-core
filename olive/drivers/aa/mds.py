@@ -43,6 +43,9 @@ class MDSnC(AcustoOpticalModulator):
 
     BAUDRATE = 19200
 
+    VERSION_PATTERN = r"MDS [vV]([\w\.]+).*//"
+    SERIAL_PATTERN = r"([\w]+)\s+"
+
     def __init__(self, driver, port):
         super().__init__(driver)
 
@@ -52,35 +55,11 @@ class MDSnC(AcustoOpticalModulator):
 
         # cached
         self._command_list = None
-        self._device_info = None
+        self._n_channels = -1
+
         self._discrete_power_range = None
 
     ##
-
-    @property
-    def info(self) -> DeviceInfo:
-        # trigger command list dump
-        self.handle.write(b"\r")
-        # firmware version
-        try:
-            response = self.handle.read_until("?").decode("utf-8")
-            print(response)
-            version = self._parse_version(response)
-            print(version)
-        except (ValueError, UnicodeDecodeError):
-            raise SyntaxError("unable to parse version")
-
-        # serial number
-        self.handle.write(b"q\r")
-        response = self.handle.read_until("?").decode("utf-8")
-        print(response)
-        matches = re.search(r"([\w]+)\s+", response)
-        if matches:
-            sn = matches.group(1)
-        else:
-            raise SyntaxError("unable to parse serial number")
-
-        return DeviceInfo(version=version, vendor="AA", model="MDSnC", serial_number=sn)
 
     @property
     def is_busy(self):
@@ -97,7 +76,8 @@ class MDSnC(AcustoOpticalModulator):
         try:
             await self.open()
             logger.info(f".. {self.info}")
-        except (SyntaxError, SerialException):
+            # TODO verify device version
+        except (DeviceTimeoutError, SyntaxError):
             raise UnsupportedClassError
         finally:
             await self.close()
@@ -111,16 +91,43 @@ class MDSnC(AcustoOpticalModulator):
             loop=loop, url=port, baudrate=self.BAUDRATE
         )
 
-        await self._get_command_list()
+        self._command_list = await self._get_command_list()
+        self._n_channels = await self._get_number_of_channels()
+        # self._discrete_power_range = self._get_discrete_power_range()
 
-        self._discrete_power_range = self._get_discrete_power_range()
+        await self._set_control_voltage(ControlVoltage.FIVE_VOLT)
+        await self._set_control_mode(ControlMode.EXTERNAL)
 
-        self._set_control_voltage(ControlVoltage.FIVE_VOLT)
-        self._set_control_mode(ControlMode.EXTERNAL)
+    async def _get_device_info(self):
+        # parse firmware version
+        matches = re.search(
+            self.VERSION_PATTERN, self._command_list, flags=re.MULTILINE
+        )
+        if matches:
+            version = matches.group(1)
+        else:
+            raise SyntaxError("unable to find version string")
+
+        # request serial
+        self._writer.write(b"q\r")
+        await self._writer.drain()
+        serial = await self._reader.readuntil(b"?")
+        serial = serial.decode()
+
+        # parse serial
+        matches = re.search(self.SERIAL_PATTERN, serial)
+        if matches:
+            serial = matches.group(1)
+        else:
+            raise SyntaxError("unable to find serial number")
+
+        return DeviceInfo(
+            version=version, vendor="AA", model="MDSnC", serial_number=serial
+        )
 
     async def _close(self):
-        self._save_parameters()
-        self._set_control_mode(ControlMode.INTERNAL)
+        await self._save_parameters()
+        await self._set_control_mode(ControlMode.INTERNAL)
 
         self._writer.close()
         await self._writer.wait_closed()
@@ -253,9 +260,7 @@ class MDSnC(AcustoOpticalModulator):
             else:
                 logger.warning(msg)
 
-    """
-    Property accessors.
-    """
+    ##
 
     def _get_discrete_power_range(
         self, pattern=r"-> P[p]{4} = Power adj \([p]{4} = (\d+)->(\d+)\)"
@@ -273,29 +278,45 @@ class MDSnC(AcustoOpticalModulator):
         else:
             raise SyntaxError("unable to parse discrete power range")
 
-    def _set_control_mode(self, mode: ControlMode):
-        """Adjust driver mode."""
-        logger.debug(f"switching control mode to {mode.name}")
-        self.handle.write(f"I{mode.value}\r".encode())
+    async def _set_control_mode(self, mode: ControlMode):
+        """
+        Adjust driver mode.
 
-    def _set_control_voltage(self, voltage: ControlVoltage):
+        Args:
+            mode (ControlMode): control mode, either internal or external
+        """
+        logger.debug(f"switching control mode to {mode.name}")
+        self._writer.write(f"I{mode.value}\r".encode())
+        await self._writer.drain()
+
+    async def _set_control_voltage(self, voltage: ControlVoltage):
         """
         Adjust external driver voltage.
 
+        Args:
+            voltage (ControlVoltage): external control voltage range, either 5V max or
+                10V max
         Note:
             Due to unknown reason, fast control 'V0\r' will cause the controller to
             return complete help message. Fallback to slower interactive mode, 'v\r0\r'.
         """
         logger.debug(f"switching control voltage to {voltage.name}")
-        # self.handle.write(f"V{voltage.value}\r".encode())
-        self.handle.write(b"v\r")
-        self.handle.read_until(">")
-        self.handle.write(f"{voltage.value}\r".encode())
-        self.handle.read_until("?")
 
-    """
-    Private helper functions and constants.
-    """
+        # faster shortcut
+        # self.handle.write(f"V{voltage.value}\r".encode())
+
+        # send request
+        self._writer.write(b"v\r")
+        await self._writer.drain()
+        # wait till user prompt
+        await self._reader.readuntil(b">")
+        # set mode
+        self._writer.write(f"{voltage.value}\r".encode())
+        await self._writer.drain()
+        # wait till complete
+        await self._reader.readuntil(b"?")
+
+    ##
 
     async def _get_command_list(self, timeout=1, n_retry=3):
         """
@@ -308,35 +329,26 @@ class MDSnC(AcustoOpticalModulator):
             (str): decoded raw command list
         """
         if self._command_list is not None:
-            return
+            return self._command_list
+        logger.debug(f"command list not cached")
 
         for i_retry in range(n_retry):
-            self._writer.write("\r".encode())
+            self._writer.write(b"\r")
             await self._writer.drain()
 
             try:
                 # wait 3 seconds to load, normally, this is enough
                 command_list = await asyncio.wait_for(
-                    self._reader.readuntil("?"), timeout=timeout
+                    self._reader.readuntil(b"?"), timeout=timeout
                 )
-                self._command_list = command_list.decode()
+                return command_list.decode()
                 break
             except asyncio.TimeoutError:
-                logger.debug(f"command list request timeout, trial {i_retry}")
+                logger.debug(f"command list request timeout, trial {i_retry+1}")
         else:
             raise DeviceTimeoutError()
 
-        return command_list
-
     ##
-
-    def _parse_version(self, response, pattern=r"MDS [vV]([\w\.]+).*//"):
-        # scan for version string
-        matches = re.search(pattern, response, flags=re.MULTILINE)
-        if matches:
-            return matches.group(1)
-        else:
-            raise SyntaxError("unable to parse version string")
 
     def _get_line_status(self, channel):
         self.handle.reset_input_buffer()
@@ -358,15 +370,22 @@ class MDSnC(AcustoOpticalModulator):
         else:
             raise SyntaxError("unable to parse line status")
 
-    def _save_parameters(self):
+    async def _save_parameters(self):
         """Save parameters in the EEPROM."""
-        self.handle.write(b"E\r")
+        self._writer.write(b"E\r")
+        await self._writer.drain()
 
-    def _dump_status(self):
-        """Dump status string from all lines."""
-        self.handle.write(b"S")
-        response = self.handle.read_until("?").decode()
-        print(response)
+    async def _get_number_of_channels(self):
+        """Get number of channels using general status dump."""
+        # simple dump
+        self._writer.write(b"S")
+        await self._writer.drain()
+
+        # wait response
+        status = await self._reader.readuntil(b"?")
+        status = status.decode()
+
+        return len(re.findall(r"l\d F", status))
 
 
 class MultiDigitalSynthesizer(Driver):
