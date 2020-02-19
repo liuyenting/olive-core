@@ -13,10 +13,21 @@ coloredlogs.install(
 logger = logging.getLogger(__name__)
 
 
-async def run(device: AcustoOpticalModulator):
-    await device.open()
+def run(device: AcustoOpticalModulator):
+    loop = asyncio.get_event_loop()
+
+    print("** start **")
+    loop.run_until_complete(device.open())
     print(f"# ch: {device.number_of_channels()}")
-    await device.close()
+
+    # define new channel
+    device.new_channel("488")
+    device.new_channel("561")
+
+    # turn new channel on
+    device.enable("488")
+
+    loop.run_until_complete(device.close())
 
 
 def main():
@@ -32,7 +43,7 @@ def main():
     print(aom_devices)
 
     aom_device = aom_devices[0]
-    loop.run_until_complete(run(aom_device))
+    run(aom_device)
 
 
 if __name__ == "__main__":

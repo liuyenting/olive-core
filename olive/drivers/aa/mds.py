@@ -1,6 +1,8 @@
 import asyncio
 from collections import namedtuple
+from dataclasses import dataclass
 from enum import Enum
+from functools import partial
 import logging
 import re
 from typing import Iterable
@@ -21,7 +23,11 @@ __all__ = ["MultiDigitalSynthesizer"]
 logger = logging.getLogger(__name__)
 
 
-LineStatus = namedtuple("LineStatus", ["channel", "frequency", "power", "switch"])
+@dataclass
+class LineStatus:
+    frequency: float  # MHz
+    power: float  # dB
+    switch: bool
 
 
 class ControlMode(Enum):
@@ -45,6 +51,8 @@ class MDSnC(AcustoOpticalModulator):
 
     VERSION_PATTERN = r"MDS [vV]([\w\.]+).*//"
     SERIAL_PATTERN = r"([\w]+)\s+"
+
+    LINE_STATUS_PATTERN = r"l(\d)F(\d+\.\d+)P(\s*[+-]?\d+\.\d+)S([01])"
 
     def __init__(self, driver, port):
         super().__init__(driver)
@@ -93,10 +101,11 @@ class MDSnC(AcustoOpticalModulator):
 
         self._command_list = await self._get_command_list()
         self._n_channels = await self._get_number_of_channels()
-        # self._discrete_power_range = self._get_discrete_power_range()
 
         await self._set_control_voltage(ControlVoltage.FIVE_VOLT)
         await self._set_control_mode(ControlMode.EXTERNAL)
+
+        # self._discrete_power_range = self._get_discrete_power_range()
 
     async def _get_device_info(self):
         # parse firmware version
@@ -126,8 +135,8 @@ class MDSnC(AcustoOpticalModulator):
         )
 
     async def _close(self):
-        await self._save_parameters()
         await self._set_control_mode(ControlMode.INTERNAL)
+        await self._save_parameters()
 
         self._writer.close()
         await self._writer.wait_closed()
@@ -144,47 +153,74 @@ class MDSnC(AcustoOpticalModulator):
     ##
 
     def number_of_channels(self):
-        return 8
+        return self._n_channels
 
-    def new_channel(self, alias):
+    def new_channel(self, new_alias):
         if len(self.defined_channels()) == self.number_of_channels():
             raise ExceedsChannelCapacityError()
 
         # line 1-8
         aliases = [None] * self.number_of_channels()
         # re-fill
-        for alias, line in self._channels:
+        for alias, line in self._channels.items():
             aliases[line] = alias
         # find first empty slot
         for line, alias in enumerate(aliases):
             if alias is None:
-                self._channels[alias] = line
+                logger.debug(f'assign "{new_alias}" to line {line}')
+                self._channels[new_alias] = line
                 break
 
     ##
 
-    def is_enabled(self, channel):
-        self.handle.write(f"L{channel}\r".encode())
-        status = self._get_line_status(channel)
+    def is_enabled(self, alias):
+        loop = asyncio.get_event_loop()
+        status = loop.run_in_executor(None, partial(self._get_line_status, alias))
         return status.switch
 
-    def enable(self, channel):
-        self.set_switch(channel, True)
+    async def _get_line_status(self, alias, trigger=True):
+        if trigger:
+            self._writer.write(f"L{self._channels[alias]}\r".encode())
+            await self._writer.drain()
 
-    def disable(self, channel):
-        self.set_switch(channel, False)
+        status = await self._reader.readuntil(b"\r")
+        status = status.decode()
+
+        print(status)
+
+        # parse line
+        matches = re.search(self.LINE_STATUS_PATTERN, status)
+        if matches:
+            return LineStatus(
+                frequency=float(matches.group(1)),
+                power=float(matches.group(2)),
+                switch=(matches.group(3) == "1"),
+            )
+        else:
+            raise SyntaxError("unable to parse line status")
+
+    def enable(self, alias):
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(self._set_switch(alias, True))
+
+    def disable(self, alias):
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(self._set_switch(alias, False))
 
     ##
 
-    def set_switch(self, channel, on: bool):
-        on = 1 if on else 0
-        self.handle.write(f"L{channel}O{on}\r".encode())
+    async def _set_switch(self, alias, on: bool):
+        print(f"{alias}, {on}")
+        print(f"L{self._channels[alias]}O{int(on)}")
+        self._writer.write(f"L{self._channels[alias]}O{int(on)}\r".encode())
+        await self._writer.drain()
+
+        print(f"sent, verify...")
         # verify
-        data = self.handle.read_until("\r").decode("utf-8")
-        status = self._parse_line_status(data)
+        status = await self._get_line_status(alias, trigger=False)
         if status.switch ^ on:
-            text = "enable" if on else "disable"
-            msg = f"unable to {text} channel {channel}"
+            state = "enable" if on else "disable"
+            raise RuntimeError(f'unable to {state} "{alias}"')
 
     def get_frequency_range(self, channel):
         state_ori = self.is_enabled(channel)
@@ -285,6 +321,8 @@ class MDSnC(AcustoOpticalModulator):
         Args:
             mode (ControlMode): control mode, either internal or external
         """
+        await asyncio.sleep(0.5)  # slight delay to prevent message loss at MDS
+
         logger.debug(f"switching control mode to {mode.name}")
         self._writer.write(f"I{mode.value}\r".encode())
         await self._writer.drain()
@@ -300,11 +338,12 @@ class MDSnC(AcustoOpticalModulator):
             Due to unknown reason, fast control 'V0\r' will cause the controller to
             return complete help message. Fallback to slower interactive mode, 'v\r0\r'.
         """
+        await asyncio.sleep(0.5)  # slight delay to prevent message loss at MDS
+
         logger.debug(f"switching control voltage to {voltage.name}")
-
-        # faster shortcut
-        # self.handle.write(f"V{voltage.value}\r".encode())
-
+        self._writer.write(f"V{voltage.value}\r".encode())
+        await self._writer.drain()
+        """
         # send request
         self._writer.write(b"v\r")
         await self._writer.drain()
@@ -315,6 +354,7 @@ class MDSnC(AcustoOpticalModulator):
         await self._writer.drain()
         # wait till complete
         await self._reader.readuntil(b"?")
+        """
 
     ##
 
@@ -349,26 +389,6 @@ class MDSnC(AcustoOpticalModulator):
             raise DeviceTimeoutError()
 
     ##
-
-    def _get_line_status(self, channel):
-        self.handle.reset_input_buffer()
-        self.handle.write(f"L{channel}\r".encode())
-        data = self.handle.read_until("\r").decode("utf-8")
-        return self._parse_line_status(data)
-
-    def _parse_line_status(
-        self, data, pattern=r"l(\d)F(\d+\.\d+)P(\s*[+-]?\d+\.\d+)S([01])"
-    ):
-        matches = re.search(pattern, data)
-        if matches:
-            return LineStatus(
-                channel=int(matches.group(1)),
-                frequency=float(matches.group(2)),
-                power=float(matches.group(3)),
-                switch=(matches.group(4) == "1"),
-            )
-        else:
-            raise SyntaxError("unable to parse line status")
 
     async def _save_parameters(self):
         """Save parameters in the EEPROM."""

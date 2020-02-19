@@ -30,7 +30,7 @@ class Modulator(Device):
 
     @abstractmethod
     def new_channel(self, alias):
-        """Create new channel and book-keep it internally."""
+        """Create new channel and book-keeping it internally."""
 
     def delete_channel(self, alias):
         assert alias in self._channels, f'"{alias}" does not exist"'
