@@ -23,9 +23,19 @@ def run(device: AcustoOpticalModulator):
     # define new channel
     device.new_channel("488")
     device.new_channel("561")
+    device.new_channel("640")
+
+    device.delete_channel("561")
+    device.new_channel("405")
 
     # turn new channel on
     device.enable("488")
+    fmin, fmax = device.get_frequency_range("488")
+    print(f"frange: [{fmin}, {fmax}]")
+    device.disable("488")
+
+    pmin, pmax = device.get_power_range("488")
+    print(f"prange: [{pmin}, {pmax}]")
 
     loop.run_until_complete(device.close())
 

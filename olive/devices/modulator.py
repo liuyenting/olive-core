@@ -1,13 +1,9 @@
-from __future__ import annotations
-
 from abc import abstractmethod
-from dataclasses import dataclass
 from typing import Iterable, Tuple
 
 import numpy as np
 
 from .base import Device
-from .error import ChannelExistsError
 
 __all__ = ["AcustoOpticalModulator", "ElectroOpticalModulator", "SpatialLightModulator"]
 
@@ -21,23 +17,17 @@ class Modulator(Device):
     ##
 
     @abstractmethod
-    def number_of_channels(self):
+    def get_max_channels(self):
         """Maximum supported channels."""
 
-    def defined_channels(self) -> Iterable[str]:
-        """Get currently configured channels."""
-        return tuple(self._channels.keys())
-
     @abstractmethod
-    def new_channel(self, alias):
+    def create_channel(self, alias):
         """Create new channel and book-keeping it internally."""
 
     def delete_channel(self, alias):
         assert alias in self._channels, f'"{alias}" does not exist"'
+        self.disable(alias)  # ensure the channel is disabled
         self._channels.pop(alias)
-
-        # ensure the channel is disabled
-        self.disable(alias)
 
     ##
 
@@ -46,11 +36,11 @@ class Modulator(Device):
         """Is the channel enabled?"""
 
     @abstractmethod
-    def enable(self, alias):
+    async def enable(self, alias):
         """Enable a channel."""
 
     @abstractmethod
-    def disable(self, alias):
+    async def disable(self, alias):
         """Disable a channel."""
 
 
@@ -72,27 +62,27 @@ class AcustoOpticalModulator(Modulator, Device):
     """
 
     @abstractmethod
-    def get_frequency_range(self, alias):
+    async def get_frequency_range(self, alias):
         pass
 
     @abstractmethod
-    def get_frequency(self, alias) -> float:
+    async def get_frequency(self, alias) -> float:
         pass
 
     @abstractmethod
-    def set_frequency(self, alias, frequency: float):
+    async def set_frequency(self, alias, frequency: float):
         pass
 
     @abstractmethod
-    def get_power_range(self, alias):
+    async def get_power_range(self, alias):
         pass
 
     @abstractmethod
-    def get_power(self, alias) -> float:
+    async def get_power(self, alias) -> float:
         pass
 
     @abstractmethod
-    def set_power(self, alias, power: float):
+    async def set_power(self, alias, power: float):
         pass
 
 
@@ -134,9 +124,9 @@ class SpatialLightModulator(Modulator, Device):
     ##
 
     @abstractmethod
-    def get_image(self, alias) -> np.ndarray:
+    async def get_image(self, alias) -> np.ndarray:
         pass
 
     @abstractmethod
-    def set_image(self, alias, image: np.ndarray):
+    async def set_image(self, alias, image: np.ndarray):
         pass

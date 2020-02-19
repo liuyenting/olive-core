@@ -57,22 +57,6 @@ class Device(metaclass=DeviceType):
         return self._driver
 
     @property
-    def info(self) -> DeviceInfo:
-        """Return device info."""
-        assert self._info is not None, "device is not properly initialized"
-        return self._info
-
-    @property
-    @abstractmethod
-    def is_busy(self):
-        """Is device busy?"""
-
-    @property
-    @abstractmethod
-    def is_opened(self):
-        """Is the device opened?"""
-
-    @property
     def parent(self) -> Device:
         return self._parent
 
@@ -144,12 +128,26 @@ class Device(metaclass=DeviceType):
         """Concrete close operation."""
         raise NotImplementedError
 
-    def register(self, child):
+    ##
+
+    def register(self, child: Device):
+        """
+        Register a child to this device.
+
+        Args:
+            child (Device): child to add
+        """
         assert child not in self._children, "child is already registered"
         self._children.append(child)
         logger.debug(f'[REG] DEV "{child}" -> DEV "{self}"')
 
-    def unregister(self, child):
+    def unregister(self, child: Device):
+        """
+        Unregister a child from this device.
+
+        Args:
+            child (Device): child to remove
+        """
         assert child in self._children, "child is already unregistered"
         self._children.remove(child)
         logger.debug(f'[UNREG] DEV "{child}" -> DEV "{self}"')
@@ -160,7 +158,7 @@ class Device(metaclass=DeviceType):
     async def enumerate_properties(self):
         """Get properties supported by the device."""
 
-    def get_property(self, name):
+    async def get_property(self, name):
         """
         Get the value of device property.
 
@@ -170,11 +168,11 @@ class Device(metaclass=DeviceType):
         """
         try:
             func = self._get_accessor("_get", name)
-            return func()
+            return await func()
         except AttributeError:
             return self.parent.get_property(name)
 
-    def set_property(self, name, value):
+    async def set_property(self, name, value):
         """
         Set the value of device property.
 
@@ -183,7 +181,7 @@ class Device(metaclass=DeviceType):
         """
         try:
             func = self._get_accessor("_set", name)
-            func(value)
+            await func(value)
         except AttributeError:
             self.parent.set_property(name, value)
 
@@ -196,5 +194,5 @@ class Device(metaclass=DeviceType):
     ##
 
     @abstractmethod
-    async def _get_device_info(self) -> DeviceInfo:
+    async def get_device_info(self) -> DeviceInfo:
         """Get device info after a successful init."""
