@@ -108,7 +108,29 @@ class ElectroOpticalModulator(Modulator, Device):
             - max
     """
 
-    pass
+    @abstractmethod
+    async def get_gain_range(self, alias) -> Tuple[float, float]:
+        pass
+
+    @abstractmethod
+    async def get_gain(self, alias) -> float:
+        pass
+
+    @abstractmethod
+    async def set_gain(self, alias, gain: float):
+        pass
+
+    @abstractmethod
+    async def get_bias_range(self, alias) -> Tuple[float, float]:
+        pass
+
+    @abstractmethod
+    async def get_bias(self, alias) -> float:
+        pass
+
+    @abstractmethod
+    async def set_bias(self, alias, bias: float):
+        pass
 
 
 class SpatialLightModulator(Modulator, Device):
