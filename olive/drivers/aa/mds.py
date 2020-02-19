@@ -162,13 +162,14 @@ class MDSnC(AcustoOpticalModulator):
         # line 1-8
         aliases = [None] * self.number_of_channels()
         # re-fill
+        # NOTE lines [1, 8], but index [0, 7]
         for alias, line in self._channels.items():
-            aliases[line] = alias
+            aliases[line - 1] = alias
         # find first empty slot
         for line, alias in enumerate(aliases):
             if alias is None:
                 logger.debug(f'assign "{new_alias}" to line {line}')
-                self._channels[new_alias] = line
+                self._channels[new_alias] = line + 1
                 break
 
     ##
