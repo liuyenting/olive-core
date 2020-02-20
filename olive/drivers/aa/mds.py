@@ -84,7 +84,7 @@ class MDSnC(AcustoOpticalModulator):
     async def test_open(self):
         try:
             await self.open()
-            logger.info(f".. {self.info}")
+            logger.info(f".. {await self.get_device_info()}")
             # TODO verify device version
         except (DeviceTimeoutError, SyntaxError):
             raise UnsupportedClassError
@@ -106,7 +106,25 @@ class MDSnC(AcustoOpticalModulator):
         await self._set_control_voltage(ControlVoltage.FIVE_VOLT)
         await self._set_control_mode(ControlMode.EXTERNAL)
 
-    async def _get_device_info(self):
+    async def _close(self):
+        await self._set_control_mode(ControlMode.INTERNAL)
+        await self._save_parameters()
+
+        self._writer.close()
+        await self._writer.wait_closed()
+
+        self.driver.manager.release_port(self._port)
+
+        self._reader, self._writer = None, None
+
+    ##
+
+    async def enumerate_properties(self):
+        return ("control_mode", "control_voltage", "discrete_power_range")
+
+    ##
+
+    async def get_device_info(self):
         # parse firmware version
         matches = re.search(
             self.VERSION_PATTERN, self._command_list, flags=re.MULTILINE
@@ -133,33 +151,19 @@ class MDSnC(AcustoOpticalModulator):
             version=version, vendor="AA", model="MDSnC", serial_number=serial
         )
 
-    async def _close(self):
-        await self._set_control_mode(ControlMode.INTERNAL)
-        await self._save_parameters()
-
-        self._writer.close()
-        await self._writer.wait_closed()
-
-        self.driver.manager.release_port(self._port)
-
-        self._reader, self._writer = None, None
-
     ##
 
-    def enumerate_properties(self):
-        return ("control_mode", "control_voltage", "discrete_power_range")
-
-    ##
-
-    def number_of_channels(self):
+    def get_max_channels(self):
         return self._n_channels
 
-    def new_channel(self, new_alias):
-        if len(self.defined_channels()) == self.number_of_channels():
+    def create_channel(self, new_alias):
+        n_channels = self.get_max_channels()
+
+        if len(self._channels()) == n_channels:
             raise ExceedsChannelCapacityError()
 
         # line 1-8
-        aliases = [None] * self.number_of_channels()
+        aliases = [None] * n_channels
         # re-fill
         # NOTE lines [1, 8], but index [0, 7]
         for alias, status in self._channels.items():
@@ -172,6 +176,8 @@ class MDSnC(AcustoOpticalModulator):
                 break
 
     ##
+
+    # TODO update this
 
     def write(self, alias, **kwargs):
         # build command string

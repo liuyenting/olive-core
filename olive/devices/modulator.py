@@ -108,6 +108,34 @@ class ElectroOpticalModulator(Modulator, Device):
             - max
     """
 
+    def get_max_channels(self):
+        return 1
+
+    # TODO
+
+    def create_channel(self):
+        """Create new channel and book-keeping it internally."""
+        logger.debug(f'EOM devices only have one channel')
+
+    def delete_channel(self, alias):
+        logger.debug(f'EOM devices only have one channel')
+
+    ##
+
+    @abstractmethod
+    def is_enabled(self) -> bool:
+        """Is the channel enabled?"""
+
+    @abstractmethod
+    async def enable(self):
+        """Enable a channel."""
+
+    @abstractmethod
+    async def disable(self):
+        """Disable a channel."""
+
+    ##
+
     @abstractmethod
     async def get_gain_range(self, alias) -> Tuple[float, float]:
         pass
