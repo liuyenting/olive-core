@@ -10,7 +10,7 @@ from olive.drivers.base import Driver
 from olive.devices.base import DeviceInfo
 from olive.utils import retry
 from olive.devices import SensorAdapter
-from olive.devices.error import UnsupportedDeviceError
+from olive.devices.error import UnsupportedClassError
 
 from olive.drivers.ophir.sensors import Photodiode
 
@@ -122,13 +122,13 @@ class Nova2(OphirMeter):
     Compatible with all standard Ophir Thermopile, BeamTrack, Pyroelectric and Photodiode sensors.
     """
 
-    @retry(UnsupportedDeviceError, logger=logger)
+    @retry(UnsupportedClassError, logger=logger)
     def test_open(self):
         self.handle.open()
         try:
             logger.info(f".. {self.info}")
         except SyntaxError:
-            raise UnsupportedDeviceError
+            raise UnsupportedClassError
         finally:
             # fast close
             self.handle.close()
@@ -166,7 +166,7 @@ class Nova2(OphirMeter):
                 )
 
 
-class Ophir(Driver):
+class Ophir(object):  # Driver):
     def __init__(self):
         super().__init__()
 
@@ -207,7 +207,7 @@ class Ophir(Driver):
             results = loop.run_until_complete(testers)
 
             for controller, result in zip(_controllers, results):
-                if isinstance(result, UnsupportedDeviceError):
+                if isinstance(result, UnsupportedClassError):
                     continue
                 elif result is None:
                     # remove from test cycle
@@ -235,7 +235,7 @@ class Ophir(Driver):
             results = loop.run_until_complete(testers)
 
             for sensor, result in zip(_sensors, results):
-                if isinstance(result, UnsupportedDeviceError):
+                if isinstance(result, UnsupportedClassError):
                     continue
                 elif result is None:
                     valid_sensors.append(sensor)

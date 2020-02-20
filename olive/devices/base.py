@@ -34,15 +34,17 @@ class Device(metaclass=DeviceType):
     """
     All primitive device types should inherit from this class.
 
-    Attributes:
+    Args:
         driver : driver that instantiate this device
         parent (Device): parent device
     """
 
-    def __init__(self, driver, parent: Device = None):
+    def __init__(self, driver, *, parent: Device = None):
         """Abstract __init__ to prevent instantiation."""
         self._driver = driver
         self._parent, self._children = parent, []
+
+        self._info = None
 
     ##
 
@@ -53,21 +55,6 @@ class Device(metaclass=DeviceType):
     @property
     def driver(self):
         return self._driver
-
-    @property
-    @abstractmethod
-    def info(self) -> DeviceInfo:
-        """Return device info."""
-
-    @property
-    @abstractmethod
-    def is_busy(self):
-        """Is device busy?"""
-
-    @property
-    @abstractmethod
-    def is_opened(self):
-        """Is the device opened?"""
 
     @property
     def parent(self) -> Device:
@@ -91,8 +78,8 @@ class Device(metaclass=DeviceType):
                 await self.parent.open()
             except AttributeError:
                 pass
-            # 2) open ourself
             try:
+                # 2) open this device
                 await self._open()
             except NotImplementedError:
                 pass
@@ -103,8 +90,7 @@ class Device(metaclass=DeviceType):
             self.parent.register(self)
         except AttributeError:
             pass
-        # 5) register ourself with driver
-        self.driver.register(self)
+        # 5) get device info
 
     async def _open(self):
         """Concrete open operation."""
@@ -140,12 +126,32 @@ class Device(metaclass=DeviceType):
         """Concrete close operation."""
         raise NotImplementedError
 
-    def register(self, child):
+    ##
+
+    @abstractmethod
+    async def get_device_info(self) -> DeviceInfo:
+        """Get device info after a successful init."""
+
+    ##
+
+    def register(self, child: Device):
+        """
+        Register a child to this device.
+
+        Args:
+            child (Device): child to add
+        """
         assert child not in self._children, "child is already registered"
         self._children.append(child)
         logger.debug(f'[REG] DEV "{child}" -> DEV "{self}"')
 
-    def unregister(self, child):
+    def unregister(self, child: Device):
+        """
+        Unregister a child from this device.
+
+        Args:
+            child (Device): child to remove
+        """
         assert child in self._children, "child is already unregistered"
         self._children.remove(child)
         logger.debug(f'[UNREG] DEV "{child}" -> DEV "{self}"')
@@ -156,7 +162,7 @@ class Device(metaclass=DeviceType):
     async def enumerate_properties(self):
         """Get properties supported by the device."""
 
-    def get_property(self, name):
+    async def get_property(self, name):
         """
         Get the value of device property.
 
@@ -166,11 +172,11 @@ class Device(metaclass=DeviceType):
         """
         try:
             func = self._get_accessor("_get", name)
-            return func()
+            return await func()
         except AttributeError:
             return self.parent.get_property(name)
 
-    def set_property(self, name, value):
+    async def set_property(self, name, value):
         """
         Set the value of device property.
 
@@ -179,7 +185,7 @@ class Device(metaclass=DeviceType):
         """
         try:
             func = self._get_accessor("_set", name)
-            func(value)
+            await func(value)
         except AttributeError:
             self.parent.set_property(name, value)
 
@@ -188,5 +194,3 @@ class Device(metaclass=DeviceType):
             return getattr(self, f"{prefix}_{name}")
         except AttributeError:
             raise AttributeError(f'unknown property "{name}"')
-
-    ##
