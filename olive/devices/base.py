@@ -79,10 +79,8 @@ class Device(metaclass=DeviceType):
             except AttributeError:
                 pass
             try:
-                # 2.1) open this device
+                # 2) open this device
                 await self._open()
-                # 2.2) cache device info
-                self._info = await self._get_device_info()
             except NotImplementedError:
                 pass
             # 3) cleanup children list
@@ -127,6 +125,12 @@ class Device(metaclass=DeviceType):
     async def _close(self):
         """Concrete close operation."""
         raise NotImplementedError
+
+    ##
+
+    @abstractmethod
+    async def get_device_info(self) -> DeviceInfo:
+        """Get device info after a successful init."""
 
     ##
 
@@ -190,9 +194,3 @@ class Device(metaclass=DeviceType):
             return getattr(self, f"{prefix}_{name}")
         except AttributeError:
             raise AttributeError(f'unknown property "{name}"')
-
-    ##
-
-    @abstractmethod
-    async def get_device_info(self) -> DeviceInfo:
-        """Get device info after a successful init."""

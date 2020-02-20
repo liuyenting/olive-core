@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import Iterable, Tuple
+from typing import Tuple
 
 import numpy as np
 
@@ -25,14 +25,22 @@ class Modulator(Device):
         """Create new channel and book-keeping it internally."""
 
     def delete_channel(self, alias):
+        """
+        Delete a channel reference.
+
+        Args:
+            alias (str): alias of the channel to delete
+
+        Note:
+            User should properly disable the channel before deleting it.
+        """
         assert alias in self._channels, f'"{alias}" does not exist"'
-        self.disable(alias)  # ensure the channel is disabled
         self._channels.pop(alias)
 
     ##
 
     @abstractmethod
-    def is_enabled(self, alias) -> bool:
+    async def is_enabled(self, alias) -> bool:
         """Is the channel enabled?"""
 
     @abstractmethod
@@ -110,15 +118,6 @@ class ElectroOpticalModulator(Modulator, Device):
 
     def get_max_channels(self):
         return 1
-
-    # TODO
-
-    def create_channel(self):
-        """Create new channel and book-keeping it internally."""
-        logger.debug(f'EOM devices only have one channel')
-
-    def delete_channel(self, alias):
-        logger.debug(f'EOM devices only have one channel')
 
     ##
 

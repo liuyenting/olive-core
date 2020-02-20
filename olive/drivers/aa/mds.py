@@ -1,22 +1,23 @@
 import asyncio
-from collections import namedtuple
+import logging
+import math
+import re
 from dataclasses import dataclass
 from enum import Enum
 from functools import lru_cache
-import logging
-import re
 from typing import Iterable
 
-from serial import Serial, SerialException
-from serial.tools import list_ports
 from serial_asyncio import open_serial_connection
 
-from olive.drivers.base import Driver
 from olive.devices import AcustoOpticalModulator
 from olive.devices.base import DeviceInfo
-from olive.devices.error import UnsupportedClassError, DeviceTimeoutError
+from olive.devices.error import (
+    DeviceTimeoutError,
+    ExceedsChannelCapacityError,
+    UnsupportedClassError,
+)
+from olive.drivers.base import Driver
 from olive.drivers.utils import SerialPortManager
-from olive.devices.error import ExceedsChannelCapacityError
 
 __all__ = ["MultiDigitalSynthesizer"]
 
@@ -25,11 +26,10 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class LineStatus:
-    line: int = 0  # line number
-    frequency: float = 0  # MHz
-    power: float = 0  # dB
-    switch: bool = False
-    is_dirty: bool = False
+    lineno: int
+    frequency: float  # MHz
+    power: float  # dBm
+    switch: bool
 
 
 class ControlMode(Enum):
@@ -54,7 +54,7 @@ class MDSnC(AcustoOpticalModulator):
     VERSION_PATTERN = r"MDS [vV]([\w\.]+).*//"
     SERIAL_PATTERN = r"([\w]+)\s+"
 
-    LINE_STATUS_PATTERN = r"l\dF(\d+\.\d+)P(\s*[+-]?\d+\.\d+)S([01])"
+    LINE_STATUS_PATTERN = r"l(\d)F(\d+\.\d+)P(\s*[+-]?\d+\.\d+)S([01])"
     POWER_RANGE_PATTERN = r"-> P[p]{4} = Power adj \([p]{4} = (\d+)->(\d+)\)"
 
     def __init__(self, driver, port):
@@ -119,11 +119,6 @@ class MDSnC(AcustoOpticalModulator):
 
     ##
 
-    async def enumerate_properties(self):
-        return ("control_mode", "control_voltage", "discrete_power_range")
-
-    ##
-
     async def get_device_info(self):
         # parse firmware version
         matches = re.search(
@@ -153,197 +148,8 @@ class MDSnC(AcustoOpticalModulator):
 
     ##
 
-    def get_max_channels(self):
-        return self._n_channels
-
-    def create_channel(self, new_alias):
-        n_channels = self.get_max_channels()
-
-        if len(self._channels()) == n_channels:
-            raise ExceedsChannelCapacityError()
-
-        # line 1-8
-        aliases = [None] * n_channels
-        # re-fill
-        # NOTE lines [1, 8], but index [0, 7]
-        for alias, status in self._channels.items():
-            aliases[status.line - 1] = alias
-        # find first empty slot
-        for line, alias in enumerate(aliases):
-            if alias is None:
-                logger.debug(f'assign "{new_alias}" to line {line}')
-                self._channels[new_alias] = LineStatus(line=line + 1, is_dirty=True)
-                break
-
-    ##
-
-    # TODO update this
-
-    def write(self, alias, **kwargs):
-        # build command string
-        commands = [f"L{self._channels[alias].line}"]
-        for key, value in kwargs.items():
-            if key == "frequency":
-                command = f"F{value:3.2f}"
-            elif key == "power":
-                command = f"D{value:2.2f}"
-            elif key == "discrete_power":
-                command = f"P{value}"
-            elif key == "switch":
-                command = f"O{int(value)}"
-            commands.append(command)
-        commands = "".join(commands) + "\r"
-        logger.debug(f"write [{commands}]")
-
-        # send it
-        self._writer.write(commands.encode())
-
-        # wait
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(self._writer.drain())
-
-        # mark as dirty
-        self._channels[alias].is_dirty = True
-
-    def read(self, terminator=b"\r"):
-        loop = asyncio.get_event_loop()
-        response = loop.run_until_complete(self._reader.readuntil(terminator))
-        return response.decode()
-
-    def is_enabled(self, alias):
-        return self._get_line_status(alias).switch
-
-    def _get_line_status(self, alias, trigger=False):
-        if self._channels[alias].is_dirty:
-            logger.debug(f'"{alias}" requires status update')
-            self._refresh_line_status(alias, trigger)
-        return self._channels[alias]
-
-    def _refresh_line_status(self, alias, trigger=True):
-        """
-        Get line status.
-
-        Args:
-            alias (str): channel alias
-            trigger (bool, optional): trigger the controller to respond
-        """
-        if trigger:
-            self.write(alias)
-        new_status = self.read()
-
-        # parse line
-        matches = re.search(self.LINE_STATUS_PATTERN, new_status)
-        if matches:
-            status = self._channels[alias]
-            status.frequency = float(matches.group(1))
-            status.power = float(matches.group(2))
-            status.switch = matches.group(3) == "1"
-        else:
-            raise SyntaxError("unable to parse line status")
-
-    def enable(self, alias):
-        self._set_switch(alias, True)
-
-    def disable(self, alias):
-        self._set_switch(alias, False)
-
-    def _set_switch(self, alias, on: bool):
-        self.write(alias, switch=on)
-
-        # verify
-        status = self._get_line_status(alias, trigger=False)
-        if status.switch ^ on:
-            state = "enable" if on else "disable"
-            raise RuntimeError(f'unable to {state} "{alias}"')
-
-    ##
-
-    def get_frequency_range(self, alias, frange=(0, 1000)):
-        state0 = self.is_enabled(alias)
-        self.disable(alias)
-        freq0 = self.get_frequency(alias)
-
-        # test lower bound
-        self.set_frequency(alias, 0)
-        fmin = self.get_frequency(alias)
-        # test upper bound
-        self.set_frequency(alias, 1000)
-        fmax = self.get_frequency(alias)
-
-        # restore original state
-        self.set_frequency(alias, freq0)
-        if state0:
-            self.enable(alias)
-
-        return (fmin, fmax)
-
-    def get_frequency(self, alias):
-        return self._get_line_status(alias).frequency
-
-    def set_frequency(self, alias, frequency):
-        self.write(alias, frequency=frequency)
-
-        # verify
-        status = self._get_line_status(alias, trigger=False)
-        if status.frequency != frequency:
-            logger.warning(f"frequency out-of-range ({frequency} MHz), ignored")
-
-    def get_power_range(self, alias):
-        """
-        Test power range for _current_ frequency setting.
-        """
-        state0 = self.is_enabled(alias)
-        self.disable(alias)
-        power0 = self.get_power(alias)
-
-        loop = asyncio.get_event_loop()
-
-        vmin, vmax = self._discrete_power_range()
-        # test lower/upper bound by discrete power level
-        self._writer.write(f"L{alias}P{vmin}\r".encode())
-        loop.run_until_complete(self._writer.drain())
-        pmin = self.get_power(alias)
-        self._writer.write(f"L{alias}P{vmax}\r".encode())
-        loop.run_until_complete(self._writer.drain())
-        pmax = self.get_power(alias)
-
-        # restore original state
-        self.set_power(alias, power0)
-        if state0:
-            self.enable(alias)
-
-        return (pmin, pmax)
-
-    def get_power(self, alias):
-        loop = asyncio.get_event_loop()
-        status = loop.run_until_complete(self._get_line_status(alias))
-        return status.power
-
-    def set_power(self, alias, power):
-        loop = asyncio.get_event_loop()
-
-        self._writer.write(f"L{self._channels[alias]}D{power:2.2f}\r".encode())
-        loop.run_until_complete(self._writer.drain())
-
-        # verify
-        status = loop.run_until_complete(self._get_line_status(alias, trigger=False))
-        if status.power != power:
-            logger.warning(f"power out-of-range ({power} dBm), ignored")
-
-    ##
-
-    @lru_cache(maxsize=1)
-    def _discrete_power_range(self):
-        """
-        Use fast channel command description to boostrap discrete steps.
-        """
-        matches = re.search(
-            self.POWER_RANGE_PATTERN, self._command_list, flags=re.MULTILINE
-        )
-        if matches:
-            return (int(matches.group(1)), int(matches.group(2)))
-        else:
-            raise SyntaxError("unable to parse discrete power range")
+    async def enumerate_properties(self):
+        return ("control_mode", "control_voltage")
 
     async def _set_control_mode(self, mode: ControlMode):
         """
@@ -370,6 +176,98 @@ class MDSnC(AcustoOpticalModulator):
         logger.debug(f"switching control voltage to {voltage.name}")
         self._writer.write(f"V{voltage.value}\r".encode())
         await self._writer.drain()
+
+    ##
+
+    def get_max_channels(self):
+        return self._n_channels
+
+    def create_channel(self, new_alias):
+        n_channels = self.get_max_channels()
+
+        if len(self._channels) == n_channels:
+            raise ExceedsChannelCapacityError()
+
+        # line 1-8
+        aliases = [None] * n_channels
+        # re-fill
+        for alias, lineno in self._channels.items():
+            aliases[lineno - 1] = alias  # lines starts from 1
+        # find first empty slot
+        for lineno, alias in enumerate(aliases):
+            if alias is None:
+                lineno += 1  # lines starts from 1
+                logger.debug(f'assign "{new_alias}" to line {lineno}')
+                self._channels[new_alias] = lineno
+                break
+
+    ##
+
+    async def is_enabled(self, alias):
+        status = await self._get_line_status(alias)
+        return status.switch
+
+    async def enable(self, alias):
+        await self._set_line_status(alias, switch=True)
+
+    async def disable(self, alias):
+        await self._set_line_status(alias, switch=False)
+
+    ##
+
+    async def get_frequency_range(self, alias, frange=(0, 1000)):
+        state0 = await self.is_enabled(alias)
+        if state0:
+            await self.disable(alias)
+        freq0 = await self.get_frequency(alias)
+
+        # test lower/upper bound
+        fmin = await self._set_line_status(alias, frequency=0, validate=False)
+        fmax = await self._set_line_status(alias, frequency=1000, validate=False)
+        fmin, fmax = fmin.frequency, fmax.frequency
+
+        # restore original state
+        await self.set_frequency(alias, freq0)
+        if state0:
+            await self.enable(alias)
+
+        return (fmin, fmax)
+
+    async def get_frequency(self, alias):
+        status = await self._get_line_status(alias)
+        return status.frequency
+
+    async def set_frequency(self, alias, frequency):
+        await self._set_line_status(alias, frequency=frequency)  # ensure digits
+
+    async def get_power_range(self, alias):
+        """
+        Test power range for _current_ frequency setting.
+        """
+        state0 = await self.is_enabled(alias)
+        if state0:
+            await self.disable(alias)
+        power0 = await self.get_power(alias)
+
+        vmin, vmax = self._discrete_power_range()
+        # test lower/upper bound by discrete power level
+        pmin = await self._set_line_status(alias, discrete_power=vmin, validate=False)
+        pmax = await self._set_line_status(alias, discrete_power=vmax, validate=False)
+        pmin, pmax = pmin.power, pmax.power
+
+        # restore original state
+        await self.set_power(alias, power0)
+        if state0:
+            await self.enable(alias)
+
+        return (pmin, pmax)
+
+    async def get_power(self, alias):
+        status = await self._get_line_status(alias)
+        return status.power
+
+    async def set_power(self, alias, power):
+        await self._set_line_status(alias, power=power)
 
     ##
 
@@ -403,12 +301,87 @@ class MDSnC(AcustoOpticalModulator):
         else:
             raise DeviceTimeoutError()
 
-    ##
+    @lru_cache(maxsize=1)
+    def _discrete_power_range(self):
+        """
+        Use fast channel command description to boostrap discrete steps.
+        """
+        matches = re.search(
+            self.POWER_RANGE_PATTERN, self._command_list, flags=re.MULTILINE
+        )
+        if matches:
+            return (int(matches.group(1)), int(matches.group(2)))
+        else:
+            raise SyntaxError("unable to parse discrete power range")
 
-    async def _save_parameters(self):
-        """Save parameters in the EEPROM."""
-        self._writer.write(b"E\r")
+    async def _get_line_status(self, alias, from_response=False) -> LineStatus:
+        if not from_response:
+            self._writer.write(f"L{self._channels[alias]}\r".encode())
+            await self._writer.drain()
+
+        response = await self._reader.readuntil(b"\r")
+        response = response.decode()
+
+        status = self._parse_line_status_response(response)
+        return status
+
+    @classmethod
+    def _parse_line_status_response(self, response) -> LineStatus:
+        """
+        Parse line status using command response.
+
+        Args:
+            response (str): response string
+
+        Returns:
+            (LineStatus): parsed LineStatus object
+        """
+        matches = re.search(self.LINE_STATUS_PATTERN, response)
+        if matches:
+            return LineStatus(
+                lineno=int(matches.group(1)),
+                frequency=float(matches.group(2)),
+                power=float(matches.group(3)),
+                switch=(matches.group(4) == "1"),
+            )
+        else:
+            raise SyntaxError("unable to parse line status")
+
+    async def _set_line_status(self, alias, validate=True, **kwargs) -> LineStatus:
+        # build command string
+        commands = [f"L{self._channels[alias]}"]
+        for key, value in kwargs.items():
+            if key == "frequency":
+                command = f"F{value:3.2f}"
+            elif key == "power":
+                command = f"D{value:2.2f}"
+            elif key == "discrete_power":
+                command = f"P{value}"
+            elif key == "switch":
+                command = f"O{int(value)}"
+            commands.append(command)
+        commands = "".join(commands) + "\r"
+        logger.debug(f"write [{commands[:-1]}]")
+
+        # send it
+        self._writer.write(commands.encode())
         await self._writer.drain()
+
+        # clear out receive buffer
+        status = await self._get_line_status(alias, from_response=True)
+        if validate:
+            for key, value0 in kwargs.items():
+                if key not in ("frequency", "power", "switch"):
+                    continue
+                value = getattr(status, key)
+                if (isinstance(value, float) and not math.isclose(value, value0)) or (
+                    value != value0
+                ):
+                    raise ValueError(
+                        f"{key} (target: {value0}, current: {value}) out of range"
+                    )
+
+        return status
 
     async def _get_number_of_channels(self):
         """Get number of channels using general status dump."""
@@ -421,6 +394,11 @@ class MDSnC(AcustoOpticalModulator):
         status = status.decode()
 
         return len(re.findall(r"l\d F", status))
+
+    async def _save_parameters(self):
+        """Save parameters in the EEPROM."""
+        self._writer.write(b"E\r")
+        await self._writer.drain()
 
 
 class MultiDigitalSynthesizer(Driver):
@@ -442,4 +420,3 @@ class MultiDigitalSynthesizer(Driver):
     def _enumerate_device_candidates(self) -> Iterable[MDSnC]:
         candidates = [MDSnC(self, port) for port in self.manager.list_ports()]
         return candidates
-

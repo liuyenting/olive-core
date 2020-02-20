@@ -27,7 +27,7 @@ class PseudoCamera(Camera):
     async def _open(self):
         pass
 
-    async def close(self):
+    async def _close(self):
         pass
 
     ##
@@ -37,27 +37,32 @@ class PseudoCamera(Camera):
 
     ##
 
-    def snap(self):
+    async def get_device_info(self):
+        pass
+
+    ##
+
+    async def snap(self):
         pass
 
     def configure_grab(self):
         pass
 
-    def grab(self):
+    async def grab(self):
         pass
 
-    def sequence(self):
+    async def sequence(self):
         pass
 
     ##
 
-    def configure_acquisition(self):
+    async def configure_acquisition(self):
         pass
 
-    def start_acquisition(self):
+    async def start_acquisition(self):
         pass
 
-    def get_image(self):
+    async def get_image(self):
         pass
 
     def stop_acquisition(self):
