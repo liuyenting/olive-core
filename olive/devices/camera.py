@@ -73,7 +73,13 @@ class FrameBuffer(object):
     def empty(self):
         return (not self.full()) and (self._read_index == self._write_index)
 
-    def write(self, frame: RawArray):
+    async def put(self, frame: RawArray):
+        """
+        Write a frame and put it to dirty queue.
+
+        Args:
+            frame (RawArray): frame to write in the buffer
+        """
         if self.full():
             raise IndexError("not enough internal buffer")
         self.frames[self._write_index][:] = frame
@@ -81,7 +87,17 @@ class FrameBuffer(object):
         self._write_index = (self._write_index + 1) % self.capacity()
         self._is_full = self._read_index == self._write_index
 
-    def read(self) -> RawArray:
+    def put_done(self):
+        # TODO put item, task_done
+        pass
+
+    async def get(self) -> RawArray:
+        """
+        Return a new frame and put it back to clean queue.
+
+        Returns:
+            (RawArray): underlying array object
+        """
         if self.empty():
             return None
         frame = self.frames[self._read_index]
@@ -90,6 +106,10 @@ class FrameBuffer(object):
         self._is_full = False
 
         return frame
+
+    def get_done(self):
+        # TODO put item, task_done
+        pass
 
     def capacity(self):
         """Returns the maximum capacity of the buffer."""
@@ -205,7 +225,7 @@ class Camera(Device):
         Args:
             n_frames (int): size of the frame buffer
                 - n_frames > 0, fixed number of frames
-                - n_frames < 0, continuous acquisition, buffer size determined
+                - n_frames <= 0, continuous acquisition, buffer size determined
                     automagically
         """
 
@@ -224,7 +244,7 @@ class Camera(Device):
         # in continuous mode when:
         #   - specified explicitly
         #   - limited memory
-        self._continous = (n_frames < 0) or (ratio > 1)
+        self._continous = (n_frames <= 0) or (ratio > 1)
 
     async def _configure_frame_buffer(self, n_frames):
         (_, shape), dtype = await self.get_roi(), await self.get_dtype()
@@ -257,7 +277,7 @@ class Camera(Device):
             copy (bool, optional): copy frame from the buffer
             out (np.ndarray, optional): output array
         """
-        frame = await self._extract_frame(mode)
+        frame = await self.buffer.read(mode)
 
         if out is None:
             # reinterpret as a numpy array
