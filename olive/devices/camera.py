@@ -1,8 +1,10 @@
 import asyncio
 import logging
+import threading
 from abc import abstractmethod
 from ctypes import c_uint8
 from enum import Enum, auto
+from functools import partial
 from math import floor
 from multiprocessing.sharedctypes import RawArray
 from typing import List, Optional, Union
@@ -81,9 +83,25 @@ class FrameBuffer(object):
     def empty(self):
         return (not self._is_full) and (self._read_index == self._write_index)
 
-    def write(self, frame):
+    async def write(self, frame):
         """
-        Write a frame and put it to dirty queue.
+        TBA
+
+        Args:
+            frame (RawArray, optional): frame to write in the buffer, dummy write if
+                `None`
+        """
+        while True:
+            try:
+                self.write_nowait(frame)
+            except NotEnoughBufferError:
+                asyncio.sleep(0)
+            else:
+                break
+
+    def write_nowait(self, frame):
+        """
+        TBA
 
         Args:
             frame (RawArray, optional): frame to write in the buffer, dummy write if
@@ -92,11 +110,21 @@ class FrameBuffer(object):
         if self.full():
             raise NotEnoughBufferError()
         self._frames[self._write_index][:] = frame
+        self._advance_write_index()
 
+    def _advance_write_index(self):
         self._write_index = (self._write_index + 1) % self.maxsize
         self._is_full = self._read_index == self._write_index
 
-    def read(self) -> RawArray:
+    async def read(self) -> RawArray:
+        while True:
+            frame = self.read_nowait()
+            if frame is None:
+                asyncio.sleep(0)
+            else:
+                break
+
+    def read_nowait(self) -> RawArray:
         """
         Return a new frame and put it back to clean queue.
 
@@ -106,7 +134,9 @@ class FrameBuffer(object):
         if self.empty():
             return None
         yield self._frames[self._read_index]
+        self._advance_read_index()
 
+    def _advance_read_index(self):
         self._read_index = (self._read_index + 1) % self.maxsize
         self._is_full = False
 
@@ -114,6 +144,42 @@ class FrameBuffer(object):
         """Number of unread frames in the buffer."""
         size = self._read_index - self._write_index
         return self.maxsize + size if size < 0 else size  # wrap around if negative
+
+
+class Worker(threading.Thread):
+    """
+    Worker thread that retrieve frame from the camera to frame buffer.
+    """
+
+    def __init__(self):
+        super().__init__()
+
+        self._buffer, self._async_func = None, None
+        self._stop_event = threading.Event()
+
+    ##
+
+    def run(self):
+        async def wrapper():
+            while not self._stop_event.is_set():
+                frame = await self._async_func
+                self._buffer.write_nowait(frame)
+
+        self._stop_event.clear()
+        asyncio.run(wrapper())
+
+    ##
+
+    def set_buffer(self, buffer: FrameBuffer):
+        self._buffer = buffer
+
+    def set_retrieval_function(self, func):
+        self._async_func = func
+
+    ##
+
+    def stop(self):
+        self._stop_event.set()
 
 
 class Camera(Device):
@@ -132,7 +198,9 @@ class Camera(Device):
         self._buffer, self._max_memory_size = None, None
         self.set_max_memory_size(max_memory_size)
 
-        self._continous = False
+        self._continous, self._acquisition_mode = False, BufferRetrieveMode.Next
+
+        self._worker = Worker()
 
     ##
 
@@ -155,29 +223,31 @@ class Camera(Device):
         Args:
             out (np.ndarray, optional): store frame in this array if provided
         """
-        # NOTE ring buffer requires minimally of 2 frames
         await self.configure_acquisition(1)
 
         self.start_acquisition()
         out = await self.get_image(out=out)
         self.stop_acquisition()
 
-        await self.unconfigure_acquisition()
+        self.unconfigure_acquisition()
 
         return out
 
-    async def grab(self):
-        """Perform an acquisition that loops continuously."""
-        # TODO probe the system for optimal size
-        await self.configure_acquisition(100, continuous=True)
+    async def grab(self, lossy=False):
+        """
+        Perform an acquisition that loops continuously.
+
+        Args:
+            lossy (bool, optional): should we ignore frames
+        """
+        await self.configure_acquisition(lossy=lossy)
 
         self.start_acquisition()
-        with trio.CancelScope():
-            while True:
-                yield await self.get_image(mode=BufferRetrieveMode.Latest, copy=False)
+        while True:
+            yield await self.get_image(copy=False)
         self.stop_acquisition()
 
-        await self.unconfigure_acquisition()
+        self.unconfigure_acquisition()
 
     async def sequence(self, frames: Union[int, np.ndarray]):
         """
@@ -200,20 +270,21 @@ class Camera(Device):
 
         self.start_acquisition()
         for i in range(n_frames):
-            yield await self.get_image(mode=BufferRetrieveMode.Next, out=frames[i, ...])
+            yield await self.get_image(out=frames[i, ...])
         self.stop_acquisition()
 
-        await self.unconfigure_acquisition()
+        self.unconfigure_acquisition()
 
     ##
 
-    async def configure_acquisition(self, n_frames: Optional[int] = None):
+    async def configure_acquisition(self, n_frames: Optional[int] = None, lossy=False):
         """
         Configure resources required in an acquisition.
 
         Args:
             n_frames (int, optional): size of the frame buffer, maxmum number if not
                 specified
+            lossy (bool, optional): should we ignore frames
         """
         coerced = False
         try:
@@ -228,6 +299,10 @@ class Camera(Device):
         #   - specified explicitly
         #   - limited memory
         self._continous = (n_frames is None) or coerced
+
+        self._acquisition_mode = (
+            BufferRetrieveMode.Latest if lossy else BufferRetrieveMode.Next
+        )
 
     async def _configure_frame_buffer(self, n_frames: Optional[int] = None):
         """
@@ -263,28 +338,36 @@ class Camera(Device):
 
     @abstractmethod
     def start_acquisition(self):
-        """Starts an acquisition."""
+        """
+        Start the acquisition.
+
+        Base function only launches the acquisition thread, if other setups are
+        required, please configure them first and call `super().start_acquisition()` as
+        the last step.
+        """
+        self._worker.set_buffer(self.buffer)
+        func = self._retrieve_frame(self._acquisition_mode)
+        self._worker.set_retrieval_function(func)
+
+        # RUN!
+        self._worker.run()
+
+    @abstractmethod
+    async def _retrieve_frame(self, mode: BufferRetrieveMode) -> RawArray:
+        """Retrieve raw frame data from the camera and write it to the frame buffer."""
 
     async def get_image(
-        self,
-        mode: BufferRetrieveMode = BufferRetrieveMode.Next,
-        copy: bool = True,
-        out: Optional[np.ndarray] = None,
+        self, copy: bool = True, out: Optional[np.ndarray] = None,
     ) -> np.ndarray:
         """
         Acquire specified frame.
 
+        If no worker exists
         Args:
-            mode (BufferRetrieveMode, optional): retrieve next or latest frame
             copy (bool, optional): copy frame from the buffer
             out (np.ndarray, optional): output array
         """
-        while True:
-            frame = self.buffer.read(mode)
-            if frame is None:
-                await asyncio.sleep(0)  # force release
-            else:
-                break
+        frame = await self.buffer.read()
 
         if out is None:
             # reinterpret as a numpy array
@@ -302,12 +385,10 @@ class Camera(Device):
         return out
 
     @abstractmethod
-    async def _retrieve_frame(self, mode: BufferRetrieveMode) -> RawArray:
-        """Retrieve raw frame data from the camera and write it to the frame buffer."""
-
-    @abstractmethod
     def stop_acquisition(self):
         """Stops an acquistion."""
+        self._worker.stop()
+        self._worker.join()  # wait until the thread is terminated
 
     def unconfigure_acquisition(self):
         """Release resources used in the acquisition."""

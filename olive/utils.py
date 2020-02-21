@@ -1,3 +1,4 @@
+import asyncio
 from collections import deque
 from functools import wraps
 import importlib
@@ -6,9 +7,38 @@ import logging
 import pkgutil
 import time
 
-__all__ = ["DisjointSet", "enumerate_namespace_classes", "retry", "Singleton"]
+__all__ = ["timeit", "DisjointSet", "enumerate_namespace_classes", "retry", "Singleton"]
 
 logger = logging.getLogger(__name__)
+
+
+def timeit(func):
+    async def process(func, *args, **params):
+        if asyncio.iscoroutinefunction(func):
+            print("this function is a coroutine: {}".format(func.__name__))
+            return await func(*args, **params)
+        else:
+            print("this is not a coroutine")
+            return func(*args, **params)
+
+    async def helper(*args, **params):
+        print("{}.time".format(func.__name__))
+        start = time.time()
+        result = await process(func, *args, **params)
+
+        # Test normal function route...
+        # result = await process(lambda *a, **p: print(*a, **p), *args, **params)
+
+        print(">>>", time.time() - start)
+        return result
+
+    return helper
+
+
+async def compute(x, y):
+    print("Compute %s + %s ..." % (x, y))
+    await asyncio.sleep(1.0)  # asyncio.sleep is also a coroutine
+    return x + y
 
 
 class Singleton(type):
