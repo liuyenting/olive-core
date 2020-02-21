@@ -83,13 +83,9 @@ class MDSnC(AcustoOpticalModulator):
 
     async def test_open(self):
         try:
-            await self.open()
-            logger.info(f".. {await self.get_device_info()}")
-            # TODO verify device version
+            await super().test_open()
         except (DeviceTimeoutError, SyntaxError):
             raise UnsupportedClassError
-        finally:
-            await self.close()
 
     async def _open(self):
         """Open connection to the synthesizer and seize its internal control."""

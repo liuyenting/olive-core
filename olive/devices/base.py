@@ -57,18 +57,32 @@ class Device(metaclass=DeviceType):
         return self._driver
 
     @property
+    @abstractmethod
+    def is_busy(self):
+        pass
+
+    @property
+    @abstractmethod
+    def is_opened(self):
+        pass
+
+    @property
     def parent(self) -> Device:
         return self._parent
 
     ##
 
-    @abstractmethod
     async def test_open(self):
         """
         Test open the device.
 
         Test open is used during enumeration, if mocking is supported, this can avoid full-scale device initialization.
         """
+        try:
+            await self.open()
+            logger.info(f".. {await self.get_device_info()}")
+        finally:
+            await self.close()
 
     async def open(self):
         """Open the device and register with parent."""

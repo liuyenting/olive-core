@@ -23,7 +23,7 @@ class Driver(metaclass=DriverType):
 
     @property
     def is_active(self):
-        return any(device.is_opened() for device in self._devices)
+        return any(device.is_opened for device in self._devices)
 
     ##
 
@@ -51,7 +51,7 @@ class Driver(metaclass=DriverType):
         candidates = self._enumerate_device_candidates()
 
         # ignore devices that are already active
-        active_devices = [device for device in self._devices if device.is_opened()]
+        active_devices = [device for device in self._devices if device.is_opened]
         logger.debug(
             f"there are {len(active_devices)} active device(s) during enumeration"
         )
