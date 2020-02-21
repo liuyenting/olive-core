@@ -72,9 +72,9 @@ class Driver(metaclass=DriverType):
                     except UnsupportedClassError:
                         # known unsupported case
                         continue
-                    except Exception as e:
-                        # grace fully logged and ignored
-                        logger.error(str(e))
+                    except Exception as err:
+                        # gracefully logged and ignored
+                        logger.error(str(err))
 
         # combine results and refresh internal book-keeping
         self._devices = active_devices + inactive_devices

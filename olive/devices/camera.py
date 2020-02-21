@@ -1,16 +1,17 @@
+import asyncio
 import logging
 from abc import abstractmethod
 from ctypes import c_uint8
 from enum import Enum, auto
 from math import floor
 from multiprocessing.sharedctypes import RawArray
-from typing import Optional, Union
+from typing import List, Optional, Union
 
 import numpy as np
 from psutil import virtual_memory
 
 from .base import Device
-from .error import HostOutOfMemoryError
+from .error import HostOutOfMemoryError, NotEnoughBufferError
 
 __all__ = ["BufferRetrieveMode", "Camera"]
 
@@ -24,27 +25,22 @@ class BufferRetrieveMode(Enum):
 
 class FrameBuffer(object):
     """
-    A buffer wrapper class that
+    An non-blocking ring buffer.
 
     Args:
         shape (tuple): shape of a frame
+        dtype (dtype): frame data type
         frames (int, optional): number of frames
-        dtype (dtype, optional): data type
     """
 
     def __init__(self, shape, dtype, nframes=1):
         assert nframes >= 1, "frames in a ring buffer should be >= 1"
 
         self._shape, self._dtype = shape, dtype
-
-        (ny, nx), dtype = self.shape, self.dtype
-        nbytes = (nx * ny) * np.dtype(dtype).itemsize
-        self._frames = [RawArray(c_uint8, nbytes) for _ in range(nframes)]
+        self._frames = [RawArray(c_uint8, self.nbytes) for _ in range(nframes)]
 
         self._read_index, self._write_index = 0, 0
         self._is_full = False
-
-        self.reset()
 
     ##
 
@@ -53,13 +49,25 @@ class FrameBuffer(object):
         return self._dtype
 
     @property
-    def frames(self):
-        return self._frames
+    def maxsize(self):
+        """Number of frames in the buffer."""
+        return len(self._frames)
+
+    @property
+    def nbytes(self):
+        """Number of bytes per frame."""
+        (ny, nx), itemsize = self.shape, np.dtype(self.dtype).itemsize
+        return (nx * ny) * itemsize
 
     @property
     def shape(self):
         """Shape of a frame."""
         return self._shape
+
+    @property
+    def frames(self) -> List[RawArray]:
+        """Reference to the actual frame buffer."""
+        return self._frames
 
     ##
 
@@ -71,27 +79,24 @@ class FrameBuffer(object):
         return self._is_full
 
     def empty(self):
-        return (not self.full()) and (self._read_index == self._write_index)
+        return (not self._is_full) and (self._read_index == self._write_index)
 
-    async def put(self, frame: RawArray):
+    def write(self, frame):
         """
         Write a frame and put it to dirty queue.
 
         Args:
-            frame (RawArray): frame to write in the buffer
+            frame (RawArray, optional): frame to write in the buffer, dummy write if
+                `None`
         """
         if self.full():
-            raise IndexError("not enough internal buffer")
-        self.frames[self._write_index][:] = frame
+            raise NotEnoughBufferError()
+        self._frames[self._write_index][:] = frame
 
-        self._write_index = (self._write_index + 1) % self.capacity()
+        self._write_index = (self._write_index + 1) % self.maxsize
         self._is_full = self._read_index == self._write_index
 
-    def put_done(self):
-        # TODO put item, task_done
-        pass
-
-    async def get(self) -> RawArray:
+    def read(self) -> RawArray:
         """
         Return a new frame and put it back to clean queue.
 
@@ -100,31 +105,15 @@ class FrameBuffer(object):
         """
         if self.empty():
             return None
-        frame = self.frames[self._read_index]
+        yield self._frames[self._read_index]
 
-        self._read_index = (self._read_index + 1) % self.capacity()
+        self._read_index = (self._read_index + 1) % self.maxsize
         self._is_full = False
 
-        return frame
-
-    def get_done(self):
-        # TODO put item, task_done
-        pass
-
-    def capacity(self):
-        """Returns the maximum capacity of the buffer."""
-        return len(self.frames)
-
     def size(self):
-        """Number of unread frames."""
-        if self.full():
-            return self.capacity()
-        else:
-            size = self._read_index - self._write_index
-            if size < 0:
-                return self.capacity() + size  # wrap around
-            else:
-                return size
+        """Number of unread frames in the buffer."""
+        size = self._read_index - self._write_index
+        return self.maxsize + size if size < 0 else size  # wrap around if negative
 
 
 class Camera(Device):
@@ -152,7 +141,7 @@ class Camera(Device):
         return self._buffer
 
     @property
-    def continuous(self):
+    def is_continuous(self):
         return self._continous
 
     ##
@@ -218,46 +207,59 @@ class Camera(Device):
 
     ##
 
-    async def configure_acquisition(self, n_frames):
+    async def configure_acquisition(self, n_frames: Optional[int] = None):
         """
         Configure resources required in an acquisition.
 
         Args:
-            n_frames (int): size of the frame buffer
-                - n_frames > 0, fixed number of frames
-                - n_frames <= 0, continuous acquisition, buffer size determined
-                    automagically
+            n_frames (int, optional): size of the frame buffer, maxmum number if not
+                specified
         """
-
-        max_bytes = self.get_max_memory_size()
-        ratio = 1
-        while True:
-            try:
-                await self._configure_frame_buffer(n_frames // ratio)
-                break
-            except HostOutOfMemoryError:
-                ratio *= 2
-                logger.warning(
-                    f"exceeds memory limit ({max_bytes} bytes), shrink {ratio}x"
-                )
+        coerced = False
+        try:
+            await self._configure_frame_buffer(n_frames)
+        except HostOutOfMemoryError as err:
+            logger.warning(str(err))
+            n_frames = await self._configure_frame_buffer()
+            logger.info(f"coerced buffer size is {n_frames} frame(s)")
+            coerced = True
 
         # in continuous mode when:
         #   - specified explicitly
         #   - limited memory
-        self._continous = (n_frames <= 0) or (ratio > 1)
+        self._continous = (n_frames is None) or coerced
 
-    async def _configure_frame_buffer(self, n_frames):
+    async def _configure_frame_buffer(self, n_frames: Optional[int] = None):
+        """
+        Create frame buffer.
+
+        Args:
+            n_frames (int, optional): size of the frame buffer, maximum number if not
+                specified
+
+        Returns:
+            (int): allocated number of frames
+        """
         (_, shape), dtype = await self.get_roi(), await self.get_dtype()
 
         ny, nx = shape
         nbytes = (nx * ny) * np.dtype(dtype).itemsize
 
         max_bytes = self.get_max_memory_size()
-        if max_bytes < nbytes * n_frames:
-            raise HostOutOfMemoryError()
+        try:
+            if max_bytes < nbytes * n_frames:
+                max_bytes = self.get_max_memory_size()
+                raise HostOutOfMemoryError(
+                    f"requested buffer size exceeds memory limit ({max_bytes} bytes)"
+                )
+        except TypeError:
+            # use maximum frames
+            n_frames = max_bytes // nbytes
 
         logger.debug(f"allocated {n_frames} frame(s) in the buffer")
         self._buffer = FrameBuffer(shape, dtype, n_frames)
+
+        return n_frames
 
     @abstractmethod
     def start_acquisition(self):
@@ -277,7 +279,12 @@ class Camera(Device):
             copy (bool, optional): copy frame from the buffer
             out (np.ndarray, optional): output array
         """
-        frame = await self.buffer.read(mode)
+        while True:
+            frame = self.buffer.read(mode)
+            if frame is None:
+                await asyncio.sleep(0)  # force release
+            else:
+                break
 
         if out is None:
             # reinterpret as a numpy array
@@ -285,17 +292,18 @@ class Camera(Device):
             _out = np.reshape(_out, self.buffer.shape)
             if copy:
                 # create a new copy
-                return np.copy(_out)
+                out = np.copy(_out)
             else:
-                return _out
+                out = _out
         else:
             # write into the frame
             out[:] = frame[:]
-            return out
+
+        return out
 
     @abstractmethod
     async def _retrieve_frame(self, mode: BufferRetrieveMode) -> RawArray:
-        """Retrieve raw frame data from the buffer."""
+        """Retrieve raw frame data from the camera and write it to the frame buffer."""
 
     @abstractmethod
     def stop_acquisition(self):

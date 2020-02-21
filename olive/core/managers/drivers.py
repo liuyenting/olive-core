@@ -2,6 +2,7 @@ import importlib
 import itertools
 import logging
 from typing import List, Optional, Tuple
+import asyncio
 
 import olive.drivers  # preload
 from olive.devices.base import Device, DeviceType
@@ -30,11 +31,10 @@ class DriverManager(metaclass=Singleton):
     def __init__(self):
         # list device categories
         self._drivers = {klass: [] for klass in Device.__subclasses__()}
-        self.refresh()
 
     ##
 
-    def refresh(self, force_reload=False):
+    async def refresh(self, force_reload=False):
         """
         Refresh known driver list.
 
@@ -55,22 +55,32 @@ class DriverManager(metaclass=Singleton):
         logger.info(f"found {len(driver_klasses)} driver(s)")
 
         logger.info("categorizing drivers by their supported devices")
+        drivers = []
         for driver_klass in driver_klasses:
             driver_name = driver_klass.__name__
 
             if driver_klass not in active_driver_classes:
-                try:
-                    driver = driver_klass()
-                    driver.initialize()
-                except InitializeError as err:
-                    logger.error(
-                        f'unable to initialize {driver_name}, due to "{str(err)}"'
-                    )
-                    continue
+                driver = driver_klass()
+                drivers.append(driver)
             else:
                 logger.debug(f'"{driver_name}" is already initialized')
 
-            self._add_driver(driver)
+        logger.info(f"initializing {len(drivers)} driver(s)")
+        tasks = [driver.initialize() for driver in drivers]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        for driver, result in zip(drivers, results):
+            if result is None:
+                self._add_driver(driver)
+            else:
+                try:
+                    raise result
+                except InitializeError as err:
+                    # gracefully logged and ignored
+                    driver_name = type(driver).__name__
+                    logger.error(
+                        f'unable to initialize {driver_name}, due to "{str(err)}"'
+                    )
 
     def query_drivers(self, device_klass: Optional[DeviceType] = None) -> Tuple[Driver]:
         """

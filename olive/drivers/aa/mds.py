@@ -414,7 +414,7 @@ class MultiDigitalSynthesizer(Driver):
 
     ##
 
-    def initialize(self):
+    async def initialize(self):
         self.manager.refresh()
 
     def _enumerate_device_candidates(self) -> Iterable[MDSnC]:
