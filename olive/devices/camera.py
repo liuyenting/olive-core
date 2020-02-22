@@ -4,7 +4,6 @@ import threading
 from abc import abstractmethod
 from ctypes import c_uint8
 from enum import Enum, auto
-from functools import partial
 from math import floor
 from multiprocessing.sharedctypes import RawArray
 from typing import List, Optional, Union
@@ -95,7 +94,7 @@ class FrameBuffer(object):
             try:
                 self.write_nowait(frame)
             except NotEnoughBufferError:
-                asyncio.sleep(0)
+                await asyncio.sleep(0)
             else:
                 break
 
@@ -120,7 +119,7 @@ class FrameBuffer(object):
         while True:
             frame = self.read_nowait()
             if frame is None:
-                asyncio.sleep(0)
+                await asyncio.sleep(0)
             else:
                 break
 
@@ -357,7 +356,7 @@ class Camera(Device):
         """Retrieve raw frame data from the camera and write it to the frame buffer."""
 
     async def get_image(
-        self, copy: bool = True, out: Optional[np.ndarray] = None,
+        self, copy: bool = True, out: Optional[np.ndarray] = None
     ) -> np.ndarray:
         """
         Acquire specified frame.
