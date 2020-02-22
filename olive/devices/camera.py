@@ -6,7 +6,7 @@ from ctypes import c_uint8
 from enum import Enum, auto
 from math import floor
 from multiprocessing.sharedctypes import RawArray
-from typing import List, Optional, Union
+from typing import Awaitable, Callable, List, Optional, Union
 
 import numpy as np
 from psutil import virtual_memory
@@ -150,15 +150,15 @@ class Worker(threading.Thread):
     Worker thread that retrieve frame from the camera to frame buffer.
     """
 
-    def __init__(self):
+    def __init__(self, func: Callable[[], Awaitable[RawArray]], buffer: FrameBuffer):
         super().__init__()
 
-        self._buffer, self._async_func = None, None
+        self._func, self._buffer = func, buffer
         self._stop_event = threading.Event()
 
     ##
 
-    def run(self):
+    def run(self):  # TODO fix me
         async def wrapper():
             while not self._stop_event.is_set():
                 frame = await self._async_func
@@ -199,7 +199,7 @@ class Camera(Device):
 
         self._continous, self._acquisition_mode = False, BufferRetrieveMode.Next
 
-        self._worker = Worker()
+        self._worker = None
 
     ##
 
