@@ -3,8 +3,8 @@ from pprint import pprint
 
 import coloredlogs
 
-from olive.core import DriverManager
-from olive.devices import Camera, DeviceManager
+from olive.core.managers import DeviceManager, DriverManager
+from olive.devices import Camera
 
 coloredlogs.install(
     level="DEBUG", fmt="%(asctime)s %(levelname)s %(message)s", datefmt="%H:%M:%S"
