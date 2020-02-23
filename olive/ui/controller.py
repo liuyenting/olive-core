@@ -50,3 +50,6 @@ class Controller(metaclass=Singleton):
 
         # TODO link main window with model/interactor
 
+        self.views.run_event_loop()
+
+        # TODO cleanup

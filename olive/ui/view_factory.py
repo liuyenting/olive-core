@@ -38,3 +38,11 @@ class ViewFactory(ABC, Mapping):
         Returns:
             (dict of PresenterBase: ViewBase): a association dictionary
         """
+
+    @abstractmethod
+    def run_event_loop(self):
+        """
+        Most UI framework has event loop that response to user actions. Run it.
+
+        This is a blocking method, only returns when the UI is closing.
+        """

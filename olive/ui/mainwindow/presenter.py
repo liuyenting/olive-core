@@ -63,6 +63,7 @@ class MainWindowPresenter(PresenterBase):
         self._workspaces = WorkspaceRedirector()
         self._workspaces.register_to(self.view)
 
+        # register callbacks
         self.view.set_change_workspace_action(self.on_change_workspace)
         self.view.set_exit_action(self.on_exit)
 
