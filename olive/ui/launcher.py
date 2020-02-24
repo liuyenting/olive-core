@@ -7,6 +7,10 @@ __all__ = ["launch"]
 logger = logging.getLogger(__name__)
 
 # TODO wrap launch() with clicks
-def launch(backend="qt"):
-    controller = Controller(backend)
+
+
+def launch():
+    print('launch start')
+    controller = Controller()
+    print('controller created')
     controller.run()

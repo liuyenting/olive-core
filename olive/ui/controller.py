@@ -1,9 +1,12 @@
 import logging
+import sys
+
+from qtpy.QtWidgets import QApplication
+import qdarkstyle
 
 from olive.utils import Singleton
 
 from .mainwindow import MainWindowPresenter
-from .view_factory import ViewFactory
 
 __all__ = ["Controller"]
 
@@ -18,22 +21,10 @@ class Controller(metaclass=Singleton):
         backend (str): name of the backend to use
     """
 
-    def __init__(self, backend: str):
-        # retrieve backend
-        views = ViewFactory.__subclasses__()
-        views = {klass.name: klass for klass in views}
-        logger.debug(f"found {len(views)} view factory")
-
-        try:
-            self._views = views[backend]()  # instantiation
-        except KeyError:
-            logger.error(f'unknown backend "{backend}"')
+    def __init__(self):
+        print('controller init')
 
     ##
-
-    @property
-    def views(self) -> ViewFactory:
-        return self._views
 
     ##
 
@@ -44,6 +35,9 @@ class Controller(metaclass=Singleton):
             2) Create user interface.
         """
 
+        app = QApplication()
+        app.setStyleSheet(qdarkstyle.load_stylesheet())
+
         # TODO kick start background service
 
         main_window = MainWindowPresenter()
@@ -53,3 +47,5 @@ class Controller(metaclass=Singleton):
         self.views.run_event_loop()
 
         # TODO cleanup
+
+        app.exec_()
