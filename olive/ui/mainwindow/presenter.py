@@ -3,7 +3,7 @@ from abc import abstractmethod
 from enum import IntEnum, auto
 from collections.abc import Mapping
 
-from ..base import PresenterBase
+from ..base import BasePresenter
 from ..workspace import (
     AcquisitionPresenter,
     DeviceHubPresenter,
@@ -55,7 +55,7 @@ class WorkspaceRedirector(Mapping):
             self._lut[workspace] = index
 
 
-class MainWindowPresenter(PresenterBase):
+class MainWindowPresenter(BasePresenter):
     def __init__(self):
         super().__init__()
 
