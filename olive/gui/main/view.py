@@ -6,7 +6,7 @@ from functools import partial
 from qtpy.QtCore import Signal
 
 from ..base import BaseView
-from .redirector import Workspace
+from ..workspace import Workspace
 
 __all__ = ["MainView"]
 
@@ -37,12 +37,18 @@ class MainView(BaseMainView):
 
         # workspace buttons
         mapping = {
-            self.view.device_hub.clicked: Workspace.DeviceHub,
-            self.view.protocol_editor.clicked: Workspace.ProtocolEditor,
-            self.view.acquisition.clicked: Workspace.Acquisition,
+            self.device_hub.clicked: Workspace.DeviceHub,
+            self.protocol_editor.clicked: Workspace.ProtocolEditor,
+            self.acquisition.clicked: Workspace.Acquisition,
         }
         for signal, workspace in mapping.items():
             signal.connect(partial(self.change_workspace.emit, workspace))
+
+        # problems
+        # TODO
+
+        # exit
+        self.exit.clicked.connect(self.exit_triggered.emit)
 
     ##
 

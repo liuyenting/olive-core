@@ -18,14 +18,6 @@ logger = logging.getLogger(__name__)
 class DriverManager(metaclass=Singleton):
     """
     Driver bookkeeping.
-
-    Todo:
-        - blacklist
-        - driver reload
-
-    Attributes:
-        drivers (tuple): a list of known drivers
-            This will return everything.
     """
 
     def __init__(self):

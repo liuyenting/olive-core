@@ -7,7 +7,11 @@
     <file alias="device_hub">icons/device_hub.png</file>
   </qresource>
   <qresource prefix="device_hub">
+    <file alias="refresh_devices_enabled">icons/youtube_searched_for_white.png</file>
+    <file alias="refresh_devices_disabled">icons/youtube_searched_for_black.png</file>
     <file alias="computer">icons/computer.png</file>
+    <file alias="refresh_properties_disabled">icons/autorenew_black.png</file>
+    <file alias="refresh_properties_enabled">icons/autorenew_white.png</file>
     <file alias="sequencer">icons/android.png</file>
     <file alias="sensor">icons/settings_input_antenna.png</file>
     <file alias="motion">icons/videogame_asset.png</file>

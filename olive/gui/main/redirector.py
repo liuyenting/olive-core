@@ -1,24 +1,14 @@
 from collections.abc import Mapping
-from enum import IntEnum, auto
 
+from ..workspace import Workspace, workspace_defs
 from .view import BaseMainView
 
 __all__ = ["Workspace", "WorkspaceRedirector"]
 
 
-class Workspace(IntEnum):
-    DeviceHub = auto()  # 1)
-    ProtocolEditor = auto()  # 2)
-    Acquisition = auto()  # 3)
-
-
 class WorkspaceRedirector(Mapping):
     def __init__(self):
-        self._workspaces = {
-            Workspace.DeviceHub: (None, None),
-            Workspace.ProtocolEditor: (None, None),
-            Workspace.Acquisition: (None, None),
-        }
+        self._workspaces = workspace_defs.copy()
 
     def __getitem__(self, workspace: Workspace):
         presenter = self._workspaces[workspace]
@@ -36,12 +26,12 @@ class WorkspaceRedirector(Mapping):
 
     ##
 
-    def register_to(self, view: BaseMainView):
-        for workspace, (p_klass, v_klass) in self._workspaces.items():
+    def register_to(self, main_view: BaseMainView):
+        for workspace, klass_def in self._workspaces.items():
             # create presenter/view
-            view = v_klass()
-            presenter = p_klass(view)
+            view = klass_def.view()
+            presenter = klass_def.presenter(view)
             # register
-            view.register_workspace_view(view)
+            main_view.register_workspace_view(view)
             # update the record
             self._workspaces[workspace] = presenter

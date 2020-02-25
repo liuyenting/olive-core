@@ -1,10 +1,13 @@
 import logging
 import os
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta
 
 from qtpy.QtCore import QObject
 from qtpy.QtWidgets import QWidget
 from qtpy.uic import loadUi
+
+# mandatory import for uic files, early cached
+from ..resources import resources_rc  # noqa
 
 __all__ = ["BaseView"]
 

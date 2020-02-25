@@ -1,9 +1,9 @@
 import logging
 
-from ..base import BasePresenter
+from ...base import BasePresenter
 from .view import BaseDeviceHubView
 
-__all__ = []
+__all__ = ["DeviceHubPresenter"]
 
 logger = logging.getLogger(__name__)
 
@@ -13,21 +13,21 @@ class DeviceHubPresenter(BasePresenter):
         super().__init__(view=view)
 
         self.view.refresh_device_list.connect(self.on_refresh_device_list)
-        self.view.select_device.connect(self.on_select_device)
+        # self.view.select_device.connect(self.on_select_device)
 
-        self.view.on_refresh_paramters(self.on_refresh_paramters)
+        self.view.refresh_properties.connect(self.on_refresh_properties)
 
     ##
 
     ##
 
     def on_refresh_device_list(self):
-        pass
+        print("refresh device list")
 
     def on_select_device(self):
         pass
 
     ##
 
-    def on_refresh_paramters(self):
-        pass
+    def on_refresh_properties(self):
+        print("refresh properties")

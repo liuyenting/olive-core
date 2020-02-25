@@ -1,8 +1,9 @@
 import logging
 
 from ..base import BasePresenter
+from ..workspace import Workspace
+from .redirector import WorkspaceRedirector
 from .view import BaseMainView
-from .redirector import Workspace, WorkspaceRedirector
 
 __all__ = ["MainPresenter"]
 
@@ -17,6 +18,7 @@ class MainPresenter(BasePresenter):
         self.redirector.register_to(self.view)
 
         self.view.change_workspace.connect(self.on_change_workspace)
+        self.view.exit_triggered.connect(self.on_exit)
 
     ##
 
@@ -29,3 +31,7 @@ class MainPresenter(BasePresenter):
     def on_change_workspace(self, workspace: Workspace):
         workspace = self.redirector[workspace]
         self.view.set_current_workspace(workspace.view)
+
+    def on_exit(self):
+        print(">>> EXIT <<<")
+        self.view.close()

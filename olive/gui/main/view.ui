@@ -59,7 +59,7 @@
          <string>Device Hub</string>
         </property>
         <property name="icon">
-         <iconset resource="../backend/qt/resources/resources.qrc">
+         <iconset resource="../resources/resources.qrc">
           <normaloff>:/main_window/device_hub</normaloff>:/main_window/device_hub</iconset>
         </property>
         <property name="iconSize">
@@ -89,7 +89,7 @@
 Editor</string>
         </property>
         <property name="icon">
-         <iconset resource="../backend/qt/resources/resources.qrc">
+         <iconset resource="../resources/resources.qrc">
           <normaloff>:/main_window/protocol_editor</normaloff>:/main_window/protocol_editor</iconset>
         </property>
         <property name="iconSize">
@@ -118,7 +118,7 @@ Editor</string>
          <string>Acquisition</string>
         </property>
         <property name="icon">
-         <iconset resource="../backend/qt/resources/resources.qrc">
+         <iconset resource="../resources/resources.qrc">
           <normaloff>:/main_window/acquisition</normaloff>:/main_window/acquisition</iconset>
         </property>
         <property name="iconSize">
@@ -160,7 +160,7 @@ Editor</string>
          <string>Problems</string>
         </property>
         <property name="icon">
-         <iconset resource="../backend/qt/resources/resources.qrc">
+         <iconset resource="../resources/resources.qrc">
           <normaloff>:/main_window/problems</normaloff>:/main_window/problems</iconset>
         </property>
         <property name="iconSize">
@@ -189,7 +189,7 @@ Editor</string>
          <string>Exit</string>
         </property>
         <property name="icon">
-         <iconset resource="../backend/qt/resources/resources.qrc">
+         <iconset resource="../resources/resources.qrc">
           <normaloff>:/main_window/exit</normaloff>:/main_window/exit</iconset>
         </property>
         <property name="iconSize">
@@ -225,7 +225,7 @@ Editor</string>
   </layout>
  </widget>
  <resources>
-  <include location="../backend/qt/resources/resources.qrc"/>
+  <include location="../resources/resources.qrc"/>
  </resources>
  <connections/>
 </ui>
