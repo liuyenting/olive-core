@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 class BaseMainView(BaseView):
-    change_workspace = Signal(int)
+    change_workspace = Signal(object)  # Workspace
     exit_triggered = Signal()
 
     ##

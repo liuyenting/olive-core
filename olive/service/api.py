@@ -1,3 +1,0 @@
-"""
-TODO define API endpoints
-"""
