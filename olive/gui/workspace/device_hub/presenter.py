@@ -17,6 +17,8 @@ class DeviceHubPresenter(BasePresenter):
 
         self.view.refresh_properties.connect(self.on_refresh_properties)
 
+        # TODO trigger refresh
+
     ##
 
     ##
@@ -25,7 +27,7 @@ class DeviceHubPresenter(BasePresenter):
         print("refresh device list")
 
     def on_select_device(self):
-        pass
+        print("select device")
 
     ##
 

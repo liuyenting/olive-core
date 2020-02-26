@@ -4,6 +4,7 @@ import sys
 from qtpy.QtWidgets import QApplication
 import qdarkstyle
 
+from .data import DataManager
 from .main import MainView, MainPresenter
 
 __all__ = ["launch"]
@@ -18,6 +19,8 @@ class AppController(object):
         self._app = app
 
     def run(self):
+        data = DataManager()
+
         # kick start main window
         view = MainView()
         presenter = MainPresenter(view)

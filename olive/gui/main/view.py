@@ -6,7 +6,7 @@ from functools import partial
 from qtpy.QtCore import Signal
 
 from ..base import BaseView
-from ..workspace import Workspace
+from ..workspace.mapping import Workspace
 
 __all__ = ["MainView"]
 
@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 class BaseMainView(BaseView):
-    change_workspace = Signal(BaseView)
+    change_workspace = Signal(int)
     exit_triggered = Signal()
 
     ##

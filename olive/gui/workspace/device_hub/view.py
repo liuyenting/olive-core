@@ -26,7 +26,7 @@ class BaseDeviceHubView(BaseView):
     refresh_properties = Signal()  # FIXME assign device name to refresh
 
     ##
-    # device list manipulation - category
+    # device list - manipulate categories
 
     @abstractmethod
     def add_category(self, category: Device):
@@ -51,7 +51,7 @@ class BaseDeviceHubView(BaseView):
         """Set whether user can trigger device list refresh."""
 
     ##
-    # device list manipulation - device
+    # device list - manipulate devices
 
     @abstractmethod
     def add_device(self, category, device: Device):
@@ -78,7 +78,7 @@ class DeviceHubView(BaseDeviceHubView):
         # FIXME when signal is patched, add missing device UUID assignment
 
     ##
-    # device list maipulation - category
+    # device list - manipulate categories
 
     def add_category(self, category: Device):
         pass
@@ -93,3 +93,4 @@ class DeviceHubView(BaseDeviceHubView):
         self.refresh_devices_button.setEnabled(enable)
 
     ##
+    # property editor

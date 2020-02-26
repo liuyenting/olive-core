@@ -1,6 +1,6 @@
 from collections.abc import Mapping
 
-from ..workspace import Workspace, workspace_defs
+from ..workspace.mapping import Workspace, workspace_defs
 from .view import BaseMainView
 
 __all__ = ["Workspace", "WorkspaceRedirector"]

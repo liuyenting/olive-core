@@ -1,7 +1,7 @@
 import logging
 
 from ..base import BasePresenter
-from ..workspace import Workspace
+from ..workspace.mapping import Workspace
 from .redirector import WorkspaceRedirector
 from .view import BaseMainView
 
