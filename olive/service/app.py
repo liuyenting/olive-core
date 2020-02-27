@@ -1,9 +1,10 @@
+import asyncio
 import logging
 
-from aiohttp.web import Application, run_app
+from aiohttp.web import Application, AppRunner, TCPSite, run_app
 
-from .routes import devices
 from .gateway import Gateway
+from .routes import devices
 
 __all__ = ["launch"]
 
@@ -46,13 +47,32 @@ class AppController(object):
     ##
 
     def run(self):
+        loop = asyncio.get_event_loop()
+
         app = Application()
 
         # attach API endpoints
         # NOTE by adding subapp, we can introduce API versioning in the future
         app.add_subapp("/api", self.api)
 
-        run_app(app, host=self._host, port=self._port)
+        # create runner
+        runner = AppRunner(app)
+        loop.run_until_complete(runner.setup())
+        # create the site
+        site = TCPSite(runner, host=self._host, port=self._port)
+
+        # work around for Windows signal handlers
+        # NOTE https://bugs.python.org/issue23057
+        async def wakeup():
+            while True:
+                await asyncio.sleep(1)
+
+        # run!
+        try:
+            loop.run_until_complete(asyncio.gather(*[site.start(), wakeup()]))
+        except KeyboardInterrupt:
+            logger.info("keyboard interrupted, stopping")
+            loop.run_until_complete(runner.cleanup())
 
 
 def launch(port=None):

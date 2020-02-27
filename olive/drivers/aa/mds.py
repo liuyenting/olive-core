@@ -16,8 +16,10 @@ from olive.devices.error import (
     ExceedsChannelCapacityError,
     UnsupportedClassError,
 )
-from olive.drivers.base import Driver
-from olive.drivers.utils import SerialPortManager
+
+from ..base import Driver
+from ..error import PortAlreadyAssigned
+from ..utils import SerialPortManager
 
 __all__ = ["MultiDigitalSynthesizer"]
 
@@ -84,7 +86,8 @@ class MDSnC(AcustoOpticalModulator):
     async def test_open(self):
         try:
             await super().test_open()
-        except (DeviceTimeoutError, SyntaxError):
+            await self.driver.manager.mark_port(self._port)  # mark port as in-use
+        except (DeviceTimeoutError, PortAlreadyAssigned, SyntaxError):
             raise UnsupportedClassError
 
     async def _open(self):
@@ -109,7 +112,7 @@ class MDSnC(AcustoOpticalModulator):
         self._writer.close()
         await self._writer.wait_closed()
 
-        self.driver.manager.release_port(self._port)
+        await self.driver.manager.release_port(self._port)
 
         self._reader, self._writer = None, None
 

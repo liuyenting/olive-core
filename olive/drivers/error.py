@@ -8,3 +8,14 @@ class InitializeError(DriverError):
 
 class ShutdownError(DriverError):
     """Failed to shutdown the driver."""
+
+
+##
+
+
+class SerialPortManagerError(DriverError):
+    """Generic serial port manager error."""
+
+
+class PortAlreadyAssigned(SerialPortManagerError):
+    """Selected port already found its driver and assigned."""
