@@ -23,6 +23,11 @@ class Driver(metaclass=DriverType):
 
     @property
     def is_active(self):
+        """
+        The driver has opened devices.
+
+        Devices may not be active, use `is_active` to further probe their status.
+        """
         return any(device.is_opened for device in self._devices)
 
     ##
@@ -30,10 +35,17 @@ class Driver(metaclass=DriverType):
     async def initialize(self):
         """Initialize the library."""
 
-    async def shutdown(self):
-        """Cleanup resources allocated by the library."""
-        tasks = [device.close() for device in self._devices]
-        results = await asyncio.gather(*tasks, return_exceptions=True)
+    async def shutdown(self, force=False):
+        """
+        Cleanup resources allocated by the library.
+
+        Args:
+            force (bool, optional): force shutdown the driver even if there are devices
+                still being active
+        """
+        results = await asyncio.gather(
+            *[device.close(force) for device in self._devices], return_exceptions=True
+        )
         for result in results:
             if result is not None:
                 # something wrong happened

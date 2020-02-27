@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 from abc import ABCMeta, abstractmethod
 from typing import NamedTuple, Tuple
@@ -61,12 +62,10 @@ class Device(metaclass=DeviceType):
     @property
     def is_active(self):
         """
-        The device is selected as an concrete implementation in requirements.
-
-        To avoid mis-assigned value by external classes, is_active will be assigned its
-        state through internal means (underscore / from DeviceManager class)
+        The device or its children is selected as an concrete implementation in
+        requirements.
         """
-        return self._is_active
+        return self._is_active or any(child.is_active for child in self._children)
 
     @property
     @abstractmethod
@@ -126,35 +125,55 @@ class Device(metaclass=DeviceType):
         raise NotImplementedError
 
     async def close(self, force=False):
-        """Close the device and unregister with parent."""
+        """
+        Close the device and unregister with parent.
+
+        Args:
+            force (bool, optional): force close the device even if there are children
+                still being active
+        """
         if not self.is_opened:
             return
 
-        if self.children:
+        # stop itself
+        # NOTE a device _should not_ remain active, when it is not even _opened_
+        self._is_active = False
+
+        # 1) clean up children
+        if self.is_active:
+            # our `is_active` is already False, if we are here, this means that there
+            # are active children
             logger.warning("there are still children active")
-            if not force:
-                return
-        # 4) unregister ourself
-        try:
-            self.parent.unregister(self)
-        except AttributeError:
-            pass
-        # 3) cleanup children list, ignored
+            if force:
+                # 1) close all children
+                results = await asyncio.gather(
+                    *[child.close(force) for child in self.children],
+                    return_exceptions=True,
+                )
+                for result in results:
+                    if result is not None:
+                        # something wrong happened
+                        logger.exception(result)
+
         # 2) close ourself
         try:
             await self._close()
         except NotImplementedError:
             pass
-        # 1) close parent
+
+        # 3) unregister ourself
+        try:
+            self.parent.unregister(self)
+        except AttributeError:
+            pass
+
+        # 4) close parent
         try:
             await self.parent.close()
         except AttributeError:
             pass
 
-        # a device _cannot_ possibly remain active when:
-        #   1) itself
-        #   2) its parent(s)
-        # both are not _opened_.
+        # a device _cannot_ possibly remain active when it is not even _opened_
         self._is_active = False
 
     async def _close(self):

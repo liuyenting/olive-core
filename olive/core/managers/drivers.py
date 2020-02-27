@@ -101,12 +101,13 @@ class DriverManager(metaclass=Singleton):
             logger.debug(f".. {device_klass.__name__}")
             self._drivers[device_klass].append(driver)
 
-    def _shutdown_all_drivers(self, force_shutdown=False) -> List[Driver]:
+    def _shutdown_all_drivers(self, force=False) -> List[Driver]:
         """
         Shutdown all enlisted drivers.
 
         Args:
-            force_shutdown (bool, optional): force active drivers being shutdown
+            force (bool, optional): force drivers that have devices actively in-use to
+                shutdown
 
         Returns:
             (list of Driver) drivers that are still active

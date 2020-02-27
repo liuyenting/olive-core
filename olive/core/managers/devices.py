@@ -124,6 +124,11 @@ class DeviceManager(metaclass=Singleton):
     """
     Device book-keeping.
 
+    All discoverable devices are register with the device manager (opened), in order to ensure that user will only interact with devices that _can be used_.
+
+    Devices that participates in the requirements are linked (active) with an alias.
+
+
     # FIXME
     >> registration flow
     1) instantiate new device
@@ -200,6 +205,22 @@ class DeviceManager(metaclass=Singleton):
         task = asyncio.create_task(_unregister())
         self._tasks.append(task)
 
+    async def wait_ready(self, timeout=5):
+        """
+        Wait until (un)registration requests are finished.
+
+        Args:
+            timeout (int, optional): timeout in seconds
+        """
+        loop = asyncio.get_event_loop()
+        future = asyncio.wait(*self._tasks, timeout=timeout)
+        done, pending = loop.run_until_complete(future)
+        if len(pending) > 0:
+            raise DeviceTimeoutException(f"timeout occurs for {pending}")
+
+        # wipe task list
+        self._tasks = []
+
     ##
 
     def update_requirements(self, requirements: Dict[str, Device]):
@@ -214,7 +235,7 @@ class DeviceManager(metaclass=Singleton):
             f"{len(unused_devices)} device(s) are not required after the update"
         )
         for device in unused_devices:
-            self.unregister(device)
+            self.unlink(device)
 
     def link(self, alias: str, device: Device):
         """
@@ -226,7 +247,6 @@ class DeviceManager(metaclass=Singleton):
         """
         logger.debug(f'[LINK] "{device}" -> "{alias}')
         self._requirements[alias] = device
-        self.register(device)
 
         # activate the device
         device._is_active = True
@@ -240,25 +260,9 @@ class DeviceManager(metaclass=Singleton):
         """
         logger.debug(f'[UNLINK] "{alias}"')
         device = self._requirements.pop(alias)
-        self.unregister(device)
 
         # inactivate the device
         device._is_active = False
-
-    ##
-
-    async def wait_ready(self, timeout=5):
-        """
-        Wait until (un)registration requests are finished.
-
-        Args:
-            timeout (int, optional): timeout in seconds
-        """
-        loop = asyncio.get_event_loop()
-        future = asyncio.wait(*self._tasks, timeout=timeout)
-        done, pending = loop.run_until_complete(future)
-        if len(pending) > 0:
-            raise DeviceTimeoutException(f"timeout occurs for {pending}")
 
 
 def query_device_hierarchy():
