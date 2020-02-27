@@ -212,11 +212,18 @@ class DeviceManager(metaclass=Singleton):
         Args:
             timeout (int, optional): timeout in seconds
         """
-        loop = asyncio.get_event_loop()
-        future = asyncio.wait(*self._tasks, timeout=timeout)
-        done, pending = loop.run_until_complete(future)
-        if len(pending) > 0:
-            raise DeviceTimeoutException(f"timeout occurs for {pending}")
+        if not self._tasks:
+            # nothing to wait for
+            return
+
+        done, pending = await asyncio.wait(self._tasks, timeout=timeout)
+
+        # cancel pending tasks
+        n_pending = len(pending)
+        if n_pending > 0:
+            for task in pending:
+                task.cancel()
+            raise DeviceTimeoutException(f"timeout occurs for {n_pending} device(s)")
 
         # wipe task list
         self._tasks = []

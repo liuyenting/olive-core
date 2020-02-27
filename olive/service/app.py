@@ -3,6 +3,7 @@ import logging
 from aiohttp.web import Application, run_app
 
 from .routes import devices
+from .gateway import Gateway
 
 __all__ = ["launch"]
 
@@ -13,19 +14,45 @@ class AppController(object):
     def __init__(self, host=None, port=None):
         self._host, self._port = host, port
 
-        # create api root application
-        api = Application()
+        self._api = Application()
 
-        # install routes
-        api.router.add_routes(devices.routes)
+        self.setup_routes()
+        self.setup_gateway()
 
-        # create actual root
-        app = Application()
-        app.add_subapp("/api/", api)
-        self._app = app
+    ##
+
+    @property
+    def api(self) -> Application:
+        """API endpoints."""
+        return self._api
+
+    ##
+
+    def setup_routes(self):
+        """Setup routing tables."""
+        # /devices
+        # /devices/{uuid}
+        # /devices/categories
+        self.api.router.add_routes(devices.routes)
+
+    def setup_gateway(self):
+        gateway = Gateway()
+        self.api.on_startup.append(gateway.initialize)
+        self.api.on_cleanup.append(gateway.shutdown)
+
+        # save it in context
+        self.api["gateway"] = gateway
+
+    ##
 
     def run(self):
-        run_app(self._app, host=self._host, port=self._port)
+        app = Application()
+
+        # attach API endpoints
+        # NOTE by adding subapp, we can introduce API versioning in the future
+        app.add_subapp("/api", self.api)
+
+        run_app(app, host=self._host, port=self._port)
 
 
 def launch(port=None):

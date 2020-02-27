@@ -1,6 +1,6 @@
 import logging
 
-from aiohttp.web import RouteTableDef, Response
+from aiohttp.web import RouteTableDef, Response, json_response
 
 __all__ = ["routes"]
 
@@ -11,10 +11,21 @@ routes = RouteTableDef()
 
 @routes.get("/devices")
 async def list_devices(request):
-    print(f'GET /api/devices, "{request}"')
+    print(f"GET devices")
 
-    response = Response()
-    response.body = "Fuck this".encode()
-    response.content_type = "text/plain"
 
-    return response
+@routes.get("/devices/host")
+async def get_host_info(request):
+    logger.debug(f"GET host_info")
+
+    gateway = request.app["gateway"]
+
+    hostname = gateway.query_hostname()
+
+    return json_response({"hostname": hostname})
+
+
+@routes.get("/devices/classes")
+async def list_device_classes(request):
+    print(f"GET device_classes")
+

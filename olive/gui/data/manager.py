@@ -8,4 +8,5 @@ logger = logging.getLogger(__name__)
 
 
 class DataManager(metaclass=Singleton):
-    pass
+    def __init__(self):
+        pass
