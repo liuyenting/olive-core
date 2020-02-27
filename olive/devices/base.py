@@ -173,9 +173,6 @@ class Device(metaclass=DeviceType):
         except AttributeError:
             pass
 
-        # a device _cannot_ possibly remain active when it is not even _opened_
-        self._is_active = False
-
     async def _close(self):
         """Concrete close operation."""
         raise NotImplementedError
