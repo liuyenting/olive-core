@@ -165,6 +165,9 @@ class DeviceManager(metaclass=Singleton):
         Args:
             device (Device): new device
         """
+        if device in self._tasks:
+            logger.debug(f'"{device}" already registered')
+            return
         logger.debug(f'[REG] "{device}"')
 
         async def _register():
@@ -225,6 +228,9 @@ class DeviceManager(metaclass=Singleton):
         self._requirements[alias] = device
         self.register(device)
 
+        # activate the device
+        device._is_active = True
+
     def unlink(self, alias: str):
         """
         Unlink alias-device association.
@@ -235,6 +241,9 @@ class DeviceManager(metaclass=Singleton):
         logger.debug(f'[UNLINK] "{alias}"')
         device = self._requirements.pop(alias)
         self.unregister(device)
+
+        # inactivate the device
+        device._is_active = False
 
     ##
 

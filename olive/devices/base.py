@@ -46,6 +46,8 @@ class Device(metaclass=DeviceType):
 
         self._info = None
 
+        self._is_active = False
+
     ##
 
     @property
@@ -57,13 +59,25 @@ class Device(metaclass=DeviceType):
         return self._driver
 
     @property
+    def is_active(self):
+        """
+        The device is selected as an concrete implementation in requirements.
+
+        To avoid mis-assigned value by external classes, is_active will be assigned its
+        state through internal means (underscore / from DeviceManager class)
+        """
+        return self._is_active
+
+    @property
     @abstractmethod
     def is_busy(self):
+        """The device is not capable of actively processing new commands."""
         pass
 
     @property
     @abstractmethod
     def is_opened(self):
+        """The host has established a connection with the device."""
         pass
 
     @property
@@ -104,7 +118,8 @@ class Device(metaclass=DeviceType):
             self.parent.register(self)
         except AttributeError:
             pass
-        # 5) get device info
+
+        # NOTE a device _may not_ be active, despite opened
 
     async def _open(self):
         """Concrete open operation."""
@@ -136,6 +151,12 @@ class Device(metaclass=DeviceType):
         except AttributeError:
             pass
 
+        # a device _cannot_ possibly remain active when:
+        #   1) itself
+        #   2) its parent(s)
+        # both are not _opened_.
+        self._is_active = False
+
     async def _close(self):
         """Concrete close operation."""
         raise NotImplementedError
@@ -158,6 +179,9 @@ class Device(metaclass=DeviceType):
         assert child not in self._children, "child is already registered"
         self._children.append(child)
         logger.debug(f'[REG] DEV "{child}" -> DEV "{self}"')
+
+        # a device must be active when it has at least 1 child
+        self._is_active = True
 
     def unregister(self, child: Device):
         """

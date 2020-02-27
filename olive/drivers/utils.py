@@ -45,6 +45,8 @@ class SerialPortManager(metaclass=Singleton):
         logger.debug(f'requesting "{port}"...')
         lock = self._ports[port]
         await lock.acquire()
+        # TODO switch to condition, and use notify to determine whether someone can
+        # open a serial port already, if so, stop trying
 
         return port
 

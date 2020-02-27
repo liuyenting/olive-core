@@ -21,7 +21,7 @@ class DriverManager(metaclass=Singleton):
     """
 
     def __init__(self):
-        # list device categories
+        # organize drivers by their supported device classes
         self._drivers = {klass: [] for klass in Device.__subclasses__()}
 
     ##
@@ -76,10 +76,10 @@ class DriverManager(metaclass=Singleton):
 
     def query_drivers(self, device_klass: Optional[DeviceType] = None) -> Tuple[Driver]:
         """
-        Return drivers of a device category.
+        Return drivers that support the specified device class.
 
         Args:
-            device_klass (Device, optional): category of interest, if None, return all
+            device_klass (Device, optional): class of interest, if `None`, return all
         """
         if device_klass is None:
             return tuple(set(itertools.chain.from_iterable(self._drivers.values())))
@@ -120,7 +120,7 @@ class DriverManager(metaclass=Singleton):
                 logger.warning(f"{driver} is still active")
             else:
                 try:
-                    driver.shudown()
+                    driver.shutdown()
                     continue
                 except ShutdownError as err:
                     logger.error(f'{driver} failed to shutdown, due to "{str(err)}"')
