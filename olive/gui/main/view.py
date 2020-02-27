@@ -45,7 +45,7 @@ class MainView(BaseMainView):
             signal.connect(partial(self.change_workspace.emit, workspace))
 
         # problems
-        # TODO
+        # TODO register logger handler to here
 
         # exit
         self.exit.clicked.connect(self.exit_triggered.emit)

@@ -30,12 +30,12 @@ setup(
     # use pyproject.toml for setup dependencies instead
     # setup_requires=[],
     install_requires=[
+        "aiohttp",
         "coloredlogs",
         "psutil",
         "pyqtgraph>=0.11.0rc0",
         "pyserial-asyncio",
         "pyside2",
-        "pyzmq",
         "qtpy",
     ],
     #
