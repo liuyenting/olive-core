@@ -11,6 +11,21 @@ __all__ = ["launch"]
 logger = logging.getLogger(__name__)
 
 
+async def wakeup():
+    """
+    Work around for Windows signal handlers.
+
+    References:
+        - asyncio: support signal handlers on Windows (feature request)
+            https://bugs.python.org/issue23057
+        - Why does the asyncio's event loop suppress the KeyboardInterrupt on
+            Windows?
+            https://stackoverflow.com/a/36925722
+    """
+    while True:
+        await asyncio.sleep(1)
+
+
 class AppController(object):
     def __init__(self, host=None, port=None):
         self._host, self._port = host, port
@@ -60,12 +75,6 @@ class AppController(object):
         loop.run_until_complete(runner.setup())
         # create the site
         site = TCPSite(runner, host=self._host, port=self._port)
-
-        # work around for Windows signal handlers
-        # NOTE https://bugs.python.org/issue23057
-        async def wakeup():
-            while True:
-                await asyncio.sleep(1)
 
         # run!
         try:
