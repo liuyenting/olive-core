@@ -16,7 +16,7 @@ async def get_host_info(request):
     gateway = request.app["gateway"]
     key = request.match_info["key"]
 
-    func_mapping = {"hostname": gateway.query_hostname}
+    func_mapping = {"hostname": gateway.query_hostname, "memory": None, "storage": None}
     try:
         func = func_mapping[key]
         value = func()

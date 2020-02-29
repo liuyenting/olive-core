@@ -14,7 +14,8 @@ class Host(APIClient):
     ##
 
     async def hostname(self) -> str:
-        async with self.get('/host') as response:
+        await self.get("/host")
+        async with self.get("/host") as response:
             assert response.status == 200
             return await response.json()
         return self._session
@@ -22,7 +23,7 @@ class Host(APIClient):
     ##
 
     async def all_info(self):
-        async with self.get('/host') as response:
+        async with self.get("/host") as response:
             assert response.status == 200
-            return await
+            return
 
