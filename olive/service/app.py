@@ -4,7 +4,7 @@ import logging
 from aiohttp.web import Application, AppRunner, TCPSite, run_app
 
 from .gateway import Gateway
-from .routes import devices
+from .routes import devices, host
 
 __all__ = ["launch"]
 
@@ -46,6 +46,8 @@ class AppController(object):
 
     def setup_routes(self):
         """Setup routing tables."""
+        # /host
+        self.api.router.add_routes(host.routes)
         # /devices
         # /devices/{uuid}
         # /devices/categories

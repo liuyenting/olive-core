@@ -121,22 +121,21 @@ class DriverManager(metaclass=Singleton):
                 logger.warning(f"{driver} is still active")
             else:
                 try:
-                    driver.shutdown()
+                    driver.shutdown(force)
                     continue
                 except ShutdownError as err:
                     logger.error(f'{driver} failed to shutdown, due to "{str(err)}"')
             # if we are here, the driver does _not_ shutdown completely
             active_drivers.append(driver)
+        logger.info(f"{len(active_drivers)} driver(s) are still active")
 
         if len(active_drivers) > 0:
-            if force_shutdown:
-                logger.warning("force shutdown ALL active driver(s)")
-                # already tried shutdown, so we remove their reference directly
+            if force:
+                logger.warning("force shutdown remaining active driver(s)")
+                # already tried shutdown, so we delete their reference directly
                 del active_drivers[:]
-            else:
-                logger.debug(f"{len(active_drivers)} driver(s) are still active")
 
-        # clear all enlisted drivers
+        # clear all internally enlisted drivers
         for drivers in self._drivers.values():
             del drivers[:]
 
