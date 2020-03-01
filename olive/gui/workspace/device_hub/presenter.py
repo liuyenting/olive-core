@@ -34,6 +34,10 @@ class DeviceHubPresenter(BasePresenter):
         hostname = "hello"  # TODO get hostname from the data manager
         self.view.set_hostname(hostname)
 
+        # TODO retreive device classes and populate them
+
+        # TODO retrieve devices and populate them
+
     def on_select_device(self):
         print("select device")
 

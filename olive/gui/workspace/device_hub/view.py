@@ -84,22 +84,26 @@ class DeviceHubView(BaseDeviceHubView):
         self.refresh_properties_button.clicked.connect(self.refresh_properties.emit)
         # FIXME when signal is patched, add missing device UUID assignment
 
+        # book-keeping to ease the add/remove access
+        self._root = None
+        self._device_classes = dict()  # for reverse lookup widget item
+
     ##
     # device list - manipulate categories
 
     def set_hostname(self, hostname: str):
-        n_toplevel = self.device_list.topLevelItemCount()
-        if n_toplevel > 0:
-            # modify existing top level item
-            assert n_toplevel == 1, "multi-host is not supported"
-            root = self.device_list.topLevelItem(0)
-        else:
+        if self._root is None:
             # create top level item
             root = QTreeWidgetItem(self.device_list)
             # add icon
             icon = QIcon()
             icon.addPixmap(QPixmap(":/device_hub/computer"), QIcon.Normal, QIcon.Off)
             root.setIcon(0, icon)
+
+            # save it
+            self._root = root
+        else:
+            root = self._root
 
         root.setText(0, hostname)
 
@@ -117,6 +121,18 @@ class DeviceHubView(BaseDeviceHubView):
             category (str, optional): remove this category from the list, if `None`,
                 remove all categories.
         """
+        if device_class is None:
+            # clear everything from the widget
+            self.device_list.clear()
+            # drop the references
+            self._root = None
+            self._device_classes = dict()
+            return
+
+        item = self._device_classes[device_class]
+
+        # TODO populate child item, drop them
+        # TODO delete reference from the device_classes dict
 
     def set_category_state(self, category: Device, state: CategoryState):
         pass
