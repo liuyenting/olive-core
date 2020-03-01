@@ -32,6 +32,7 @@ class BaseDeviceHubView(BaseView):
 
     @abstractmethod
     def set_hostname(self, hostname: str):
+        """Set device list root node to reflect connected host."""
         pass
 
     @abstractmethod
@@ -87,11 +88,10 @@ class DeviceHubView(BaseDeviceHubView):
     # device list - manipulate categories
 
     def set_hostname(self, hostname: str):
-        if self.device_list.topLevelItemCount() > 0:
+        n_toplevel = self.device_list.topLevelItemCount()
+        if n_toplevel > 0:
             # modify existing top level item
-            assert (
-                self.device_list.topLevelItemCount() == 1
-            ), "multi-host is not supported, this should not happen"
+            assert n_toplevel == 1, "multi-host is not supported"
             root = self.device_list.topLevelItem(0)
         else:
             # create top level item
