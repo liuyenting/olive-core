@@ -1,7 +1,8 @@
 import logging
 
-import aiohttp
+from requests import Session
 
+from .host import Host
 from .model import devices
 
 __all__ = []
@@ -10,18 +11,8 @@ logger = logging.getLogger(__name__)
 
 
 class APIHelper(object):
-    def __init__(self):
-        self._session = aiohttp.ClientSession()
+    def __init__(self, url_root: str):
+        self._session = Session()
 
-    ##
-
-    @property
-    def session(self):
-        return self._sesion
-
-    ##
-
-    async def do_devices_api_call(self, request: devices.DevicesRequest):
-        async with self.session.get() as response:
-            assert response.status == 200
-            return await response.json()
+        # establish endpoints
+        self.host = Host(url_root, self._session)

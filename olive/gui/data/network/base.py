@@ -1,7 +1,7 @@
 import logging
 import os
 
-from aiohttp import ClientSession
+from requests import Session
 
 __all__ = ["APIClient"]
 
@@ -23,26 +23,11 @@ class APIClient(object):
         session (ClientSession): connection pool
     """
 
-    def __init__(self, uri_root: str, session: ClientSession):
-        self._root = uri_root
-        self._session = session
-
-    ##
-
-    async def get(self, path):
-        uri = os.path.join(self._root, path)
-        async with self._session.get(uri) as response:
-            return response.status, response.json()
-
-    def post(self):
-        pass
-
-    def put(self):
-        pass
-
-    def delete(self):
-        pass
+    def __init__(self, url_root: str, session: Session):
+        self.root = url_root
+        self.session = session
 
     ##
 
     # TODO websocket
+

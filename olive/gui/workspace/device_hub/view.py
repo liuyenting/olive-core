@@ -5,6 +5,8 @@ from typing import Optional
 from enum import IntEnum, auto
 
 from qtpy.QtCore import Signal
+from qtpy.QtGui import QIcon, QPixmap
+from qtpy.QtWidgets import QTreeWidgetItem
 
 from olive.devices.base import Device
 from ...base import BaseView
@@ -29,16 +31,20 @@ class BaseDeviceHubView(BaseView):
     # device list - manipulate categories
 
     @abstractmethod
-    def add_category(self, category: Device):
-        """Add new device category."""
+    def set_hostname(self, hostname: str):
+        pass
 
     @abstractmethod
-    def remove_category(self, category: Optional[Device] = None):
+    def add_device_class(self, device_class: str):
+        """Add new device class."""
+
+    @abstractmethod
+    def remove_device_class(self, device_class: Optional[str] = None):
         """
-        Remove a device category.
+        Remove a device class.
 
         Args:
-            category (Device, optional): remove this category from the list, if `None`,
+            category (str, optional): remove this category from the list, if `None`,
                 remove all categories.
         """
 
@@ -80,11 +86,37 @@ class DeviceHubView(BaseDeviceHubView):
     ##
     # device list - manipulate categories
 
-    def add_category(self, category: Device):
-        pass
+    def set_hostname(self, hostname: str):
+        if self.device_list.topLevelItemCount() > 0:
+            # modify existing top level item
+            assert (
+                self.device_list.topLevelItemCount() == 1
+            ), "multi-host is not supported, this should not happen"
+            root = self.device_list.topLevelItem(0)
+        else:
+            # create top level item
+            root = QTreeWidgetItem(self.device_list)
+            # add icon
+            icon = QIcon()
+            icon.addPixmap(QPixmap(":/device_hub/computer"), QIcon.Normal, QIcon.Off)
+            root.setIcon(0, icon)
 
-    def remove_category(self, category: Optional[Device] = None):
-        pass
+        root.setText(0, hostname)
+
+    def add_device_class(self, device_class: str):
+        """Add new device class."""
+        # TODO create widget item
+        # TODO lookup icons
+        # TODO assign text and icons
+
+    def remove_device_class(self, device_class: Optional[str] = None):
+        """
+        Remove a device class.
+
+        Args:
+            category (str, optional): remove this category from the list, if `None`,
+                remove all categories.
+        """
 
     def set_category_state(self, category: Device, state: CategoryState):
         pass

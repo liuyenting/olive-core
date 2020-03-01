@@ -1,5 +1,6 @@
 import logging
 
+
 from ...base import BasePresenter
 from .view import BaseDeviceHubView
 
@@ -25,6 +26,13 @@ class DeviceHubPresenter(BasePresenter):
 
     def on_refresh_device_list(self):
         print("refresh device list")
+
+        # clear the tree
+        self.view.remove_device_class()
+
+        # set the host
+        hostname = "hello"  # TODO get hostname from the data manager
+        self.view.set_hostname(hostname)
 
     def on_select_device(self):
         print("select device")

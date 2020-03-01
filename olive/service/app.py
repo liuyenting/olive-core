@@ -1,7 +1,7 @@
 import asyncio
 import logging
 
-from aiohttp.web import Application, AppRunner, TCPSite, run_app
+from aiohttp.web import Application, AppRunner, TCPSite
 
 from .gateway import Gateway
 from .routes import devices, host
@@ -70,7 +70,7 @@ class AppController(object):
 
         # attach API endpoints
         # NOTE by adding subapp, we can introduce API versioning in the future
-        app.add_subapp("/api", self.api)
+        app.add_subapp("/v1", self.api)
 
         # create runner
         runner = AppRunner(app)
