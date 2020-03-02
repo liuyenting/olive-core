@@ -1,5 +1,8 @@
 import asyncio
 import logging
+import signal
+from multiprocessing import Event
+from typing import Optional
 
 from aiohttp.web import Application, AppRunner, TCPSite
 
@@ -11,9 +14,16 @@ __all__ = ["launch"]
 logger = logging.getLogger(__name__)
 
 
-async def wakeup():
+class EventInterrupt(Exception):
+    """Raised when the interrupt event is triggered."""
+
+
+async def wakeup(event: Optional[Event] = None):
     """
     Work around for Windows signal handlers.
+
+    Args:
+        event (Event, optional): using external event to generate interrupt
 
     References:
         - asyncio: support signal handlers on Windows (feature request)
@@ -23,6 +33,9 @@ async def wakeup():
             https://stackoverflow.com/a/36925722
     """
     while True:
+        if event and event.is_set():
+            # trigger termination
+            raise EventInterrupt()
         await asyncio.sleep(1)
 
 
@@ -63,7 +76,13 @@ class AppController(object):
 
     ##
 
-    def run(self):
+    def run(self, event: Optional[Event]):
+        """
+        Kick start the OLIVE service.
+
+        Args:
+            event (Event, optional): using external event to generate interrupt
+        """
         loop = asyncio.get_event_loop()
 
         app = Application()
@@ -80,12 +99,15 @@ class AppController(object):
 
         # run!
         try:
-            loop.run_until_complete(asyncio.gather(*[site.start(), wakeup()]))
+            loop.run_until_complete(asyncio.gather(*[site.start(), wakeup(event)]))
         except KeyboardInterrupt:
-            logger.info("keyboard interrupted, stopping")
+            logger.info("keyboard interrupted")
+        except EventInterrupt:
+            logger.debug("event interrupt")
+        finally:
             loop.run_until_complete(runner.cleanup())
 
 
-def launch(port=None):
+def launch(port=None, event=None):
     controller = AppController(port=port)
-    controller.run()
+    controller.run(event)

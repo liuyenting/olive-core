@@ -1,7 +1,5 @@
 import logging
 
-from requests import Session
-
 from olive.utils import Singleton
 
 from .network import APIHelper
@@ -27,6 +25,8 @@ class DataManager(metaclass=Singleton):
     def set_service_url(self, url_root):
         """Set service URL in order to open interface to the API."""
         if self._api is not None:
+            logger.info(f"found previous connection, closing")
             # we have to close it first
             self._api.close()
+
         self._api = APIHelper(url_root)

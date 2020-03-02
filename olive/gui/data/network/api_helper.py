@@ -13,7 +13,7 @@ class APIHelper(object):
     def __init__(self, url_root: str):
         self._session = Session()
 
-        logger.info(f'establish connection with "{url_root}"')
+        logger.info(f'establishing connection with "{url_root}"')
 
         # establish endpoints
         self.host = Host(url_root, self._session)
