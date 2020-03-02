@@ -30,13 +30,14 @@ setup(
     # use pyproject.toml for setup dependencies instead
     # setup_requires=[],
     install_requires=[
-        "aiohttp",
+        "aiohttp",  # FIXME dependency for service
+        "requests",  # FIXME dependency for gui
         "coloredlogs",
         "psutil",
-        "pyqtgraph>=0.11.0rc0",
+        "pyqtgraph>=0.11.0rc0",  # FIXME dependency for gui
         "pyserial-asyncio",
-        "pyside2",
-        "qtpy",
+        "pyside2",  # FIXME dependency for gui
+        "qtpy",  # FIXME dependency for gui
     ],
     #
     # Package Structure
