@@ -3,7 +3,6 @@ import logging
 from requests import Session
 
 from .host import Host
-from .model import devices
 
 __all__ = []
 
@@ -16,3 +15,10 @@ class APIHelper(object):
 
         # establish endpoints
         self.host = Host(url_root, self._session)
+
+    ##
+
+    ##
+
+    def close(self):
+        """Close the API helper."""

@@ -1,7 +1,7 @@
 import logging
 
+from olive.gui.base import BasePresenter
 
-from ...base import BasePresenter
 from .view import BaseDeviceHubView
 
 __all__ = ["DeviceHubPresenter"]
@@ -30,9 +30,11 @@ class DeviceHubPresenter(BasePresenter):
         # clear the tree
         self.view.remove_device_class()
 
+        # api alias
+        api = self.data_manager.api.host
+
         # set the host
-        hostname = "hello"  # TODO get hostname from the data manager
-        self.view.set_hostname(hostname)
+        self.view.set_hostname(api.hostname())
 
         # TODO retreive device classes and populate them
 

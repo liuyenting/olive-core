@@ -12,5 +12,5 @@ class Host(APIClient):
     def hostname(self) -> str:
         path = os.path.join(self.root, "/host/hostname")
         response = self.session.get(path)
-        assert response.r.status_code == 200
+        assert response.status_code == 200
         return response.text
