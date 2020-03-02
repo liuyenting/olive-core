@@ -49,7 +49,7 @@ class Gateway(object):
         logger.debug(f"{len(self.device_manager._tasks)} device(s) to register")
         await self.device_manager.wait_ready()
 
-        logger.info("gateway initialization complete")
+        logger.info("gateway initialized")
 
     async def shutdown(self, app):
         logger.info("gateway shutdown in-progress")

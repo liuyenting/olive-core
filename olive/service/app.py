@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import signal
 from multiprocessing import Event
 from typing import Optional
 
@@ -8,6 +7,7 @@ from aiohttp.web import Application, AppRunner, TCPSite
 
 from .gateway import Gateway
 from .routes import devices, host
+from .utils import find_free_port
 
 __all__ = ["launch"]
 
@@ -40,10 +40,24 @@ async def wakeup(event: Optional[Event] = None):
 
 
 class AppController(object):
-    def __init__(self, host=None, port=None):
-        self._host, self._port = host, port
+    """
+    Args:
+        host (str, optional): local binding address
+        port (int, optional): port to listen
+        version (int, optional): API version
+    """
+
+    def __init__(
+        self,
+        host: Optional[str] = "localhost",
+        port: Optional[int] = None,
+        version: Optional[int] = 1,
+    ):
+        self._host = host
+        self._port = find_free_port() if port is None else port
 
         self._api = Application()
+        self._version = version
 
         self.setup_routes()
         self.setup_gateway()
@@ -54,6 +68,10 @@ class AppController(object):
     def api(self) -> Application:
         """API endpoints."""
         return self._api
+
+    @property
+    def url(self) -> str:
+        return f"http://{self._host}:{self._port}/v{self._version}"
 
     ##
 
@@ -76,7 +94,7 @@ class AppController(object):
 
     ##
 
-    def run(self, event: Optional[Event]):
+    def run(self, event: Optional[Event] = None):
         """
         Kick start the OLIVE service.
 
@@ -89,12 +107,13 @@ class AppController(object):
 
         # attach API endpoints
         # NOTE by adding subapp, we can introduce API versioning in the future
-        app.add_subapp("/v1", self.api)
+        app.add_subapp(f"/v{self._version}", self.api)
 
         # create runner
         runner = AppRunner(app)
         loop.run_until_complete(runner.setup())
         # create the site
+        logger.info(f"OLIVE service is now listen on {self._host}:{self._port}")
         site = TCPSite(runner, host=self._host, port=self._port)
 
         # run!
@@ -108,6 +127,7 @@ class AppController(object):
             loop.run_until_complete(runner.cleanup())
 
 
-def launch(port=None, event=None):
-    controller = AppController(port=port)
-    controller.run(event)
+def launch(**kwargs):
+    """Alias to start the OLIVE service."""
+    controller = AppController(**kwargs)
+    controller.run()

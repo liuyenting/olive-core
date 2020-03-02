@@ -8,7 +8,7 @@ from qtpy.QtWidgets import QApplication
 
 from .data import DataManager
 from .main import MainPresenter, MainView
-from .utils import is_port_binded, find_free_port
+from .utils import is_port_binded
 
 __all__ = ["launch"]
 
@@ -16,38 +16,52 @@ logger = logging.getLogger(__name__)
 
 
 class AppController(object):
-    def __init__(self):
+    """
+    Args:
+        host (str, optional): service host address
+        port (int, optional): service port
+        version (int, optional): API version
+    """
+
+    def __init__(
+        self,
+        host: Optional[str] = "localhost",
+        port: Optional[int] = None,
+        version: Optional[int] = 1,
+    ):
         app = QApplication(sys.argv)
         app.setStyleSheet(qdarkstyle.load_stylesheet())
         self._app = app
+
+        self._host, self._port = host, port
+        self._version = version
 
         self._service, self._event = None, None
 
     ##
 
-    def run(self, host=None, port=None, version=1):
+    def run(self):
         """
         Run OLIVE.
-
-        Args:
-            host (str, optional): host address
-            port (int, optional): target port
-            version (int, optional): API version
 
         Note:
             If OLIVE service is not running, we will try to start it as well.
         """
-        if host is None:
-            host = "localhost"
-            # we should connect to a local service
-            if port and is_port_binded("localhost", port):
+        data = DataManager()
+
+        # try to connect to the service using waht we have
+        url = None
+        if self._host == "localhost":
+            if self._port and is_port_binded("localhost", self._port):
                 logger.info(f"local OLIVE service is running")
             else:
-                port = self.run_service(port)
-        # build url string
-        url = "http://{}:{}/v{}".format(host, port, version)
+                url = self.run_service()
 
-        data = DataManager()
+        if url is None:
+            # build url string using updated info
+            url = "http://{}:{}/v{}".format(self._host, self._port, self._version)
+
+        # update the URL root
         data.set_service_url(url)
 
         # kick start main window
@@ -68,15 +82,12 @@ class AppController(object):
             self._service.join()
             self._service.close()
 
-    def run_service(self, port=None):
+    def run_service(self):
         """
         Run the OLIVE service.
 
-        Args:
-            port (int, optional): port OLIVE service will listen to
-
         Returns:
-            port (int): the port OLIVE is listening to
+            url (str): the URL that points to OLIVE service
         """
         try:
             from olive.service import app
@@ -84,19 +95,21 @@ class AppController(object):
             logger.error("OLIVE service not installed")
             raise
 
-        port = find_free_port() if port is None else port
-        logger.info(f"launching local service at port {port}")
+        # create service controller
+        controller = app.AppController(port=self._port, version=self._version)
+        url = controller.url
 
+        # run the service in another process
         event = Event()
-        service = Process(target=app.launch, args=(port, event))
+        service = Process(target=controller.run, args=(event,))
         service.start()
 
         self._service, self._event = service, event
 
-        return port
+        return url
 
 
-def launch():
-    controller = AppController()
+def launch(**kwargs):
+    """Alias to start the user interface."""
+    controller = AppController(**kwargs)
     controller.run()
-    # TODO why the fuck URL is not pasing downstream properly?

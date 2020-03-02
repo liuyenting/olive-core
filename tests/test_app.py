@@ -7,4 +7,4 @@ coloredlogs.install(
 )
 
 if __name__ == "__main__":
-    launch()
+    launch(port=7777)

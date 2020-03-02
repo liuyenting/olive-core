@@ -9,7 +9,7 @@ from qtpy.QtGui import QIcon, QPixmap
 from qtpy.QtWidgets import QTreeWidgetItem
 
 from olive.devices.base import Device
-from ...base import BaseView
+from olive.gui.base import BaseView
 
 __all__ = ["DeviceHubView"]
 

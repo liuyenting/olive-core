@@ -2,6 +2,7 @@ from enum import IntEnum, auto
 from collections import namedtuple
 
 from .device_hub import DeviceHubPresenter, DeviceHubView
+from .protocol_editor import ProtocolEditorPresenter, ProtocolEditorView
 
 __all__ = ["Workspace", "workspace_defs"]
 
@@ -17,6 +18,8 @@ WorkspaceClass = namedtuple("WorkspaceClass", ["presenter", "view"])
 workspace_defs = {
     # Workspace.Acquisition: WorkspaceClass(None, None),
     Workspace.DeviceHub: WorkspaceClass(DeviceHubPresenter, DeviceHubView),
-    # Workspace.ProtocolEditor: WorkspaceClass(None, None),
+    Workspace.ProtocolEditor: WorkspaceClass(
+        ProtocolEditorPresenter, ProtocolEditorView
+    ),
 }
 

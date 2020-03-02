@@ -1,5 +1,4 @@
 import logging
-import os
 
 from requests import Session
 
@@ -36,9 +35,12 @@ class APIClient(object):
     # TODO websocket
 
 
-def bind_method(method):
+def bind_method(method: str):
     """
     Bind HTTP verbs to the APIclient class.
+
+    Args:
+        method (str): the HTTP verb that `requests` use in `Session.request`
 
     Reference:
         Hammock
@@ -50,7 +52,6 @@ def bind_method(method):
         # NOTE requests.compat.urljoin requires common denominator to work, in this
         #   case, we do not have this
         url = self._url_root + path
-        print(f"bind_method.func, {url}")
         return self._session.request(method, url, **kwargs)
 
     return func

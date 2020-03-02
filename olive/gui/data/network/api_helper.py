@@ -3,6 +3,7 @@ import logging
 from requests import Session
 
 from .host import Host
+from .devices import Devices
 
 __all__ = []
 
@@ -16,8 +17,8 @@ class APIHelper(object):
         logger.info(f'establishing connection with "{url_root}"')
 
         # establish endpoints
-        print(f'APIHelper.__init__, {url_root}')
-        self.host = Host(url_root, self._session)
+        for name, klass in [("host", Host), ("devices", Devices)]:
+            setattr(self, name, klass(url_root, self._session))
 
     ##
 
