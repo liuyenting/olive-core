@@ -6,8 +6,6 @@ from typing import Optional
 import qdarkstyle
 from qtpy.QtWidgets import QApplication
 
-from olive.service import app
-
 from .data import DataManager
 from .main import MainPresenter, MainView
 from .utils import is_port_binded, find_free_port
@@ -80,6 +78,12 @@ class AppController(object):
         Returns:
             port (int): the port OLIVE is listening to
         """
+        try:
+            from olive.service import app
+        except ImportError:
+            logger.error('OLIVE service not installed')
+            raise
+
         port = find_free_port() if port is None else port
         logger.info(f"launching local service at port {port}")
 
@@ -95,4 +99,4 @@ class AppController(object):
 def launch():
     controller = AppController()
     controller.run()
-    # TODO why the fuck URL is not working?
+    # TODO why the fuck URL is not pasing downstream properly?
