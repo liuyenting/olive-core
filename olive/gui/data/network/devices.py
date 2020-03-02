@@ -33,7 +33,7 @@ class Devices(APIClient, Mapping):
         response = self.get("/devices")
         assert response.status_code == 200
         assert response.status_code != 400, "invalid UUID"
-        # rebuild device from the UUID
+        # TODO  rebuild device from the UUID
         return response.text
 
     def get_available_device_classes(self):

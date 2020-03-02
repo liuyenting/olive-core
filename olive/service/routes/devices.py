@@ -10,7 +10,7 @@ routes = RouteTableDef()
 
 
 @routes.get("/devices")
-async def list_devices(request):
+async def get_available_devices(request):
     try:
         uuid = request.app["gateway"].get_available_devices()
         return json_response(uuid, status=200)
@@ -19,6 +19,7 @@ async def list_devices(request):
 
 
 @routes.get("/devices/classes")
-async def list_device_classes(request):
+async def get_available_device_classes(request):
     print(f"GET device_classes")
+
 
