@@ -11,9 +11,8 @@ logger = logging.getLogger(__name__)
 
 class Gateway(object):
     """
-    Gateway is the entry point into the OLIVE application from an external client. One can directly interface the acquisition and protocol setups through gateway, locally.
-
-    To access gateway remotely, use `AppController`, which spawns an HTTP server with required endpoints.
+    Gateway is the entry point into the OLIVE application. One can directly interface
+    the acquisition and protocol setups through gateway locally.
     """
 
     def __init__(self):
