@@ -16,6 +16,7 @@ class APIHelper(object):
         logger.info(f'establishing connection with "{url_root}"')
 
         # establish endpoints
+        print(f'APIHelper.__init__, {url_root}')
         self.host = Host(url_root, self._session)
 
     ##

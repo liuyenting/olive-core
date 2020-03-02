@@ -44,7 +44,7 @@ class AppController(object):
                 logger.info(f"local OLIVE service is running")
             else:
                 port = self.run_service(port)
-        # generat url
+        # build url string
         url = "http://{}:{}/v{}".format(host, port, version)
 
         data = DataManager()
@@ -81,7 +81,7 @@ class AppController(object):
         try:
             from olive.service import app
         except ImportError:
-            logger.error('OLIVE service not installed')
+            logger.error("OLIVE service not installed")
             raise
 
         port = find_free_port() if port is None else port
