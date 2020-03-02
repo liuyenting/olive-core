@@ -38,6 +38,7 @@ setup(
         "pyserial-asyncio",
         "pyside2",  # FIXME dependency for gui
         "qtpy",  # FIXME dependency for gui
+        'bidict', # FIXME depenency for service
     ],
     #
     # Package Structure

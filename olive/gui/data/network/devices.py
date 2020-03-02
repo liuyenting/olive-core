@@ -25,12 +25,16 @@ class Devices(APIClient, Mapping):
 
     def get_available_devices(self):
         """
-        Retrieve avaialble device.
+        Retrieve avaialble devices.
 
         Returns:
             (list of str): a list of device ID
         """
-        pass
+        response = self.get("/devices")
+        assert response.status_code == 200
+        assert response.status_code != 400, "invalid UUID"
+        # rebuild device from the UUID
+        return response.text
 
     def get_available_device_classes(self):
         """

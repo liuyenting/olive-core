@@ -11,5 +11,5 @@ routes = RouteTableDef()
 
 @routes.get("/host/hostname")
 async def get_hostname(request):
-    hostname = request.app["gateway"].query_hostname()
+    hostname = request.app["gateway"].get_hostname()
     return Response(status=200, text=hostname)

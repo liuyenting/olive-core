@@ -11,7 +11,11 @@ routes = RouteTableDef()
 
 @routes.get("/devices")
 async def list_devices(request):
-    print(f"GET devices")
+    try:
+        uuid = request.app["gateway"].get_available_devices()
+        return json_response(uuid, status=200)
+    except KeyError:
+        return Response(status=400, reason="invalid UUID")
 
 
 @routes.get("/devices/classes")
