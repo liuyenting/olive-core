@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import functools
+from functools import partial
 import logging
 import typing
 from dataclasses import dataclass
@@ -32,6 +33,30 @@ class DevicePropertyCache:
     dirty: bool = True
 
 
+class DevicePropertyDescriptorProxy:
+    """
+    Provide a proxy to access additional attributes.
+
+    Args:
+        base (TBA): TBA
+        instance (object): the instance to operate on
+    """
+
+    __slots__ = ("base", "instance")
+
+    def __init__(self, base: DevicePropertyDescriptor, instance):
+        self.base = base
+        self.instance = instance
+
+    def __await__(self):
+        # default await action is __get__
+        return self.base._get_cache_value(self.instance).__await__()
+
+    def __getattr__(self, name):
+        # device property proxy only needs to delegate methods to the descriptor class
+        return partial(getattr(self.base, name), self.instance)
+
+
 class DevicePropertyDescriptor:
     """
     This class builds a data descriptor that provides async read-write access for
@@ -43,27 +68,6 @@ class DevicePropertyDescriptor:
         volatile (bool, optional): property may change at any-time, access cache is not
             trustworthy
     """
-
-    class Proxy:
-        """
-        Provide a proxy to access additional attributes.
-
-        Args:
-            coro (TBA): TBA
-        """
-
-        __slots__ = ("base", "instance")
-
-        def __init__(self, base: DevicePropertyDescriptor, instance):
-            self.base = base
-            self.instance = instance
-
-        def __await__(self):
-            # default await action is __get__
-            return self.base.get_cache_value(self.instance).__await__()
-
-        async def sync(self):
-            await self.base.sync_cache_value(self.instance)
 
     def __init__(self, fget=None, fset=None, volatile=False):
         self._fget, self._fset = fget, fset
@@ -86,7 +90,7 @@ class DevicePropertyDescriptor:
             return self
         if self._fget is None:
             raise AttributeError("this property is not readable")
-        return DevicePropertyDescriptor.Proxy(self, instance)
+        return DevicePropertyDescriptorProxy(self, instance)
 
     def __set__(self, instance, value):
         """
@@ -98,7 +102,7 @@ class DevicePropertyDescriptor:
         """
         if self._fset is None:
             raise AttributeError("this property is not writable")
-        self.set_cache_value(instance, value)
+        self._set_cache_value(instance, value)
 
     def __delete__(self, instance):
         raise AttributeError("device property is not deletable")
@@ -132,7 +136,7 @@ class DevicePropertyDescriptor:
             setattr(instance, DEVICE_PROPERTY_CACHE_ATTR, cache)
             return cache
 
-    async def get_cache_value(self, instance):
+    async def _get_cache_value(self, instance):
         """
         Extract cache value from the cache attribute.
 
@@ -163,7 +167,7 @@ class DevicePropertyDescriptor:
                     value = cache.value
         return value
 
-    def set_cache_value(self, instance, value):
+    def _set_cache_value(self, instance, value):
         """
         Store cache value to the cache attribute.
 
@@ -184,7 +188,7 @@ class DevicePropertyDescriptor:
             cache.value, cache.dirty = value, True
 
     # TODO how to link sync when __get__
-    async def sync_cache_value(self, instance):
+    async def sync(self, instance):
         """Sync the device property with device."""
         cache_collection = self._get_instance_cache(instance)
         name = self.__name__
