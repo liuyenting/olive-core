@@ -38,7 +38,7 @@ class DevicePropertyDescriptorProxy:
     Provide a proxy to access additional attributes.
 
     Args:
-        base (TBA): TBA
+        base (DevicePropertyDescriptor): the descriptor
         instance (object): the instance to operate on
     """
 
@@ -73,8 +73,6 @@ class DevicePropertyDescriptor:
         self._fget, self._fset = fget, fset
         self._volatile = volatile
 
-        # TODO attach sync to __get__
-
         functools.update_wrapper(self, fget if fget is not None else fset)
 
     def __get__(self, instance, owner=None):
@@ -88,8 +86,6 @@ class DevicePropertyDescriptor:
         """
         if instance is None:
             return self
-        if self._fget is None:
-            raise AttributeError("this property is not readable")
         return DevicePropertyDescriptorProxy(self, instance)
 
     def __set__(self, instance, value):
@@ -100,23 +96,14 @@ class DevicePropertyDescriptor:
             instance (object): the instance to operate on
             value : the new value
         """
-        if self._fset is None:
-            raise AttributeError("this property is not writable")
+        assert self._fset is not None, f"{self.__name__}.setter not implemented"
         self._set_cache_value(instance, value)
 
     def __delete__(self, instance):
-        raise AttributeError("device property is not deletable")
+        raise AttributeError(f'"{self.__name__}" is not deletable')
 
     ##
-    # alternative constructor to attach setter
-
-    def getter(self, fget):
-        self._check_method_name(fget, self._fset, "getter")
-        return type(self)(fget, self._fset, self._volatile)
-
-    def setter(self, fset):
-        self._check_method_name(fset, self._fget, "setter")
-        return type(self)(self._fget, fset, self._volatile)
+    # alternative constructor to attach accessor
 
     def _check_method_name(self, new_method, current_method, method_type):
         assert (
@@ -187,7 +174,6 @@ class DevicePropertyDescriptor:
         else:
             cache.value, cache.dirty = value, True
 
-    # TODO how to link sync when __get__
     async def sync(self, instance):
         """Sync the device property with device."""
         cache_collection = self._get_instance_cache(instance)
@@ -201,30 +187,48 @@ class DevicePropertyDescriptor:
                 cache.dirty = False
 
 
-def rw_property(func, *args, **kwargs):
-    """
-    A readable and writable device property. You can annotate with getter and assign
-    setter later, or vice versa.
+class ro_property(DevicePropertyDescriptor):
+    def __init__(self, func, **kwargs):
+        super().__init__(fget=func, **kwargs)
 
-    Args:
-        func (TBA): TBA
-    """
-    assert asyncio.iscoroutinefunction(func), "can only use with async def"
-    return DevicePropertyDescriptor(func, *args, **kwargs)
+    ##
+    # disable setters
 
+    def __set__(self, instance, value):
+        raise AttributeError(f'"{self.__name__}" is read-only')
 
-def ro_property():
-    pass
+    def setter(self, fset):
+        raise AttributeError(f'"{self.__name__}" is read-only')
 
 
-def wo_property():
-    pass
+class wo_property(DevicePropertyDescriptor):
+    def __init__(self, func, **kwargs):
+        super().__init__(fset=func, **kwargs)
+
+    ##
+    # disable getters
+
+    async def _get_cache_value(self, instance):
+        raise AttributeError(f'"{self.__name__}" is write-only')
+
+
+class rw_property(DevicePropertyDescriptor):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    ##
+    # alternative constructor to attach accessor
+
+    def setter(self, fset):
+        self._check_method_name(fset, self._fget, "setter")
+        return type(self)(self._fget, fset, self._volatile)
 
 
 class MyObject(object):
     def __init__(self):
-        self._val_1 = 0
-        self._val_2 = 1
+        self._val_1 = 10
+        self._val_2 = 20
+        self._val_3 = 30
 
     @rw_property
     async def val1(self):
@@ -238,17 +242,25 @@ class MyObject(object):
         await asyncio.sleep(2)
         self._val_1 = new_val
 
-    @rw_property
+    @ro_property
     async def val2(self):
         print("getting val2")
         await asyncio.sleep(1)
         return self._val_2
 
+    """
     @val2.setter
     async def val2(self, new_val):
         print("setting val2")
         await asyncio.sleep(2)
         self._val_2 = new_val
+    """
+
+    @wo_property
+    async def val3(self, new_val):
+        print("setting val3")
+        await asyncio.sleep(1)
+        self._val_3 = new_val
 
 
 async def main():
@@ -263,8 +275,21 @@ async def main():
     val = await obj.val2
     print(f"after, val2={val}")
 
+    # obj.val2 = 42
+
     val = await obj.val1
     print(f"after, val1={val}")
+
+    """
+    val = await obj.val3
+    print("val3 read")
+    """
+
+    obj.val3 = 42
+    await obj.val3.sync()
+    print(f"after, val3 synced")
+
+    # val = await obj.val3
 
 
 if __name__ == "__main__":
