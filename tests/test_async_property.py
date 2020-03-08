@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import asyncio
 import functools
-from functools import partial
 import logging
 import typing
 from dataclasses import dataclass
+from functools import partial
 
 from olive.devices.error import DeviceError
 
