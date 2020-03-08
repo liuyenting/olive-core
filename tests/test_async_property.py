@@ -189,7 +189,7 @@ class DevicePropertyDescriptor:
 
 class ro_property(DevicePropertyDescriptor):
     def __init__(self, func, **kwargs):
-        super().__init__(fget=func, **kwargs)
+        super().__init__(fget=func, fset=None, **kwargs)
 
     ##
     # disable setters
@@ -203,7 +203,7 @@ class ro_property(DevicePropertyDescriptor):
 
 class wo_property(DevicePropertyDescriptor):
     def __init__(self, func, **kwargs):
-        super().__init__(fset=func, **kwargs)
+        super().__init__(fget=None, fset=func, **kwargs)
 
     ##
     # disable getters
