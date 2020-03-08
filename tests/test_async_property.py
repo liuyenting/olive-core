@@ -3,6 +3,7 @@ import functools
 import logging
 import typing
 from dataclasses import dataclass
+from collections import defaultdict
 
 from olive.devices.error import DeviceError
 
@@ -30,6 +31,28 @@ class DevicePropertyCache:
     dirty: bool = True
 
 
+class DevicePropertyProxy:
+    """
+    Provide a proxy to access additional attributes.
+
+    Args:
+        coro (TBA): TBA
+    """
+
+    __slots__ = ("base", "instance")
+
+    def __init__(self, base, instance):
+        self.base = base
+        self.instance = instance
+
+    def __await__(self):
+        # default await action is __get__
+        return self.base.get_cache_value(self.instance).__await__()
+
+    async def sync(self):
+        await self.base.sync_cache_value(self.instance)
+
+
 class DevicePropertyDescriptor:
     """
     This class builds a data descriptor that provides async read-write access for
@@ -46,7 +69,8 @@ class DevicePropertyDescriptor:
         self._fget, self._fset = fget, fset
         self._volatile = volatile
 
-        # update wrapper using the getter/setter function
+        # TODO attach sync to __get__
+
         functools.update_wrapper(self, fget if fget is not None else fset)
 
     def __get__(self, instance, owner=None):
@@ -62,7 +86,7 @@ class DevicePropertyDescriptor:
             return self
         if self._fget is None:
             raise AttributeError("this property is not readable")
-        return self._get_cache_value(instance)
+        return DevicePropertyProxy(self, instance)
 
     def __set__(self, instance, value):
         """
@@ -74,8 +98,7 @@ class DevicePropertyDescriptor:
         """
         if self._fset is None:
             raise AttributeError("this property is not writable")
-        self._set_cache_value(instance, value)
-        # self._fset(instance, value)
+        self.set_cache_value(instance, value)
 
     def __delete__(self, instance):
         raise AttributeError("device property is not deletable")
@@ -99,18 +122,17 @@ class DevicePropertyDescriptor:
     ##
     # cache access
 
-    def _get_cache(self, instance):
-        """Get cache attribute."""
+    def _get_instance_cache(self, instance):
+        """Get cache collection."""
         try:
             return getattr(instance, DEVICE_PROPERTY_CACHE_ATTR)
         except AttributeError:
-            raise CacheMiss()
-            logger.debug("cache missed, starts as dirty cache")
-            cache = DevicePropertyCache(dirty=True)
+            # create the instance cache collection
+            cache = dict()
             setattr(instance, DEVICE_PROPERTY_CACHE_ATTR, cache)
             return cache
 
-    async def _get_cache_value(self, instance):
+    async def get_cache_value(self, instance):
         """
         Extract cache value from the cache attribute.
 
@@ -120,23 +142,28 @@ class DevicePropertyDescriptor:
         Args:
             instance (object): the instance to operate on
         """
+        cache_collection = self._get_instance_cache(instance)
+        name = self.__name__
         try:
-            cache = self._get_cache(instance)
-        except CacheMiss:
-            logger.debug(f"cache missed when getting {instance}")
+            cache = cache_collection[name]
+        except KeyError:
+            logger.debug(f'"{name}" cache missed during get')
             value = await self._fget(instance)
-            cache = DevicePropertyCache(value=value, dirty=False)
-            setattr(instance, DEVICE_PROPERTY_CACHE_ATTR, cache)
+            cache_collection[name] = DevicePropertyCache(value=value, dirty=False)
         else:
-            # we might have not sync yet
             async with cache.lock:
                 if cache.dirty:
-                    raise DirtyCacheError()
+                    raise DirtyCacheError(f'"{name}" is not synchronized"')
+                elif self._volatile:
+                    logger.debug(f'"{name}" is volatile')
+                    value = await self._fget(instance)
+                    cache.value, cache.dirty = value, False  # explicit
                 else:
+                    # not dirty, not volatile
                     value = cache.value
         return value
 
-    def _set_cache_value(self, instance, value):
+    def set_cache_value(self, instance, value):
         """
         Store cache value to the cache attribute.
 
@@ -146,21 +173,26 @@ class DevicePropertyDescriptor:
             instance (object): the instance to operate on
             value : the new value
         """
+        cache_collection = self._get_instance_cache(instance)
+        name = self.__name__
         try:
-            cache = self._get_cache(instance)
+            cache = cache_collection[name]
+        except KeyError:
+            logger.debug(f'"{name}" cache missed during set')
+            cache_collection[name] = DevicePropertyCache(value=value, dirty=True)
+        else:
             cache.value, cache.dirty = value, True
-        except CacheMiss:
-            logger.debug(f"cache missed when setting {instance}")
-            cache = DevicePropertyCache(value=value, dirty=True)
-            setattr(instance, DEVICE_PROPERTY_CACHE_ATTR, cache)
 
     # TODO how to link sync when __get__
-    async def sync(self, instance):
+    async def sync_cache_value(self, instance):
         """Sync the device property with device."""
-        cache = self._get_cache(instance)
-        if cache.dirty:
-            async with cache.lock:
-                logger.debug("updating cache")
+        cache_collection = self._get_instance_cache(instance)
+        name = self.__name__
+        # if we can call sync, cache already exists
+        cache = cache_collection[name]
+        async with cache.lock:
+            if cache.dirty:
+                logger.debug(f'"{name}" is dirty, synchronizing')
                 await self._fset(instance, cache.value)
                 cache.dirty = False
 
@@ -187,32 +219,48 @@ def wo_property():
 
 class MyObject(object):
     def __init__(self):
-        self._val = 0
+        self._val_1 = 0
+        self._val_2 = 1
 
     @rw_property
-    async def val(self):
-        print("getting")
+    async def val1(self):
+        print("getting val1")
         await asyncio.sleep(1)
-        return self._val
+        return self._val_1
 
-    @val.setter
-    async def val(self, new_val):
-        print("setting")
+    @val1.setter
+    async def val1(self, new_val):
+        print("setting val1")
         await asyncio.sleep(2)
-        self._val += new_val
+        self._val_1 = new_val
+
+    @rw_property
+    async def val2(self):
+        print("getting val2")
+        await asyncio.sleep(1)
+        return self._val_2
+
+    @val2.setter
+    async def val2(self, new_val):
+        print("setting val2")
+        await asyncio.sleep(2)
+        self._val_2 = new_val
 
 
 async def main():
     obj = MyObject()
 
-    val = await obj.val
-    print(val)
+    val = await obj.val1
+    print(f"before, val1={val}")
 
-    obj.val = 42
-    val = await obj.val
-    print(val)  # dirty cache exception
+    obj.val1 = 42
+    await obj.val1.sync()
 
-    print(dir(obj.val))
+    val = await obj.val2
+    print(f"after, val2={val}")
+
+    val = await obj.val1
+    print(f"after, val1={val}")
 
 
 if __name__ == "__main__":
