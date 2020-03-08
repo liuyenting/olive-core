@@ -188,6 +188,13 @@ class DevicePropertyDescriptor:
 
 
 class ro_property(DevicePropertyDescriptor):
+    """
+    Read-only device property.
+
+    Args:
+        func (TBA): TBA
+    """
+
     def __init__(self, func, **kwargs):
         super().__init__(fget=func, fset=None, **kwargs)
 
