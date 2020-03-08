@@ -1,9 +1,10 @@
+from __future__ import annotations
+
 import asyncio
 import functools
 import logging
 import typing
 from dataclasses import dataclass
-from collections import defaultdict
 
 from olive.devices.error import DeviceError
 
@@ -31,28 +32,6 @@ class DevicePropertyCache:
     dirty: bool = True
 
 
-class DevicePropertyProxy:
-    """
-    Provide a proxy to access additional attributes.
-
-    Args:
-        coro (TBA): TBA
-    """
-
-    __slots__ = ("base", "instance")
-
-    def __init__(self, base, instance):
-        self.base = base
-        self.instance = instance
-
-    def __await__(self):
-        # default await action is __get__
-        return self.base.get_cache_value(self.instance).__await__()
-
-    async def sync(self):
-        await self.base.sync_cache_value(self.instance)
-
-
 class DevicePropertyDescriptor:
     """
     This class builds a data descriptor that provides async read-write access for
@@ -64,6 +43,27 @@ class DevicePropertyDescriptor:
         volatile (bool, optional): property may change at any-time, access cache is not
             trustworthy
     """
+
+    class Proxy:
+        """
+        Provide a proxy to access additional attributes.
+
+        Args:
+            coro (TBA): TBA
+        """
+
+        __slots__ = ("base", "instance")
+
+        def __init__(self, base: DevicePropertyDescriptor, instance):
+            self.base = base
+            self.instance = instance
+
+        def __await__(self):
+            # default await action is __get__
+            return self.base.get_cache_value(self.instance).__await__()
+
+        async def sync(self):
+            await self.base.sync_cache_value(self.instance)
 
     def __init__(self, fget=None, fset=None, volatile=False):
         self._fget, self._fset = fget, fset
@@ -86,7 +86,7 @@ class DevicePropertyDescriptor:
             return self
         if self._fget is None:
             raise AttributeError("this property is not readable")
-        return DevicePropertyProxy(self, instance)
+        return DevicePropertyDescriptor.Proxy(self, instance)
 
     def __set__(self, instance, value):
         """
