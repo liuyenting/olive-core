@@ -293,7 +293,7 @@ class MyChildObject:
         self._val_5 = 50
 
     def __getattr__(self, name):
-        # TODO update with parent properties
+        return getattr(self.parent, name)
 
     ##
 
@@ -309,7 +309,9 @@ async def main():
     val = await obj.val1
     print(f"before, val1={val}")
 
+    print(obj.val1)
     obj.val1 = 42
+    print(obj.val1)
     await obj.val1.sync()
 
     val = await obj.val2
