@@ -49,7 +49,7 @@ class DevicePropertyDescriptorProxy:
         self.instance = instance
 
     def __await__(self):
-        # default await action is __get__
+        # default await action
         return self.base._get_cache_value(self.instance).__await__()
 
     def __getattr__(self, name):
@@ -73,6 +73,13 @@ class DevicePropertyDescriptor:
         self._fget, self._fset = fget, fset
         self._volatile = volatile
 
+        # type check
+        if self._fget is not None:
+            assert asyncio.iscoroutinefunction(self._fget), "not a coroutine"
+        if self._fset is not None:
+            assert asyncio.iscoroutinefunction(self._fset), "not a coroutine"
+
+        # sync wrapper to accessor info
         functools.update_wrapper(self, fget if fget is not None else fset)
 
     def __get__(self, instance, owner=None):
@@ -270,8 +277,34 @@ class MyObject(object):
         self._val_3 = new_val
 
 
+class MyInheritObject(MyObject):
+    def __init__(self):
+        super().__init__()
+        self._val_4 = 40
+
+    @ro_property
+    async def val4(self):
+        return self._val_4
+
+
+class MyChildObject:
+    def __init__(self, parent):
+        self.parent = parent
+        self._val_5 = 50
+
+    def __getattr__(self, name):
+        # TODO update with parent properties
+
+    ##
+
+    @ro_property
+    async def val5(self):
+        return self._val_5
+
+
 async def main():
-    obj = MyObject()
+    parent = MyObject()
+    obj = MyChildObject(parent)
 
     val = await obj.val1
     print(f"before, val1={val}")
@@ -297,6 +330,9 @@ async def main():
     print(f"after, val3 synced")
 
     # val = await obj.val3
+
+    val = await obj.val4
+    print(f"inherit, val4={val}")
 
 
 if __name__ == "__main__":
