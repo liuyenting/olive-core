@@ -10,6 +10,11 @@ __all__ = ["Galvo", "LimitStatus", "LinearAxis", "RotaryAxis", "MotionController
 logger = logging.getLogger(__name__)
 
 
+# TODO update motion devices to be subclass of Motion
+class Motion(Device):
+    pass
+
+
 class Galvo(Device):
     """
     A beam steering device.

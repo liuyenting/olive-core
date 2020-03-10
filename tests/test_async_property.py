@@ -193,7 +193,28 @@ class DevicePropertyDescriptor:
                 await self._fset(instance, cache.value)
                 cache.dirty = False
 
+    ##
+    # value type
 
+    def vtype(self, instance):
+        """
+        enum, integer, float, array
+        """
+        pass
+
+    def min(self, instance):
+        pass
+
+    def max(self, instance):
+        pass
+
+    def step(self, instance):
+        pass
+
+    def default(self, instance):
+        pass
+
+    def
 class ro_property(DevicePropertyDescriptor):
     """
     Read-only device property.
