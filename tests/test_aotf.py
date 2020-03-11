@@ -7,7 +7,9 @@ from olive.core.managers import DriverManager
 from olive.devices import AcustoOpticalModulator
 
 coloredlogs.install(
-    level="DEBUG", fmt="%(asctime)s %(levelname)s %(message)s", datefmt="%H:%M:%S"
+    level="DEBUG",
+    fmt="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    datefmt="%H:%M:%S",
 )
 
 logger = logging.getLogger(__name__)
@@ -43,8 +45,10 @@ async def run(device: AcustoOpticalModulator):
 
 async def main():
     driver_mgmt = DriverManager()
+    await driver_mgmt.refresh()
 
     aom_drivers = driver_mgmt.query_drivers(AcustoOpticalModulator)
+    assert len(aom_drivers) > 0, "unable to find any suitable driver"
     print(aom_drivers)
 
     aom_driver = aom_drivers[0]

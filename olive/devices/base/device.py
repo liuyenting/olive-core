@@ -91,13 +91,13 @@ class Device(metaclass=DeviceType):
                 await self.parent.open()
             except AttributeError:
                 pass
-            try:
-                # 2) open this device
-                await self._open()
-            except NotImplementedError:
-                pass
+
+            # 2) open this device
+            await self._open()
+
             # 3) cleanup children list
             self._children = []
+
         # 4) register ourself with parent
         try:
             self.parent.register(self)
@@ -142,10 +142,7 @@ class Device(metaclass=DeviceType):
                         logger.exception(result)
 
         # 2) close ourself
-        try:
-            await self._close()
-        except NotImplementedError:
-            pass
+        await self._close()
 
         # 3) unregister ourself
         try:
@@ -239,3 +236,7 @@ class Device(metaclass=DeviceType):
             if isinstance(getattr(type(self), prop), DevicePropertyDescriptor)
         )
         return properties
+
+    async def sync(self):
+        """Sync all the property cache."""
+        # TODO

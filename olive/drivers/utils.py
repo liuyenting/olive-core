@@ -1,4 +1,4 @@
-from asyncio import Lock, Condition
+from asyncio import Condition
 import logging
 from typing import Iterable
 from dataclasses import dataclass, field
@@ -10,7 +10,7 @@ from .error import PortAlreadyAssigned
 
 __all__ = ["SerialPortManager"]
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("olive.drivers")
 
 
 @dataclass
@@ -68,15 +68,15 @@ class SerialPortManager(metaclass=Singleton):
         async with serial_port.condition:
             if serial_port.in_use:
                 # someone can already use this port, stop trying
-                raise PortAlreadyAssigned()
+                raise PortAlreadyAssigned
             else:
                 if serial_port.in_test:
                     # someone is testing, wait for them
-                    logger.debug(f'waiting for other tests...')
+                    logger.debug(f"waiting for other tests...")
                     await serial_port.condition.wait()
                     # TODO condition object requires further testing
                 else:
-                    logger.debug(f'port acquired')
+                    logger.debug(f"port acquired")
                     # no one is testing it, let's go
                     serial_port.in_test = True
                     return port

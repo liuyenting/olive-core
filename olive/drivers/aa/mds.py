@@ -9,7 +9,7 @@ from typing import Iterable
 
 from serial_asyncio import open_serial_connection
 
-from olive.devices import AcustoOpticalModulator
+from olive.devices import AcustoOpticalModulator, wo_property, DevicePropertyDataType
 from olive.devices.base import DeviceInfo
 from olive.devices.error import (
     DeviceTimeoutError,
@@ -35,8 +35,8 @@ class LineStatus:
 
 
 class ControlMode(Enum):
-    INTERNAL = 0
-    EXTERNAL = 1
+    Internal = 0
+    External = 1
 
 
 class ControlVoltage(Enum):
@@ -48,7 +48,6 @@ class MDSnC(AcustoOpticalModulator):
     """
     Args:
         port (str): device name
-        timeout (int): timeout in ms
     """
 
     BAUDRATE = 19200
@@ -87,7 +86,9 @@ class MDSnC(AcustoOpticalModulator):
         try:
             await super().test_open()
             await self.driver.manager.mark_port(self._port)  # mark port as in-use
+            print(f"{self._port} marked")
         except (DeviceTimeoutError, PortAlreadyAssigned, SyntaxError):
+            print(f"{self._port} failed")
             raise UnsupportedClassError
 
     async def _open(self):
@@ -99,14 +100,27 @@ class MDSnC(AcustoOpticalModulator):
             loop=loop, url=port, baudrate=self.BAUDRATE
         )
 
+        print("pass open_serial_connection")
+
         self._command_list = await self._get_command_list()
         self._n_channels = await self._get_number_of_channels()
 
-        await self._set_control_voltage(ControlVoltage.FIVE_VOLT)
-        await self._set_control_mode(ControlMode.EXTERNAL)
+        print("before cached")
+
+        self.control_voltage = ControlVoltage.FIVE_VOLT
+        self.control_mode = ControlMode.External
+
+        print("cached")
+
+        # TODO batch sync from Device
+        await self.control_voltage.sync()
+        await self.control_mode.sync()
+
+        print("_open complete")
 
     async def _close(self):
-        await self._set_control_mode(ControlMode.INTERNAL)
+        self.control_mode = ControlMode.Internal
+        await self.control_mode.sync()
         await self._save_parameters()
 
         self._writer.close()
@@ -147,10 +161,12 @@ class MDSnC(AcustoOpticalModulator):
 
     ##
 
-    async def enumerate_properties(self):
-        return ("control_mode", "control_voltage")
-
-    async def _set_control_mode(self, mode: ControlMode):
+    @wo_property(
+        dtype=DevicePropertyDataType.Enum,
+        enum=ControlMode,
+        default=ControlMode.Internal,
+    )
+    async def control_mode(self, mode: ControlMode):
         """
         Adjust driver mode.
 
@@ -163,7 +179,12 @@ class MDSnC(AcustoOpticalModulator):
         self._writer.write(f"I{mode.value}\r".encode())
         await self._writer.drain()
 
-    async def _set_control_voltage(self, voltage: ControlVoltage):
+    @wo_property(
+        dtype=DevicePropertyDataType.Enum,
+        enum=ControlVoltage,
+        default=ControlVoltage.FIVE_VOLT,
+    )
+    async def control_voltage(self, voltage: ControlVoltage):
         """
         Adjust external driver voltage.
 
@@ -294,7 +315,6 @@ class MDSnC(AcustoOpticalModulator):
                     self._reader.readuntil(b"?"), timeout=timeout
                 )
                 return command_list.decode()
-                break
             except asyncio.TimeoutError:
                 logger.debug(f"command list request timeout, trial {i_retry+1}")
         else:
