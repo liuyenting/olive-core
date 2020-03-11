@@ -3,28 +3,13 @@ from __future__ import annotations
 import asyncio
 import logging
 from abc import ABCMeta, abstractmethod
-from typing import NamedTuple, Tuple
+from typing import Tuple
 
-__all__ = ["Device", "DeviceInfo", "DeviceType"]
+from .info import DeviceInfo
 
-logger = logging.getLogger(__name__)
+__all__ = ["Device", "DeviceType"]
 
-
-class DeviceInfo(NamedTuple):
-    version: str = ""
-    vendor: str = ""
-    model: str = ""
-    serial_number: str = ""
-
-    def __repr__(self) -> str:
-        tokens = [
-            ("", self.vendor),
-            ("", self.model),
-            ("version=", self.version),
-            ("s/n=", self.serial_number),
-        ]
-        tokens[:] = [f"{name}{value}" for name, value in tokens if len(value) > 0]
-        return f"<{', '.join(tokens)}>"
+logger = logging.getLogger("olive.devices")
 
 
 class DeviceType(ABCMeta):
