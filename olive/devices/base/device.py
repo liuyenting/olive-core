@@ -6,6 +6,7 @@ from abc import ABCMeta, abstractmethod
 from typing import Tuple
 
 from .info import DeviceInfo
+from .property import DEVICE_PROPERTY_CACHE_ATTR, DevicePropertyDescriptor
 
 __all__ = ["Device", "DeviceType"]
 
@@ -197,39 +198,44 @@ class Device(metaclass=DeviceType):
 
     ##
 
-    @abstractmethod
     async def enumerate_properties(self):
-        """Get properties supported by the device."""
-
-    async def get_property(self, name):
         """
-        Get the value of device property.
+        Get device properties.
 
-        Args:
-            name (str): documented property name
-            value : new value of the specified property
+        If the device has not been probed before, this will causing the host to
+        populate and updates the property cache.
         """
         try:
-            func = self._get_accessor("_get", name)
-            return await func()
+            cache_collection = getattr(self, DEVICE_PROPERTY_CACHE_ATTR)
         except AttributeError:
-            return self.parent.get_property(name)
+            # the device is not scanned yet, get the properties
+            properties = self._retrieve_device_properties()
+            tasks = [getattr(self, prop) for prop in properties]
+            results = await asyncio.gather(*tasks, return_exceptions=False)
 
-    async def set_property(self, name, value):
+            # ensure we did not miss anything
+            for prop_name, result in zip(properties, results):
+                if result is not None:
+                    try:
+                        raise result
+                    except Exception as err:
+                        # gracefully logged and ignored
+                        logger.error(
+                            f'unable to get property "{prop_name}", due to "{str(err)}"'
+                        )
+
+            return properties
+        else:
+            return tuple(cache_collection.keys())
+
+    def _retrieve_device_properties(self) -> Tuple[str]:
         """
-        Set the value of device property.
-
-        Args:
-            name (str): documented property name
+        Test all the methods in this class, in order to figure out the decorated
+        properties.
         """
-        try:
-            func = self._get_accessor("_set", name)
-            await func(value)
-        except AttributeError:
-            self.parent.set_property(name, value)
-
-    def _get_accessor(self, prefix, name):
-        try:
-            return getattr(self, f"{prefix}_{name}")
-        except AttributeError:
-            raise AttributeError(f'unknown property "{name}"')
+        properties = tuple(
+            prop
+            for prop in dir(self)
+            if isinstance(getattr(type(self), prop), DevicePropertyDescriptor)
+        )
+        return properties

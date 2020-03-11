@@ -10,7 +10,13 @@ from enum import IntEnum, auto
 
 from ..error import DirtyPropertyCacheError
 
-__all__ = ["ro_property", "wo_property", "rw_property", "DevicePropertyDataType"]
+__all__ = [
+    "ro_property",
+    "wo_property",
+    "rw_property",
+    "DevicePropertyDataType",
+    "DEVICE_PROPERTY_CACHE_ATTR",
+]
 
 DEVICE_PROPERTY_CACHE_ATTR = "__device_property_cache__"
 
@@ -55,6 +61,9 @@ class DevicePropertyDescriptorProxy:
         attr = getattr(self.base, name)
         if isinstance(getattr(type(self.base), name), property):
             # properties are not instance dependent
+            #
+            # Determine if given class attribute is a property or not, Python object
+            #   https://stackoverflow.com/a/17735716
             return attr
         else:
             # rest of the functions require cache, which is dependent on instances
@@ -67,8 +76,8 @@ class DevicePropertyDescriptor:
     low-level hardwares, and annotate them with proper signatures.
 
     Args:
-        fget
-        fset
+        fget : getter function
+        fset : setter function
         **attrs (dict, optional): additional parameters can be assigned to define the
             value range, possible combinations:
                 - 'dtype' -> str: ['integer', 'float', 'enum', 'array']
