@@ -23,7 +23,7 @@ from ..utils import SerialPortManager
 
 __all__ = ["MultiDigitalSynthesizer"]
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("olive.drivers.aa")
 
 
 @dataclass
