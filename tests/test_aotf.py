@@ -40,6 +40,11 @@ async def run(device: AcustoOpticalModulator):
     pmin, pmax = await device.get_power_range("640")
     print(f"prange: [{pmin}, {pmax}]")
 
+    # turn off all the channels
+    await device.disable("488")
+    await device.disable("405")
+    await device.disable("640")
+
     await device.close()
 
 
