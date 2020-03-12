@@ -60,7 +60,7 @@ class DevicePropertyDescriptorProxy:
         # device property proxy only needs to delegate methods to the descriptor class
         attr = getattr(self.base, name)
         if isinstance(getattr(type(self.base), name), property):
-            # properties are not instance dependent
+            # properties are not instance-dependent
             #
             # Determine if given class attribute is a property or not, Python object
             #   https://stackoverflow.com/a/17735716

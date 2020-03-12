@@ -95,28 +95,27 @@ class MDSnC(AcustoOpticalModulator):
         """Open connection to the synthesizer and seize its internal control."""
         loop = asyncio.get_running_loop()
 
+        print(f"{self._port}, 1 - request and open the port")
         port = await self.driver.manager.request_port(self._port)
         self._reader, self._writer = await open_serial_connection(
             loop=loop, url=port, baudrate=self.BAUDRATE
         )
 
-        print("pass open_serial_connection")
+        print(f"{self._port}, 2 - get basic system info")
 
         self._command_list = await self._get_command_list()
         self._n_channels = await self._get_number_of_channels()
 
-        print("before cached")
+        print(f"{self._port}, 3 - reconfigure for external control")
 
         self.control_voltage = ControlVoltage.FIVE_VOLT
         self.control_mode = ControlMode.External
 
-        print("cached")
+        print(f"{self._port}, 4 - sync")
 
-        # TODO batch sync from Device
-        await self.control_voltage.sync()
-        await self.control_mode.sync()
+        await self.sync()
 
-        print("_open complete")
+        print(f"{self._port}, 5 - complete")
 
     async def _close(self):
         self.control_mode = ControlMode.Internal

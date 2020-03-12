@@ -206,26 +206,26 @@ class Device(metaclass=DeviceType):
             cache_collection = getattr(self, DEVICE_PROPERTY_CACHE_ATTR)
         except AttributeError:
             # the device is not scanned yet, get the properties
-            properties = self._retrieve_device_properties()
-            tasks = [getattr(self, prop) for prop in properties]
-            results = await asyncio.gather(*tasks, return_exceptions=False)
+            property_names = self._retrieve_device_property_names()
+            properties = [getattr(self, name) for name in property_names]
+            results = await asyncio.gather(*properties, return_exceptions=True)
 
             # ensure we did not miss anything
-            for prop_name, result in zip(properties, results):
+            for name, result in zip(property_names, results):
                 if result is not None:
                     try:
                         raise result
                     except Exception as err:
                         # gracefully logged and ignored
                         logger.error(
-                            f'unable to get property "{prop_name}", due to "{str(err)}"'
+                            f'unable to get property "{name}", due to "{str(err)}"'
                         )
 
             return properties
         else:
             return tuple(cache_collection.keys())
 
-    def _retrieve_device_properties(self) -> Tuple[str]:
+    def _retrieve_device_property_names(self) -> Tuple[str]:
         """
         Test all the methods in this class, in order to figure out the decorated
         properties.
@@ -239,4 +239,17 @@ class Device(metaclass=DeviceType):
 
     async def sync(self):
         """Sync all the property cache."""
-        # TODO
+        property_names = self._retrieve_device_property_names()
+        tasks = [getattr(self, name).sync() for name in property_names]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        n_failed = 0
+        for name, result in zip(property_names, results):
+            if result is not None:
+                try:
+                    raise result
+                except Exception as err:
+                    logger.error(f'unable to synchronize "{name}", due to "{str(err)}"')
+                    n_failed += 1
+        if n_failed > 0:
+            logger.error(f'failed to synchronize {n_failed} properties')
