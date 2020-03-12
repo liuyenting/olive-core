@@ -5,8 +5,13 @@ import logging
 from abc import ABCMeta, abstractmethod
 from typing import Tuple
 
+from olive.utils import xgather
 from .info import DeviceInfo
-from .property import DEVICE_PROPERTY_CACHE_ATTR, DevicePropertyDescriptor
+from .property import (
+    DEVICE_PROPERTY_CACHE_ATTR,
+    DevicePropertyDescriptor,
+    isdeviceproperty,
+)
 
 __all__ = ["Device", "DeviceType"]
 
@@ -205,23 +210,8 @@ class Device(metaclass=DeviceType):
         try:
             cache_collection = getattr(self, DEVICE_PROPERTY_CACHE_ATTR)
         except AttributeError:
-            # the device is not scanned yet, get the properties
-            property_names = self._retrieve_device_property_names()
-            properties = [getattr(self, name) for name in property_names]
-            results = await asyncio.gather(*properties, return_exceptions=True)
-
-            # ensure we did not miss anything
-            for name, result in zip(property_names, results):
-                if result is not None:
-                    try:
-                        raise result
-                    except Exception as err:
-                        # gracefully logged and ignored
-                        logger.error(
-                            f'unable to get property "{name}", due to "{str(err)}"'
-                        )
-
-            return properties
+            # the device is not scanned yet, get the properties by probing
+            return self._retrieve_device_property_names()
         else:
             return tuple(cache_collection.keys())
 
@@ -230,18 +220,16 @@ class Device(metaclass=DeviceType):
         Test all the methods in this class, in order to figure out the decorated
         properties.
         """
-        properties = tuple(
-            prop
-            for prop in dir(self)
-            if isinstance(getattr(type(self), prop), DevicePropertyDescriptor)
+        return tuple(
+            name for name in dir(self) if isdeviceproperty(getattr(self, name))
         )
-        return properties
 
     async def sync(self):
         """Sync all the property cache."""
         property_names = self._retrieve_device_property_names()
-        tasks = [getattr(self, name).sync() for name in property_names]
-        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        sync_tasks = [getattr(self, name).sync() for name in property_names]
+        results = await xgather(*sync_tasks)
 
         n_failed = 0
         for name, result in zip(property_names, results):
@@ -252,4 +240,5 @@ class Device(metaclass=DeviceType):
                     logger.error(f'unable to synchronize "{name}", due to "{str(err)}"')
                     n_failed += 1
         if n_failed > 0:
-            logger.error(f'failed to synchronize {n_failed} properties')
+            logger.error(f"failed to synchronize {n_failed} properties")
+

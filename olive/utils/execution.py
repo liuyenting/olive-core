@@ -1,11 +1,12 @@
 """
 Utilities to control exceution flow.
 """
+import asyncio
 import logging
 import time
 from functools import wraps
 
-__all__ = ["Singleton", "retry"]
+__all__ = ["Singleton", "retry", "xgather"]
 
 logger = logging.getLogger("olive.utils")
 
@@ -54,3 +55,37 @@ def retry(exception, n_trials=3, delay=1, backoff=2, logger=None):
         return wrapped
 
     return retry_func
+
+
+async def xgather(*aws, timeout=None):
+    """
+    Using asyncio.wait to create customized gather-like behavior.
+
+    Args:
+        *aws
+        timeout
+
+    Returns:
+        (results, list of exceptions)
+
+    Reference:
+        asyncio.gather with selective return_exceptions
+            https://stackoverflow.com/a/48841497
+    """
+    pending = futures = list(map(asyncio.ensure_future, aws))
+    done, pending = await asyncio.wait(
+        pending, timeout=timeout, return_when=asyncio.ALL_COMPLETED
+    )
+
+    results = {}
+    for future in pending:
+        results[future] = TimeoutError
+    for future in done:
+        try:
+            results[future] = future.result()
+        except Exception as err:
+            logger.exception(f'{future} triggers "{str(err)}"')
+            results[future] = err
+
+    # sort results by future order
+    return [results[future] for future in futures]

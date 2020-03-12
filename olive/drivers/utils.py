@@ -10,7 +10,7 @@ from .error import PortAlreadyAssigned
 
 __all__ = ["SerialPortManager"]
 
-logger = logging.getLogger("olive.drivers")
+logger = logging.getLogger("olive.drivers.serialmanager")
 
 
 @dataclass

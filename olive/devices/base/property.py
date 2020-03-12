@@ -16,11 +16,16 @@ __all__ = [
     "rw_property",
     "DevicePropertyDataType",
     "DEVICE_PROPERTY_CACHE_ATTR",
+    "isdeviceproperty",
 ]
 
 DEVICE_PROPERTY_CACHE_ATTR = "__device_property_cache__"
 
 logger = logging.getLogger("olive.devices.property")
+
+
+class DevicePropertyType(type):
+    """Metaclass for device property type."""
 
 
 class DevicePropertyDataType(IntEnum):
@@ -274,7 +279,9 @@ class DevicePropertyDescriptor:
             logger.debug(f'"{name}" cache missed during set')
             cache_collection[name] = DevicePropertyCache(value=value, dirty=True)
         else:
-            cache.value, cache.dirty = value, True
+            if cache.value != value:
+                # only touch the cache if value is different
+                cache.value, cache.dirty = value, True
 
     async def sync(self, instance):
         """Sync the device property with device."""
@@ -396,3 +403,14 @@ class wo_property(DevicePropertyDescriptor):
     async def _get_cache_value(self, instance):
         raise AttributeError(f'"{self.__name__}" is write-only')
 
+
+def isdeviceproperty(method):
+    """
+    Test whether the attribute is a device property.
+
+    Since all __get__ returns a proxy object, we test against it instead.
+
+    Args:
+        method (TBA): TBA
+    """
+    return isinstance(method, DevicePropertyDescriptorProxy)

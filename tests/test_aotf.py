@@ -60,4 +60,12 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    # NOTE
+    # ALWAYS use `get_event_loop` at the root location, in order to guarantee that all
+    # the loops in the program are attached in the same one.
+    #
+    # Since some loop-dependent objects are initialized during class creation, the loop
+    # may already exist somewhere. Using `asyncio.run` seems to create an additional
+    # implicit loop, causing the program to whine about 'attached to a different loop.'
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(main())

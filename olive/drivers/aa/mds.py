@@ -103,6 +103,8 @@ class MDSnC(AcustoOpticalModulator):
 
         print(f"{self._port}, 2 - get basic system info")
 
+        await self.enumerate_properties()
+
         self._command_list = await self._get_command_list()
         self._n_channels = await self._get_number_of_channels()
 
@@ -119,7 +121,7 @@ class MDSnC(AcustoOpticalModulator):
 
     async def _close(self):
         self.control_mode = ControlMode.Internal
-        await self.control_mode.sync()
+        await self.sync()
         await self._save_parameters()
 
         self._writer.close()
