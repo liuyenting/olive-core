@@ -5,12 +5,10 @@ import logging
 from abc import ABCMeta, abstractmethod
 from typing import Tuple
 
-from olive.utils import xgather
 from .info import DeviceInfo
 from .property import (
     DEVICE_PROPERTY_CACHE_ATTR,
-    DevicePropertyDescriptor,
-    isdeviceproperty,
+    is_device_property,
 )
 
 __all__ = ["Device", "DeviceType"]
@@ -182,7 +180,7 @@ class Device(metaclass=DeviceType):
         """
         assert child not in self._children, "child is already registered"
         self._children.append(child)
-        logger.debug(f'[REG] DEV "{child}" -> DEV "{self}"')
+        logger.debug(f'[REGISTER] DEV "{child}" -> DEV "{self}"')
 
         # a device must be active when it has at least 1 child
         self._is_active = True
@@ -196,7 +194,7 @@ class Device(metaclass=DeviceType):
         """
         assert child in self._children, "child is already unregistered"
         self._children.remove(child)
-        logger.debug(f'[UNREG] DEV "{child}" -> DEV "{self}"')
+        logger.debug(f'[UNREGISTER] DEV "{child}" -> DEV "{self}"')
 
     ##
 
@@ -215,21 +213,12 @@ class Device(metaclass=DeviceType):
         else:
             return tuple(cache_collection.keys())
 
-    def _retrieve_device_property_names(self) -> Tuple[str]:
-        """
-        Test all the methods in this class, in order to figure out the decorated
-        properties.
-        """
-        return tuple(
-            name for name in dir(self) if isdeviceproperty(getattr(self, name))
-        )
-
     async def sync(self):
         """Sync all the property cache."""
         property_names = self._retrieve_device_property_names()
 
         sync_tasks = [getattr(self, name).sync() for name in property_names]
-        results = await xgather(*sync_tasks)
+        results = await asyncio.gather(*sync_tasks, return_exceptions=True)
 
         n_failed = 0
         for name, result in zip(property_names, results):
@@ -237,8 +226,19 @@ class Device(metaclass=DeviceType):
                 try:
                     raise result
                 except Exception as err:
-                    logger.error(f'unable to synchronize "{name}", due to "{str(err)}"')
+                    print(err)
+                    logger.exception(
+                        f'unable to synchronize "{name}", due to "{str(err)}"'
+                    )
                     n_failed += 1
         if n_failed > 0:
             logger.error(f"failed to synchronize {n_failed} properties")
 
+    def _retrieve_device_property_names(self) -> Tuple[str]:
+        """
+        Test all the methods in this class, in order to figure out the decorated
+        properties.
+        """
+        return tuple(
+            name for name in dir(self) if is_device_property(getattr(self, name))
+        )

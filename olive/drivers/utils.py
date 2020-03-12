@@ -1,5 +1,6 @@
 from asyncio import Condition
 import logging
+import typing
 from typing import Iterable
 from dataclasses import dataclass, field
 
@@ -23,12 +24,12 @@ class SerialPort:
     # port under test
     in_test: bool = field(init=False)
     # port already found assignment
-    in_use: bool = field(init=False)
+    in_use_by: typing.Any = field(init=False)
 
     def __post_init__(self):
         self.condition = Condition()
         self.in_test = False
-        self.in_use = False
+        self.in_use_by = None
 
 
 class SerialPortManager(metaclass=Singleton):
@@ -59,16 +60,26 @@ class SerialPortManager(metaclass=Singleton):
 
         logger.debug(f"{len(self._ports)} serial port(s) discovered")
 
-    async def request_port(self, port):
+    async def request_port(self, port, user):
+        """
+        Request a port to operate on.
+
+        Args:
+            port (str): port name
+            user (object): the downstream user
+        """
         assert port in self._ports, f'"{port}" is not in the record'
 
         serial_port = self._ports[port]
 
         logger.debug(f'requesting "{port}"...')
         async with serial_port.condition:
-            if serial_port.in_use:
-                # someone can already use this port, stop trying
-                raise PortAlreadyAssigned
+            if serial_port.in_use_by is not None:
+                if serial_port.in_use_by == user:
+                    return port
+                else:
+                    # someone can already use this port, stop trying
+                    raise PortAlreadyAssigned
             else:
                 if serial_port.in_test:
                     # someone is testing, wait for them
@@ -81,13 +92,20 @@ class SerialPortManager(metaclass=Singleton):
                     serial_port.in_test = True
                     return port
 
-    async def mark_port(self, port):
+    async def mark_port(self, port, user):
+        """
+        Mark the port by a user.
+
+        Args:
+            port (str): port name
+            user (object): the downstream user
+        """
         serial_port = self._ports[port]
 
         logger.debug(f'"{port}" marked')
         async with serial_port.condition:
             serial_port.in_test = False
-            serial_port.in_use = True
+            serial_port.in_use_by = user
 
             # tell others, but not releasing the lock
             serial_port.condition.notify_all()
@@ -100,4 +118,4 @@ class SerialPortManager(metaclass=Singleton):
         logger.debug(f'"{port}" released')
         async with serial_port.condition:
             serial_port.in_test = False
-            serial_port.in_use = False
+            serial_port.in_use_by = None

@@ -46,7 +46,7 @@ class Driver(metaclass=DriverType):
         results = await asyncio.gather(
             *[device.close(force) for device in self._devices], return_exceptions=True
         )
-        for result in results:
+        for device, result in zip(self._devices, results):
             if result is not None:
                 # something wrong happened
                 logger.exception(result)

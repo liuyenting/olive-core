@@ -85,7 +85,7 @@ class MDSnC(AcustoOpticalModulator):
     async def test_open(self):
         try:
             await super().test_open()
-            await self.driver.manager.mark_port(self._port)  # mark port as in-use
+            await self.driver.manager.mark_port(self._port, self)  # mark port as in-use
             print(f"{self._port} marked")
         except (DeviceTimeoutError, PortAlreadyAssigned, SyntaxError):
             print(f"{self._port} failed")
@@ -96,14 +96,13 @@ class MDSnC(AcustoOpticalModulator):
         loop = asyncio.get_running_loop()
 
         print(f"{self._port}, 1 - request and open the port")
-        port = await self.driver.manager.request_port(self._port)
+
+        port = await self.driver.manager.request_port(self._port, self)
         self._reader, self._writer = await open_serial_connection(
             loop=loop, url=port, baudrate=self.BAUDRATE
         )
 
         print(f"{self._port}, 2 - get basic system info")
-
-        await self.enumerate_properties()
 
         self._command_list = await self._get_command_list()
         self._n_channels = await self._get_number_of_channels()

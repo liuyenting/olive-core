@@ -16,7 +16,7 @@ __all__ = [
     "rw_property",
     "DevicePropertyDataType",
     "DEVICE_PROPERTY_CACHE_ATTR",
-    "isdeviceproperty",
+    "is_device_property",
 ]
 
 DEVICE_PROPERTY_CACHE_ATTR = "__device_property_cache__"
@@ -269,7 +269,7 @@ class DevicePropertyDescriptor:
 
         Args:
             instance (object): the instance to operate on
-            value : the new value
+            value (object): the new value
         """
         cache_collection = self._get_instance_cache(instance)
         name = self.__name__
@@ -284,16 +284,29 @@ class DevicePropertyDescriptor:
                 cache.value, cache.dirty = value, True
 
     async def sync(self, instance):
-        """Sync the device property with device."""
+        """
+        Sync the device property with device.
+
+        If the device property was never accessed in its life cycle, we cannot possibly
+        modify them, therefore, not sync'ed.
+
+        Args:
+            instance (object): the instance to operate on
+        """
         cache_collection = self._get_instance_cache(instance)
         name = self.__name__
-        # if we can call sync, cache already exists
-        cache = cache_collection[name]
-        async with cache.lock:
-            if cache.dirty:
-                logger.debug(f'"{name}" is dirty, synchronizing')
-                await self._fset(instance, cache.value)
-                cache.dirty = False
+        try:
+            cache = cache_collection[name]
+        except KeyError:
+            # we doesn't even use this property, therefore, not cached
+            pass
+        else:
+            # we have accessed this property at some point
+            async with cache.lock:
+                if cache.dirty:
+                    logger.debug(f'"{name}" is dirty, synchronizing')
+                    await self._fset(instance, cache.value)
+                    cache.dirty = False
 
     ##
     # value type
@@ -404,7 +417,7 @@ class wo_property(DevicePropertyDescriptor):
         raise AttributeError(f'"{self.__name__}" is write-only')
 
 
-def isdeviceproperty(method):
+def is_device_property(method):
     """
     Test whether the attribute is a device property.
 

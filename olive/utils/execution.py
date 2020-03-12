@@ -84,7 +84,7 @@ async def xgather(*aws, timeout=None):
         try:
             results[future] = future.result()
         except Exception as err:
-            logger.exception(f'{future} triggers "{str(err)}"')
+            # save the exception
             results[future] = err
 
     # sort results by future order

@@ -34,7 +34,7 @@ class DriverManager(metaclass=Singleton):
             force_reload (bool, optional): force active drivers being reload
         """
         # shutdown active drivers
-        active_drivers = self._shutdown_all_drivers(force_reload)
+        active_drivers = await self._shutdown_all_drivers(force_reload)
         active_driver_classes = [type(driver) for driver in active_drivers]
 
         # reload the namespace module
@@ -58,8 +58,8 @@ class DriverManager(metaclass=Singleton):
                 logger.debug(f'"{driver_name}" is already initialized')
 
         logger.info(f"initializing {len(drivers)} driver(s)")
-        tasks = [driver.initialize() for driver in drivers]
-        results = await asyncio.gather(*tasks, return_exceptions=True)
+        init_tasks = [driver.initialize() for driver in drivers]
+        results = await asyncio.gather(*init_tasks, return_exceptions=True)
 
         for driver, result in zip(drivers, results):
             if result is None:
@@ -101,7 +101,7 @@ class DriverManager(metaclass=Singleton):
             logger.debug(f".. {device_klass.__name__}")
             self._drivers[device_klass].append(driver)
 
-    def _shutdown_all_drivers(self, force=False) -> List[Driver]:
+    async def _shutdown_all_drivers(self, force=False) -> List[Driver]:
         """
         Shutdown all enlisted drivers.
 
@@ -114,19 +114,18 @@ class DriverManager(metaclass=Singleton):
         """
         drivers = self.query_drivers()
 
-        # shutdown all drivers
+        # shutdown drivers
+        shutdown_tasks = [driver.shutdown() for driver in drivers]
+        results = await asyncio.gather(*shutdown_tasks, return_exceptions=True)
+
         active_drivers = []
-        for driver in drivers:
-            if driver.is_active:
+        for driver, result in zip(drivers, results):
+            if result is not None:
+                # something really wrong, typically, runtime error
+                logger.critical(result)
+            elif driver.is_active:
                 logger.warning(f"{driver} is still active")
-            else:
-                try:
-                    driver.shutdown(force)
-                    continue
-                except ShutdownError as err:
-                    logger.error(f'{driver} failed to shutdown, due to "{str(err)}"')
-            # if we are here, the driver does _not_ shutdown completely
-            active_drivers.append(driver)
+                active_drivers.append(driver)
         logger.info(f"{len(active_drivers)} driver(s) are still active")
 
         if len(active_drivers) > 0:
