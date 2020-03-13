@@ -12,11 +12,18 @@ class Modulator(Device):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # dict value used for reverse lookup
-        self._channels = dict()
+        self._channels = {}
 
     ##
 
-    @abstractmethod
+    @property
+    def channels(self) -> Tuple[str]:
+        """Currently created channels."""
+        return tuple(self._channels.keys())
+
+    ##
+
+    @abstractmethod  # FIXME should this function become async?
     def get_max_channels(self):
         """Maximum supported channels."""
 
