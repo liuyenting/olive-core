@@ -285,7 +285,7 @@ class MDSnC(AcustoOpticalModulator):
 
         Args:
             timeout (int, optional): timeout in seconds
-
+            n_retry (int, optional): number of retries before raising timeout error
         Returns:
             (str): decoded raw command list
         """

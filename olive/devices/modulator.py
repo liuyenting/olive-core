@@ -23,8 +23,8 @@ class Modulator(Device):
 
     ##
 
-    @abstractmethod  # FIXME should this function become async?
-    def get_max_channels(self):
+    @abstractmethod
+    def get_max_channels(self) -> int:
         """Maximum supported channels."""
 
     @abstractmethod
