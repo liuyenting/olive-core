@@ -68,17 +68,17 @@ class MyChildObject:
 
 
 async def main2():
-    obj1 = MyObject()
+    obj1 = MyInheritObject()
 
     print(obj1.val1.min)
-    print(obj1.val2.enum)
+    print(obj1.val2.max)
 
     obj1.val1 = 42
     await obj1.val1.sync()
 
     for _ in range(3):
-        print(await obj1.val1)
-        print(await obj1.val2)
+        print(f'val1={await obj1.val1}')
+        print(f'val2={await obj1.val2}')
 
 
 async def main():

@@ -9,17 +9,16 @@ from typing import Iterable
 
 from serial_asyncio import open_serial_connection
 
-from olive.devices import AcustoOpticalModulator, wo_property, DevicePropertyDataType
+from olive.devices import AcustoOpticalModulator, DevicePropertyDataType, wo_property
 from olive.devices.base import DeviceInfo
 from olive.devices.error import (
     DeviceTimeoutError,
     ExceedsChannelCapacityError,
     UnsupportedClassError,
 )
-
-from ..base import Driver
-from ..error import PortAlreadyAssigned
-from ..utils import SerialPortManager
+from olive.drivers.base import Driver
+from olive.drivers.error import PortAlreadyAssigned
+from olive.drivers.utils import SerialPortManager
 
 __all__ = ["MultiDigitalSynthesizer"]
 
@@ -120,7 +119,7 @@ class MDSnC(AcustoOpticalModulator):
 
     ##
 
-    async def get_device_info(self):
+    async def get_device_info(self):  # FIXME turn this in to ro_property
         # parse firmware version
         matches = re.search(
             self.VERSION_PATTERN, self._command_list, flags=re.MULTILINE

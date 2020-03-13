@@ -226,7 +226,6 @@ class Device(metaclass=DeviceType):
                 try:
                     raise result
                 except Exception as err:
-                    print(err)
                     logger.exception(
                         f'unable to synchronize "{name}", due to "{str(err)}"'
                     )

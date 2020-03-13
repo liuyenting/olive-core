@@ -34,11 +34,11 @@ class States(Device):
         """Maximum supported states."""
 
     @abstractmethod
-    def get_state(self):
+    async def get_state(self):
         """Get currently selected state."""
 
     @abstractmethod
-    def set_state(self, state: Union[int, str]):
+    async def set_state(self, state: Union[int, str]):
         """
         Set new active state.
 
