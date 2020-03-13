@@ -48,9 +48,9 @@ class SerialPortManager(metaclass=Singleton):
         # remove old ports
         old_ports = set(self._ports.keys()) - set(ports)
         for port in old_ports:
-            assert not self._ports[
-                port
-            ].locked(), "serial port still locked, but the OS cannot find it"
+            if self._ports[port].locked():
+                logger.error(f'"{port}" is still locked, but the OS cannot find it')
+            # not matter what, we need to remove their references
             del self._ports[port]
 
         # add new ports
@@ -72,29 +72,33 @@ class SerialPortManager(metaclass=Singleton):
 
         serial_port = self._ports[port]
 
-        logger.debug(f'requesting "{port}"...')
         async with serial_port.condition:
-            if serial_port.in_use_by is not None:
-                if serial_port.in_use_by == user:
-                    return port
-                else:
-                    # someone can already use this port, stop trying
-                    raise PortAlreadyAssigned
-            else:
+            # NOTE
+            # Windows 6.0+ support 256 communications port devices
+            #   https://superuser.com/a/496668
+            for _ in range(256):
                 if serial_port.in_test:
-                    # someone is testing, wait for them
-                    logger.debug(f"waiting for other tests...")
+                    # 1) is someone testing it?
+                    logger.debug(f'"{user}" is waiting for "{port}"...')
                     await serial_port.condition.wait()
-                    # TODO condition object requires further testing
+                elif serial_port.in_use_by is not None:
+                    # 2) port in use, am I the owner?
+                    if serial_port.in_use_by == user:
+                        return port
+                    else:
+                        # someone can already use this port, stop trying
+                        raise PortAlreadyAssigned
                 else:
-                    logger.debug(f"port acquired")
-                    # no one is testing it, let's go
+                    # 3) I am the first one, grab it
+                    logger.debug(f'"{port}" acquired by "{user}"')
                     serial_port.in_test = True
                     return port
+            else:
+                logger.error("maxium serial request trials reached")
 
     async def mark_port(self, port, user):
         """
-        Mark the port by a user.
+        Mark the port to be owned by a user.
 
         Args:
             port (str): port name
@@ -102,7 +106,7 @@ class SerialPortManager(metaclass=Singleton):
         """
         serial_port = self._ports[port]
 
-        logger.debug(f'"{port}" marked')
+        logger.debug(f'"{port}" is now owned by "{user}"')
         async with serial_port.condition:
             serial_port.in_test = False
             serial_port.in_use_by = user

@@ -318,7 +318,7 @@ class MDSnC(AcustoOpticalModulator):
             except asyncio.TimeoutError:
                 logger.debug(f"command list request timeout, trial {i_retry+1}")
         else:
-            raise DeviceTimeoutError()
+            raise DeviceTimeoutError
 
     @lru_cache(maxsize=1)
     def _discrete_power_range(self):
