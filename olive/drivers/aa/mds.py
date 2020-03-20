@@ -119,35 +119,6 @@ class MDSnC(AcustoOpticalModulator):
 
     ##
 
-    async def get_device_info(self):  # FIXME turn this in to ro_property
-        # parse firmware version
-        matches = re.search(
-            self.VERSION_PATTERN, self._command_list, flags=re.MULTILINE
-        )
-        if matches:
-            version = matches.group(1)
-        else:
-            raise SyntaxError("unable to find version string")
-
-        # request serial
-        self._writer.write(b"q\r")
-        await self._writer.drain()
-        serial = await self._reader.readuntil(b"?")
-        serial = serial.decode()
-
-        # parse serial
-        matches = re.search(self.SERIAL_PATTERN, serial)
-        if matches:
-            serial = matches.group(1)
-        else:
-            raise SyntaxError("unable to find serial number")
-
-        return DeviceInfo(
-            version=version, vendor="AA", model="MDSnC", serial_number=serial
-        )
-
-    ##
-
     @wo_property(
         dtype=DevicePropertyDataType.Enum,
         enum=ControlMode,
@@ -183,6 +154,35 @@ class MDSnC(AcustoOpticalModulator):
         logger.debug(f"switching control voltage to {voltage.name}")
         self._writer.write(f"V{voltage.value}\r".encode())
         await self._writer.drain()
+
+    ##
+
+    async def get_device_info(self):
+        # parse firmware version
+        matches = re.search(
+            self.VERSION_PATTERN, self._command_list, flags=re.MULTILINE
+        )
+        if matches:
+            version = matches.group(1)
+        else:
+            raise SyntaxError("unable to find version string")
+
+        # request serial
+        self._writer.write(b"q\r")
+        await self._writer.drain()
+        serial = await self._reader.readuntil(b"?")
+        serial = serial.decode()
+
+        # parse serial
+        matches = re.search(self.SERIAL_PATTERN, serial)
+        if matches:
+            serial = matches.group(1)
+        else:
+            raise SyntaxError("unable to find serial number")
+
+        return DeviceInfo(
+            version=version, vendor="AA", model="MDSnC", serial_number=serial
+        )
 
     ##
 

@@ -6,10 +6,7 @@ from abc import ABCMeta, abstractmethod
 from typing import Tuple
 
 from .info import DeviceInfo
-from .property import (
-    DEVICE_PROPERTY_CACHE_ATTR,
-    is_device_property,
-)
+from .property import DEVICE_PROPERTY_CACHE_ATTR, is_device_property, ro_property
 
 __all__ = ["Device", "DeviceType"]
 
@@ -165,12 +162,6 @@ class Device(metaclass=DeviceType):
 
     ##
 
-    @abstractmethod
-    async def get_device_info(self) -> DeviceInfo:
-        """Get device info after a successful init."""
-
-    ##
-
     def register(self, child: Device):
         """
         Register a child to this device.
@@ -241,3 +232,17 @@ class Device(metaclass=DeviceType):
         return tuple(
             name for name in dir(self) if is_device_property(getattr(self, name))
         )
+
+    ##
+
+    @abstractmethod
+    async def get_device_info(self) -> DeviceInfo:
+        """
+        Get device info after a successful init.
+
+        This is not a DeviceeProperty since I want to use object type instead of
+        simple numeric/string/enum.
+
+        Returns:
+            (DeviceInfo): the vendor, model, version and serial number info
+        """
