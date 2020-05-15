@@ -95,6 +95,9 @@ class SerialPortManager(metaclass=Singleton):
                     return port
             else:
                 logger.error("maxium serial request trials reached")
+                raise PortAlreadyAssigned(
+                    f"maxium serial request trials reached, give up"
+                )
 
     async def mark_port(self, port, user):
         """
